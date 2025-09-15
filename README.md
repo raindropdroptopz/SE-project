@@ -11,6 +11,7 @@
 - [x] หน้าต่างการจองสนาม & อุปกรณ์
 - [ ] data flow
 - [ ] Back-End
+- [ ] เชื่อมกับSQL
 
 ### Diagram
 - [ ] DFD level 1 (Data Flow)
