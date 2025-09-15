@@ -1,4 +1,8 @@
 # SE-Project
+### Projectplan
+- Agile
+- Waterfall
+
 ### งานที่ต้องทำ ต้องภายในวันพฤหัส
 - [x] Login
 - [ ] Back-End
