@@ -6,123 +6,119 @@
     <title>ลงทะเบียนผู้ใช้</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .register-container {
-            max-width: 500px;
-            margin: 50px auto;
-            padding: 30px;
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
         }
-        
+
+        .form-register {
+            width: 100%;
+            max-width: 400px;
+            padding: 1rem;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-lg-8 register-container bg-white">
-            <h2 class="text-center mb-4">ลงทะเบียนผู้ใช้งาน</h2>
-            <form id="registerForm">
-                <div class="mb-3">
-                    <label for="email" class="form-label">อีเมล</label>
-                    <input type="email" class="form-control" id="email" name="email" required>
-                </div>
-                <div class="mb-3">
-                    <label for="password" class="form-label">รหัสผ่าน</label>
-                    <input type="password" class="form-control" id="password" name="password" required>
-                </div>
-                <div class="form-floating">
-                    <label for="confirmPassword" class="form-control"">ยืนยันรหัสผ่าน</label>
-                    <input type="password" class="form-control" id="confirmPassword" required>
-                    <div id="passwordMismatch" class="invalid-feedback">รหัสผ่านไม่ตรงกัน</div>
-                </div>
-                <div class="mb-3">
-                    <label for="identificationNumber" class="form-label">รหัสนักศึกษา/รหัสอาจารย์</label>
-                    <input type="text" class="form-control" id="identificationNumber" name="identificationNumber" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">กรุณาเลือกประเภทผู้ใช้งาน</label>
-                    <div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="userType" id="universityStaff" value="universityStaff" checked>
-                            <label class="form-check-label" for="universityStaff">บุคลากรในมหาวิทยาลัย</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="userType" id="externalUser" value="externalUser">
-                            <label class="form-check-label" for="externalUser">ผู้ใช้ภายนอก</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <button type="button" class="btn btn-secondary" onclick="window.location.href='login.html'">ย้อนกลับ</button>
-                    <button type="submit" class="btn btn-success">ลงทะเบียน</button>
-                </div>
-            </form>
+<main class="form-register w-100 m-auto text-center">
+    <form id="registerForm" novalidate>
+        <h1 class="h3 mb-3 fw-normal">ลงทะเบียนผู้ใช้งาน</h1>
+
+        <div class="form-floating mb-3">
+            <input type="email" class="form-control" id="email" name="email" placeholder="อีเมล" required>
+            <label for="email">อีเมล</label>
         </div>
-    </div>
-</div>
+        <div class="form-floating mb-3">
+            <input type="password" class="form-control" id="password" name="password" placeholder="รหัสผ่าน" required>
+            <label for="password">รหัสผ่าน</label>
+        </div>
+        <div class="form-floating mb-3">
+            <input type="password" class="form-control" id="confirmPassword" placeholder="ยืนยันรหัสผ่าน" required>
+            <label for="confirmPassword">ยืนยันรหัสผ่าน</label>
+            <div id="passwordMismatch" class="invalid-feedback">รหัสผ่านไม่ตรงกัน</div>
+        </div>
+        
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="identificationNumber" name="identificationNumber" placeholder="รหัสนักศึกษา/รหัสอาจารย์" required>
+            <label for="identificationNumber">รหัสนักศึกษา/รหัสอาจารย์</label>
+        </div>
+
+        <div class="mb-3 text-start">
+            <label class="form-label">ประเภทผู้ใช้งาน</label>
+            <div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="userType" id="universityStaff" value="universityStaff" checked>
+                    <label class="form-check-label" for="universityStaff">บุคลากรในมหาวิทยาลัย</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="userType" id="externalUser" value="externalUser">
+                    <label class="form-check-label" for="externalUser">ผู้ใช้ภายนอก</label>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2">ลงทะเบียน</button>
+        <p class="mt-3 mb-1 text-body-secondary text-center">
+            <a href="login.html">กลับไปหน้าเข้าสู่ระบบ</a>
+        </p>
+    </form>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.getElementById('registerForm').addEventListener('submit', function(event) {
-        event.preventDefault();
+        // ใช้ event.stopPropagation() เพื่อป้องกันเหตุการณ์อื่นๆ จาก Bootstrap
+        if (!this.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
 
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
         const confirmPasswordField = document.getElementById('confirmPassword');
-        const passwordMismatchDiv = document.getElementById('passwordMismatch');
-
+        
+        // ตรวจสอบรหัสผ่านไม่ตรงกัน
         if (password !== confirmPassword) {
-            confirmPasswordField.classList.add('is-invalid');
-            passwordMismatchDiv.style.display = 'block';
-            return;
+            event.preventDefault(); // หยุดการส่งฟอร์ม
+            confirmPasswordField.setCustomValidity("รหัสผ่านไม่ตรงกัน");
         } else {
-            confirmPasswordField.classList.remove('is-invalid');
-            passwordMismatchDiv.style.display = 'none';
+            confirmPasswordField.setCustomValidity("");
         }
 
-        const formData = {
-            email: document.getElementById('email').value,
-            password: password,
-            identificationNumber: document.getElementById('identificationNumber').value,
-            userType: document.querySelector('input[name="userType"]:checked').value
-        };
+        // แสดงผลการตรวจสอบความถูกต้องของฟอร์ม
+        this.classList.add('was-validated');
 
-        console.log('ข้อมูลที่ต้องการส่ง:', formData);
-
-        // นำโค้ดนี้ออกจาก comment เพื่อใช้งาน
-        fetch('/api/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        })
-        .then(response => {
-            // ตรวจสอบสถานะการตอบกลับ
-            if (!response.ok) {
-                // ถ้ามีข้อผิดพลาด (เช่น 4xx, 5xx) ให้โยน error เพื่อไปที่ .catch
-                return response.json().then(err => { throw err; });
-            }
-            return response.json();
-        })
-        .then(data => {
-            // ถ้าเซิร์ฟเวอร์ตอบกลับว่า success: true
-            if (data.success) {
-                // แสดงข้อความแจ้งเตือน "สมัครสมาชิกสำเร็จ"
-                alert('สมัครสมาชิกสำเร็จ!');
-                // เปลี่ยนเส้นทางไปยังหน้า login.html
-                window.location.href = 'login.html';
-            } else {
-                // ถ้าเซิร์ฟเวอร์บอกว่าไม่สำเร็จ (เช่น อีเมลซ้ำ)
-                alert('สมัครสมาชิกไม่สำเร็จ: ' + data.message);
-            }
-        })
-        .catch(error => {
-            // จัดการข้อผิดพลาดที่เกิดขึ้น เช่น เซิร์ฟเวอร์ล่ม
-            console.error('เกิดข้อผิดพลาด:', error);
-            alert('เกิดข้อผิดพลาดในการสมัครสมาชิก: ' + (error.message || 'กรุณาลองใหม่อีกครั้ง'));
-        });
-    });
-</script>
-
-</body>
-</html>
+        // หากทุกอย่างถูกต้อง, ส่งข้อมูล
+        if (this.checkValidity() && password === confirmPassword) {
+            const formData = {
+                email: document.getElementById('email').value,
+                password: password,
+                identificationNumber: document.getElementById('identificationNumber').value,
+                userType: document.querySelector('input[name="userType"]:checked').value
+            };
+    
+            console.log('ข้อมูลที่ต้องการส่ง:', formData);
+    
+            fetch('/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    alert('สมัครสมาชิกสำเร็จ!');
+                    window.location.href = 'login.html';
+                } else {
+                    alert('สมัครสมาชิกไม่สำเร็จ: ' + data.
