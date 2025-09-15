@@ -5,10 +5,10 @@
 
 ### งานที่ต้องทำ ต้องภายในวันพฤหัส
 - [x] Login (ข้างการเชื่อมกับSQL(XAMPP))
+- [ ] ตกแต่งหน้าLogin (in process)
 - [ ] Back-End
 - [ ] Register
 - [ ] หน้าต่างการจองสนาม & อุปกรณ์
-- [ ] ตกแต่งหน้าLogin
 - [ ] data flow
 
 ### Diagram
