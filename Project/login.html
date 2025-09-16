@@ -65,33 +65,35 @@
 
         console.log('ข้อมูลที่ต้องการส่ง:', formData);
 
-        // Fetch API เพื่อส่งข้อมูลไปยัง Back-End
-        fetch('/api/login', { // เปลี่ยน URL นี้ตาม Back-End ของคุณ
+        // Fetch API เพื่อส่งข้อมูลไปยัง Back-End (เชื่อมต่อกับ Node.js + MySQL)
+        fetch('http://localhost:3000/api/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(formData)
         })
-        .then(response => {
-            if (!response.ok) {
-                // หาก login ไม่สำเร็จ ให้แสดง error message จาก server
-                return response.json().then(err => { throw new Error(err.message || 'Login failed'); });
+        .then(async response => {
+            let data;
+            try {
+                data = await response.json();
+            } catch (e) {
+                throw new Error('เซิร์ฟเวอร์ไม่ตอบสนอง');
             }
-            return response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Login failed');
+            }
+            return data;
         })
         .then(data => {
-            // หาก login สำเร็จ
             if (data.success) {
                 alert('เข้าสู่ระบบสำเร็จ!');
-                // เปลี่ยนเส้นทางไปยังหน้าหลัก หรือหน้า Dashboard
-                window.location.href = 'index.html'; // แก้ไขเป็น URL ที่ต้องการ
+                window.location.href = 'index.html';
             } else {
-                alert('เข้าสู่ระบบไม่สำเร็จ: ' + data.message);
+                alert('เข้าสู่ระบบไม่สำเร็จ: ' + (data.message || 'ไม่สามารถเข้าสู่ระบบได้'));
             }
         })
         .catch(error => {
-            // จัดการข้อผิดพลาดในการเชื่อมต่อ
             console.error('เกิดข้อผิดพลาด:', error);
             alert('เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ' + error.message);
         });
