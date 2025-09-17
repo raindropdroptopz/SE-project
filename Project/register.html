@@ -31,10 +31,12 @@
         <div class="form-floating mb-3">
             <input type="email" class="form-control" id="email" name="email" placeholder="อีเมล" required>
             <label for="email">อีเมล</label>
+            <div class="invalid-feedback">กรุณากรอกอีเมลที่ถูกต้อง</div>
         </div>
         <div class="form-floating mb-3">
-            <input type="password" class="form-control" id="password" name="password" placeholder="รหัสผ่าน" required>
+            <input type="password" class="form-control" id="password" name="password" placeholder="รหัสผ่าน" required minlength="6">
             <label for="password">รหัสผ่าน</label>
+            <div class="invalid-feedback">กรุณากรอกรหัสผ่าน (ขั้นต่ำ 6 ตัวอักษร)</div>
         </div>
         <div class="form-floating mb-3">
             <input type="password" class="form-control" id="confirmPassword" placeholder="ยืนยันรหัสผ่าน" required>
@@ -45,20 +47,22 @@
         <div class="form-floating mb-3">
             <input type="text" class="form-control" id="identificationNumber" name="identificationNumber" placeholder="รหัสนักศึกษา/รหัสอาจารย์" required>
             <label for="identificationNumber">รหัสนักศึกษา/รหัสอาจารย์</label>
+            <div class="invalid-feedback">กรุณากรอกรหัสนักศึกษา/รหัสอาจารย์</div>
         </div>
 
         <div class="mb-3 text-start">
             <label class="form-label">ประเภทผู้ใช้งาน</label>
             <div>
                 <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="userType" id="universityStaff" value="universityStaff" checked>
+                    <input class="form-check-input" type="radio" name="userType" id="universityStaff" value="universityStaff" checked required>
                     <label class="form-check-label" for="universityStaff">บุคลากรในมหาวิทยาลัย</label>
                 </div>
                 <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="userType" id="externalUser" value="externalUser">
+                    <input class="form-check-input" type="radio" name="userType" id="externalUser" value="externalUser" required>
                     <label class="form-check-label" for="externalUser">ผู้ใช้ภายนอก</label>
                 </div>
             </div>
+             <div class="invalid-feedback text-start">กรุณาเลือกประเภทผู้ใช้งาน</div>
         </div>
 
         <button type="submit" class="btn btn-primary w-100 py-2">ลงทะเบียน</button>
@@ -71,29 +75,35 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.getElementById('registerForm').addEventListener('submit', function(event) {
-        // ใช้ event.stopPropagation() เพื่อป้องกันเหตุการณ์อื่นๆ จาก Bootstrap
-        if (!this.checkValidity()) {
-            event.preventDefault();
-            event.stopPropagation();
+        // ดึงฟอร์ม
+        const form = this;
+
+        // Reset custom validity for confirm password before re-checking
+        const confirmPasswordField = document.getElementById('confirmPassword');
+        confirmPasswordField.setCustomValidity("");
+
+        // ตรวจสอบความถูกต้องของฟอร์ม HTML5 ก่อน
+        if (!form.checkValidity()) {
+            event.preventDefault(); // หยุดการส่งฟอร์มถ้าไม่ถูกต้อง
+            event.stopPropagation(); // หยุดการแพร่กระจายของเหตุการณ์
         }
 
         const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        const confirmPasswordField = document.getElementById('confirmPassword');
+        const confirmPassword = confirmPasswordField.value;
         
         // ตรวจสอบรหัสผ่านไม่ตรงกัน
         if (password !== confirmPassword) {
             event.preventDefault(); // หยุดการส่งฟอร์ม
-            confirmPasswordField.setCustomValidity("รหัสผ่านไม่ตรงกัน");
-        } else {
-            confirmPasswordField.setCustomValidity("");
+            confirmPasswordField.setCustomValidity("รหัสผ่านไม่ตรงกัน"); // ตั้งค่าข้อผิดพลาดแบบกำหนดเอง
         }
 
-        // แสดงผลการตรวจสอบความถูกต้องของฟอร์ม
-        this.classList.add('was-validated');
+        // เพิ่ม class 'was-validated' เพื่อแสดงผลการตรวจสอบของ Bootstrap
+        form.classList.add('was-validated');
 
-        // หากทุกอย่างถูกต้อง, ส่งข้อมูล
-        if (this.checkValidity() && password === confirmPassword) {
+        // หากฟอร์มและรหัสผ่านถูกต้องทั้งหมด, ดำเนินการส่งข้อมูล
+        if (form.checkValidity() && password === confirmPassword) {
+            event.preventDefault(); // หยุดการส่งฟอร์มซ้ำ
+
             const formData = {
                 email: document.getElementById('email').value,
                 password: password,
@@ -111,14 +121,51 @@
                 body: JSON.stringify(formData)
             })
             .then(response => {
+                // ตรวจสอบสถานะการตอบกลับ
                 if (!response.ok) {
-                    return response.json().then(err => { throw err; });
+                    // ถ้ามีข้อผิดพลาด (เช่น 4xx, 5xx) ให้โยน error พร้อมข้อความจากเซิร์ฟเวอร์
+                    return response.json().then(err => { 
+                        throw new Error(err.message || `Server responded with status ${response.status}`);
+                    });
                 }
                 return response.json();
             })
             .then(data => {
+                // ถ้าเซิร์ฟเวอร์ตอบกลับว่า success: true
                 if (data.success) {
                     alert('สมัครสมาชิกสำเร็จ!');
                     window.location.href = 'login.html';
                 } else {
-                    alert('สมัครสมาชิกไม่สำเร็จ: ' + data.
+                    // ถ้าเซิร์ฟเวอร์บอกว่าไม่สำเร็จ (เช่น อีเมลซ้ำ)
+                    alert('สมัครสมาชิกไม่สำเร็จ: ' + (data.message || 'ไม่ทราบสาเหตุ'));
+                }
+            })
+            .catch(error => {
+                // จัดการข้อผิดพลาดที่เกิดขึ้น เช่น เซิร์ฟเวอร์ล่ม หรือปัญหาเครือข่าย
+                console.error('เกิดข้อผิดพลาด:', error);
+                alert('เกิดข้อผิดพลาดในการสมัครสมาชิก: ' + error.message + ' กรุณาลองใหม่อีกครั้ง');
+            });
+        }
+    });
+
+    // เพิ่ม event listener เพื่อรีเซ็ต custom validity เมื่อผู้ใช้พิมพ์ใหม่
+    document.getElementById('confirmPassword').addEventListener('input', function() {
+        if (this.value === document.getElementById('password').value) {
+            this.setCustomValidity('');
+        } else {
+            this.setCustomValidity('รหัสผ่านไม่ตรงกัน'); // ตั้งค่าข้อผิดพลาดเมื่อไม่ตรงกัน
+        }
+    });
+
+    document.getElementById('password').addEventListener('input', function() {
+        const confirmPasswordField = document.getElementById('confirmPassword');
+        if (this.value === confirmPasswordField.value) {
+            confirmPasswordField.setCustomValidity('');
+        } else {
+            confirmPasswordField.setCustomValidity('รหัสผ่านไม่ตรงกัน');
+        }
+    });
+</script>
+
+</body>
+</html>

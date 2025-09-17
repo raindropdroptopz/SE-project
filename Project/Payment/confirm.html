@@ -44,7 +44,7 @@
                         <p class="mb-1"><strong>ชื่อสนาม:</strong> สนามฟุตบอลและลู่วิ่ง</p>
                     </div>
                     <div class="col-md-6">
-                        <p class="mb-1"><strong>วันที่:</strong> 15 กันยายน 2568</p>
+                        <p class="mb-1"><strong>วันที่:</strong> <span id="booking-date"></span></p>
                     </div>
                     <div class="col-md-6">
                         <p class="mb-1"><strong>ช่วงเวลา:</strong> 14:00 - 15:00 น.</p>
@@ -55,26 +55,8 @@
             <div>
                 <h4>อุปกรณ์ที่เลือก</h4>
                 <hr>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item">
-                        <div class="d-flex justify-content-between">
-                            <span>ลูกฟุตบอล</span>
-                            <strong>1 ลูก</strong>
-                        </div>
-                    </li>
-                    <li class="list-group-item">
-                        <div class="d-flex justify-content-between">
-                            <span>ชุดกรวยฝึกซ้อม</span>
-                            <strong>1 ชุด</strong>
-                        </div>
-                    </li>
-                    <li class="list-group-item text-muted">
-                        <div class="d-flex justify-content-between">
-                            <span>ไม้แบดมินตัน</span>
-                            <span class="text-muted">ไม่ได้เลือก</span>
-                        </div>
-                    </li>
-                </ul>
+                <ul class="list-group list-group-flush" id="equipment-list">
+                    </ul>
             </div>
         </div>
     </div>
@@ -95,12 +77,12 @@
             <div class="modal-body text-center">
                 <p>กรุณาใช้แอปพลิเคชันธนาคารของท่านสแกน QR Code เพื่อชำระเงิน</p>
                 <div class="mb-3">
-                    <img src="photo/QR.png" class="img-fluid qr-code-img" alt="QR Code PromptPay">
+                    <img src="/Project/photo/QR.png" class="img-fluid qr-code-img" alt="QR Code PromptPay">
                 </div>
                 <div class="text-start">
                     <p class="mb-1"><strong>หมายเลขพร้อมเพย์:</strong> <span id="promptpayNumber">098-XXX-XXXX</span></p>
                     <p class="mb-1"><strong>ชื่อบัญชี:</strong> <span id="accountName">ระบบจองสนามกีฬา Sports Area</span></p>
-                    <p class="mb-1"><strong>ชื่อบัญชี:</strong> <span id="accountName">183-x-xxxxx-x</span></p>
+                    <p class="mb-1"><strong>ชื่อบัญชี:</strong> <span id="accountName">183-6-48594-6</span></p>
                     <p class="mb-1"><strong>ยอดที่ต้องชำระ:</strong> <span id="amountToPay">150.00 บาท</span></p>
                 </div>
                 <div class="alert alert-info mt-3" role="alert">
@@ -116,5 +98,63 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const equipmentNames = {
+        'ball': 'ลูกฟุตบอล',
+        'cones': 'ชุดกรวยฝึกซ้อม',
+        'whistle': 'นกหวีด'
+    };
+    
+    const equipmentList = document.getElementById('equipment-list');
+    const bookingDateSpan = document.getElementById('booking-date');
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Get and display the selected date
+    const selectedDate = urlParams.get('date');
+    if (selectedDate) {
+        // Format the date for better readability (optional)
+        const dateObj = new Date(selectedDate);
+        const formattedDate = dateObj.toLocaleDateString('th-TH', { 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric' 
+        });
+        bookingDateSpan.textContent = formattedDate;
+    }
+
+    let hasEquipment = false;
+    
+    for (const [key, value] of urlParams.entries()) {
+        const name = equipmentNames[key];
+        const quantity = parseInt(value);
+        if (name && quantity > 0) {
+            hasEquipment = true;
+            const listItem = document.createElement('li');
+            listItem.className = 'list-group-item';
+            listItem.innerHTML = `
+                <div class="d-flex justify-content-between">
+                    <span>${name}</span>
+                    <strong>${quantity} ลูก</strong>
+                </div>
+            `;
+            equipmentList.appendChild(listItem);
+        }
+    }
+    
+    if (!hasEquipment) {
+        const noEquipmentItem = document.createElement('li');
+        noEquipmentItem.className = 'list-group-item text-muted';
+        noEquipmentItem.innerHTML = `
+            <div class="d-flex justify-content-between">
+                <span>ไม่มีอุปกรณ์ที่เลือก</span>
+            </div>
+        `;
+        equipmentList.appendChild(noEquipmentItem);
+    }
+});
+</script>
+
 </body>
 </html>

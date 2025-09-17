@@ -36,10 +36,40 @@
 <div class="container">
     <div class="row">
         <div class="col-md-6 mb-4">
-            <div class="card p-4">
+            <div class="card p-4 mb-4">
                 <h4 class="mb-3">เลือกวันที่จอง</h4>
                 <div id="calendar"></div>
             </div>
+
+            <div class="card p-4">
+                <h4 class="mb-3">เลือกอุปกรณ์เพิ่มเติม</h4>
+                <div class="list-group mb-3" id="equipment-list">
+                    <div class="list-group-item d-flex justify-content-between align-items-center" data-item-name="ลูกฟุตบอล">
+                        <label class="form-check-label">ลูกฟุตบอล</label>
+                        <div class="input-group input-group-sm w-auto">
+                            <button class="btn btn-outline-secondary btn-decrease" type="button" data-item="ball">-</button>
+                            <input type="text" class="form-control text-center quantity-input" id="ball-input" value="0" readonly data-item-id="ball">
+                            <button class="btn btn-outline-secondary btn-increase" type="button" data-item="ball">+</button>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center" data-item-name="ชุดกรวยฝึกซ้อม">
+                        <label class="form-check-label">ชุดกรวยฝึกซ้อม</label>
+                        <div class="input-group input-group-sm w-auto">
+                            <button class="btn btn-outline-secondary btn-decrease" type="button" data-item="cones">-</button>
+                            <input type="text" class="form-control text-center quantity-input" id="cones-input" value="0" readonly data-item-id="cones">
+                            <button class="btn btn-outline-secondary btn-increase" type="button" data-item="cones">+</button>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center" data-item-name="นกหวีด">
+                        <label class="form-check-label">นกหวีด</label>
+                        <div class="input-group input-group-sm w-auto">
+                            <button class="btn btn-outline-secondary btn-decrease" type="button" data-item="whistle">-</button>
+                            <input type="text" class="form-control text-center quantity-input" id="whistle-input" value="0" readonly data-item-id="whistle">
+                            <button class="btn btn-outline-secondary btn-increase" type="button" data-item="whistle">+</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
         </div>
 
         <div class="col-md-6">
@@ -60,6 +90,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
     var statusEl = document.getElementById('status-display');
+    let selectedDate = new Date().toISOString().slice(0, 10); // Store selected date
 
     const bookingData = {
         '2025-09-17': [
@@ -82,8 +113,8 @@ document.addEventListener('DOMContentLoaded', function() {
             right: ''
         },
         dateClick: function(info) {
-            const dateStr = info.dateStr;
-            renderStatus(dateStr);
+            selectedDate = info.dateStr; // Update selected date
+            renderStatus(selectedDate);
         }
     });
 
@@ -117,7 +148,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             content += `</ul>`;
-            // Added ID to the button
             content += `<button id="proceed-to-confirm-btn" class="btn btn-primary w-100 mt-3">ดำเนินการจอง</button>`;
         } else {
             content = `<p class="text-muted text-center">ไม่มีข้อมูลการจองสำหรับวันนี้</p>`;
@@ -126,13 +156,48 @@ document.addEventListener('DOMContentLoaded', function() {
         statusEl.innerHTML = content;
     }
 
-    const today = new Date().toISOString().slice(0, 10);
-    renderStatus(today);
+    // Initial render with today's date
+    renderStatus(selectedDate);
 
-    // New event listener for the "Proceed to Confirm" button
     document.addEventListener('click', function(event) {
+        // Handle "Proceed to Confirm" button click
         if (event.target && event.target.id === 'proceed-to-confirm-btn') {
-            window.location.href = 'confirm.html';
+            const equipment = {};
+            const equipmentInputs = document.querySelectorAll('.quantity-input');
+            
+            equipmentInputs.forEach(input => {
+                const itemId = input.dataset.itemId;
+                const quantity = parseInt(input.value);
+                if (quantity > 0) {
+                    equipment[itemId] = quantity;
+                }
+            });
+
+            // Encode the equipment data as URL parameters
+            const urlParams = new URLSearchParams();
+            for (const item in equipment) {
+                urlParams.append(item, equipment[item]);
+            }
+            
+            // Redirect to confirm.html with the URL parameters and selected date
+            window.location.href = `confirm.html?date=${selectedDate}&${urlParams.toString()}`;
+        }
+
+        // Handle quantity increase/decrease buttons
+        if (event.target && event.target.classList.contains('btn-increase')) {
+            const inputId = event.target.dataset.item + '-input';
+            const inputElement = document.getElementById(inputId);
+            let currentValue = parseInt(inputElement.value);
+            inputElement.value = currentValue + 1;
+        }
+        
+        if (event.target && event.target.classList.contains('btn-decrease')) {
+            const inputId = event.target.dataset.item + '-input';
+            const inputElement = document.getElementById(inputId);
+            let currentValue = parseInt(inputElement.value);
+            if (currentValue > 0) {
+                inputElement.value = currentValue - 1;
+            }
         }
     });
 });
