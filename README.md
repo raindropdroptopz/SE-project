@@ -9,7 +9,7 @@
 โดยมีการเพิ่มถ้าหากUserเลือกอุปกรณ์และupdateยังหน้าถัดไป
 
 
-# SE-Project
+# Project Plan
 ### Projectplan
 - Agile
 - Waterfall
