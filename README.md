@@ -21,7 +21,7 @@
 - [x] Register
 - [x] หน้าต่างการจองสนาม & อุปกรณ์
 - [x] เชื่อมกับSQL
-- [ ] data flow
+- [ ] data flow (DFD level 2)
 - [ ] Back-End
 
 
