@@ -71,54 +71,53 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.getElementById('registerForm').addEventListener('submit', function(event) {
-        // ใช้ event.stopPropagation() เพื่อป้องกันเหตุการณ์อื่นๆ จาก Bootstrap
         if (!this.checkValidity()) {
             event.preventDefault();
             event.stopPropagation();
+            return;
         }
 
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
         const confirmPasswordField = document.getElementById('confirmPassword');
-        
-        // ตรวจสอบรหัสผ่านไม่ตรงกัน
+
         if (password !== confirmPassword) {
-            event.preventDefault(); // หยุดการส่งฟอร์ม
+            event.preventDefault();
             confirmPasswordField.setCustomValidity("รหัสผ่านไม่ตรงกัน");
+            this.classList.add('was-validated');
+            return;
         } else {
             confirmPasswordField.setCustomValidity("");
         }
 
-        // แสดงผลการตรวจสอบความถูกต้องของฟอร์ม
         this.classList.add('was-validated');
+        event.preventDefault();
 
-        // หากทุกอย่างถูกต้อง, ส่งข้อมูล
-        if (this.checkValidity() && password === confirmPassword) {
-            const formData = {
-                email: document.getElementById('email').value,
-                password: password,
-                identificationNumber: document.getElementById('identificationNumber').value,
-                userType: document.querySelector('input[name="userType"]:checked').value
-            };
-    
-            console.log('ข้อมูลที่ต้องการส่ง:', formData);
-    
-            fetch('/api/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw err; });
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    alert('สมัครสมาชิกสำเร็จ!');
-                    window.location.href = 'login.html';
-                } else {
-                    alert('สมัครสมาชิกไม่สำเร็จ: ' + data.
+        const formData = {
+            email: document.getElementById('email').value,
+            password: password,
+            identificationNumber: document.getElementById('identificationNumber').value,
+            userType: document.querySelector('input[name="userType"]:checked').value
+        };
+
+        fetch('http://localhost:3000/api/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(async response => {
+            let data;
+            try { data = await response.json(); } catch (e) { throw new Error('เซิร์ฟเวอร์ไม่ตอบสนอง'); }
+            if (!response.ok) throw new Error(data.message || 'Register failed');
+            return data;
+        })
+        .then(data => {
+            alert('สมัครสมาชิกสำเร็จ!');
+            window.location.href = 'login.html';
+        })
+        .catch(error => {
+            alert('เกิดข้อผิดพลาด: ' + error.message);
+        });
+    });

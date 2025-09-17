@@ -1,3 +1,4 @@
+// ----------------- ส่วน import และสร้าง app -----------------
 const express = require('express');
 const mysql = require('mysql');
 const bodyParser = require('body-parser');
@@ -75,6 +76,22 @@ dbInit.connect((err) => {
                     } else {
                         res.status(401).json({ success: false, message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
                     }
+                });
+            });
+
+            // API สำหรับสมัครสมาชิก
+            app.post('/api/register', (req, res) => {
+                const { email, password, identificationNumber, userType } = req.body;
+                // ใช้ identificationNumber เป็น username
+                const sql = 'INSERT INTO users (username, password, email) VALUES (?, ?, ?)';
+                db.query(sql, [identificationNumber, password, email], (err, result) => {
+                    if (err) {
+                        if (err.code === 'ER_DUP_ENTRY') {
+                            return res.status(400).json({ success: false, message: 'ชื่อผู้ใช้นี้ถูกใช้แล้ว' });
+                        }
+                        return res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+                    }
+                    res.json({ success: true, message: 'สมัครสมาชิกสำเร็จ' });
                 });
             });
 
