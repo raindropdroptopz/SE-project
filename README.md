@@ -26,4 +26,4 @@
 
 
 ### Diagram
-- [ ] DFD level 1 (Data Flow)
+- [ ] DFD level 2 (Data Flow)
