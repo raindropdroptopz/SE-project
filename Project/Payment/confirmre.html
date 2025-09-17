@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ข้อมูลการจอง</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 960px;
+            margin-top: 50px;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        .status-badge {
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .status-available {
+            color: #28a745;
+        }
+        .status-unavailable {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card p-4 mb-4">
+                <h4 class="mb-3">เลือกวันที่จอง</h4>
+                <div id="calendar"></div>
+            </div>
+
+            <div class="card p-4">
+                <h4 class="mb-3">เลือกอุปกรณ์เพิ่มเติม</h4>
+                <div class="list-group mb-3" id="equipment-list">
+                    <div class="list-group-item d-flex justify-content-between align-items-center" data-item-name="ลูกฟุตบอล">
+                        <label class="form-check-label">ลูกฟุตบอล</label>
+                        <div class="input-group input-group-sm w-auto">
+                            <button class="btn btn-outline-secondary btn-decrease" type="button" data-item="ball">-</button>
+                            <input type="text" class="form-control text-center quantity-input" id="ball-input" value="0" readonly data-item-id="ball">
+                            <button class="btn btn-outline-secondary btn-increase" type="button" data-item="ball">+</button>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center" data-item-name="ชุดกรวยฝึกซ้อม">
+                        <label class="form-check-label">ชุดกรวยฝึกซ้อม</label>
+                        <div class="input-group input-group-sm w-auto">
+                            <button class="btn btn-outline-secondary btn-decrease" type="button" data-item="cones">-</button>
+                            <input type="text" class="form-control text-center quantity-input" id="cones-input" value="0" readonly data-item-id="cones">
+                            <button class="btn btn-outline-secondary btn-increase" type="button" data-item="cones">+</button>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center" data-item-name="นกหวีด">
+                        <label class="form-check-label">นกหวีด</label>
+                        <div class="input-group input-group-sm w-auto">
+                            <button class="btn btn-outline-secondary btn-decrease" type="button" data-item="whistle">-</button>
+                            <input type="text" class="form-control text-center quantity-input" id="whistle-input" value="0" readonly data-item-id="whistle">
+                            <button class="btn btn-outline-secondary btn-increase" type="button" data-item="whistle">+</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card p-4">
+                <h4 class="mb-3">สถานะสนามและอุปกรณ์</h4>
+                <div id="status-display"> 
+                    <p class="text-muted text-center">กรุณาเลือกวันและเวลาจากปฏิทิน</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/th.js'></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var statusEl = document.getElementById('status-display');
+    let selectedDate = new Date().toISOString().slice(0, 10); // Store selected date
+
+    const bookingData = {
+        '2025-09-17': [
+            { time: '09:00 - 10:00', fieldStatus: 'unavailable', equipmentStatus: 'available' },
+            { time: '10:00 - 11:00', fieldStatus: 'available', equipmentStatus: 'available' },
+            { time: '11:00 - 12:00', fieldStatus: 'available', equipmentStatus: 'unavailable' }
+        ],
+        '2025-09-18': [
+            { time: '09:00 - 10:00', fieldStatus: 'available', equipmentStatus: 'available' },
+            { time: '10:00 - 11:00', fieldStatus: 'unavailable', equipmentStatus: 'available' }
+        ],
+    };
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'th',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: ''
+        },
+        dateClick: function(info) {
+            selectedDate = info.dateStr; // Update selected date
+            renderStatus(selectedDate);
+        }
+    });
+
+    calendar.render();
+
+    function renderStatus(date) {
+        let content = '';
+        const todayData = bookingData[date];
+
+        if (todayData) {
+            content += `<p>สถานะสำหรับวันที่ <strong>${date}</strong></p>`;
+            content += `<ul class="list-group">`;
+            
+            todayData.forEach(item => {
+                const fieldStatusClass = item.fieldStatus === 'available' ? 'status-available' : 'status-unavailable';
+                const fieldStatusText = item.fieldStatus === 'available' ? 'ว่าง' : 'ไม่ว่าง';
+
+                const equipStatusClass = item.equipmentStatus === 'available' ? 'status-available' : 'status-unavailable';
+                const equipStatusText = item.equipmentStatus === 'available' ? 'ว่าง' : 'ไม่ว่าง';
+
+                content += `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>ช่วงเวลา:</strong> ${item.time}
+                        </div>
+                        <div class="text-end">
+                            <span class="${fieldStatusClass}">สนาม: ${fieldStatusText}</span><br>
+                            <span class="${equipStatusClass}">อุปกรณ์: ${equipStatusText}</span>
+                        </div>
+                    </li>`;
+            });
+
+            content += `</ul>`;
+            content += `<button id="proceed-to-confirm-btn" class="btn btn-primary w-100 mt-3">ดำเนินการจอง</button>`;
+        } else {
+            content = `<p class="text-muted text-center">ไม่มีข้อมูลการจองสำหรับวันนี้</p>`;
+        }
+
+        statusEl.innerHTML = content;
+    }
+
+    // Initial render with today's date
+    renderStatus(selectedDate);
+
+    document.addEventListener('click', function(event) {
+        // Handle "Proceed to Confirm" button click
+        if (event.target && event.target.id === 'proceed-to-confirm-btn') {
+            const equipment = {};
+            const equipmentInputs = document.querySelectorAll('.quantity-input');
+            
+            equipmentInputs.forEach(input => {
+                const itemId = input.dataset.itemId;
+                const quantity = parseInt(input.value);
+                if (quantity > 0) {
+                    equipment[itemId] = quantity;
+                }
+            });
+
+            // Encode the equipment data as URL parameters
+            const urlParams = new URLSearchParams();
+            for (const item in equipment) {
+                urlParams.append(item, equipment[item]);
+            }
+            
+            // Redirect to confirm.html with the URL parameters and selected date
+            window.location.href = `confirm.html?date=${selectedDate}&${urlParams.toString()}`;
+        }
+
+        // Handle quantity increase/decrease buttons
+        if (event.target && event.target.classList.contains('btn-increase')) {
+            const inputId = event.target.dataset.item + '-input';
+            const inputElement = document.getElementById(inputId);
+            let currentValue = parseInt(inputElement.value);
+            inputElement.value = currentValue + 1;
+        }
+        
+        if (event.target && event.target.classList.contains('btn-decrease')) {
+            const inputId = event.target.dataset.item + '-input';
+            const inputElement = document.getElementById(inputId);
+            let currentValue = parseInt(inputElement.value);
+            if (currentValue > 0) {
+                inputElement.value = currentValue - 1;
+            }
+        }
+    });
+});
+</script>
+
+</body>
+</html>

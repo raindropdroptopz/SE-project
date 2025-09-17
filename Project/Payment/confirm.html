@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ยืนยันการจอง</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container {
+            max-width: 800px;
+        }
+        .jumbotron {
+            padding: 2rem 1rem;
+            margin-bottom: 2rem;
+            background-color: #e9ecef;
+            border-radius: 0.3rem;
+            text-align: center;
+        }
+        .qr-code-img {
+            max-width: 250px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+    <header class="jumbotron">
+        <h1 class="display-5">ยืนยันการจอง</h1>
+        <p class="lead text-muted">กรุณาตรวจสอบรายละเอียดการจองก่อนดำเนินการต่อ</p>
+    </header>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">สรุปการจอง</h5>
+        </div>
+        <div class="card-body">
+            
+            <div class="mb-4">
+                <h4>สนามที่เลือกจอง</h4>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>ชื่อสนาม:</strong> สนามฟุตบอลและลู่วิ่ง</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>วันที่:</strong> <span id="booking-date"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>ช่วงเวลา:</strong> 14:00 - 15:00 น.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h4>อุปกรณ์ที่เลือก</h4>
+                <hr>
+                <ul class="list-group list-group-flush" id="equipment-list">
+                    </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between">
+        <button type="button" class="btn btn-secondary" onclick="history.back()">ย้อนกลับ</button>
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">ยืนยันการจอง</button>
+    </div>
+</div>
+
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel">ชำระเงินด้วย PromptPay</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p>กรุณาใช้แอปพลิเคชันธนาคารของท่านสแกน QR Code เพื่อชำระเงิน</p>
+                <div class="mb-3">
+                    <img src="/Project/photo/QR.png" class="img-fluid qr-code-img" alt="QR Code PromptPay">
+                </div>
+                <div class="text-start">
+                    <p class="mb-1"><strong>หมายเลขพร้อมเพย์:</strong> <span id="promptpayNumber">098-XXX-XXXX</span></p>
+                    <p class="mb-1"><strong>ชื่อบัญชี:</strong> <span id="accountName">ระบบจองสนามกีฬา Sports Area</span></p>
+                    <p class="mb-1"><strong>ชื่อบัญชี:</strong> <span id="accountName">183-6-48594-6</span></p>
+                    <p class="mb-1"><strong>ยอดที่ต้องชำระ:</strong> <span id="amountToPay">150.00 บาท</span></p>
+                </div>
+                <div class="alert alert-info mt-3" role="alert">
+                    <small>เพื่อความถูกต้อง กรุณาตรวจสอบชื่อบัญชีในแอปพลิเคชันธนาคารให้ตรงกับที่แสดงบนหน้าจอ</small>
+                </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-success">ยืนยันการชำระเงินแล้ว</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const equipmentNames = {
+        'ball': 'ลูกฟุตบอล',
+        'cones': 'ชุดกรวยฝึกซ้อม',
+        'whistle': 'นกหวีด'
+    };
+    
+    const equipmentList = document.getElementById('equipment-list');
+    const bookingDateSpan = document.getElementById('booking-date');
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Get and display the selected date
+    const selectedDate = urlParams.get('date');
+    if (selectedDate) {
+        // Format the date for better readability (optional)
+        const dateObj = new Date(selectedDate);
+        const formattedDate = dateObj.toLocaleDateString('th-TH', { 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric' 
+        });
+        bookingDateSpan.textContent = formattedDate;
+    }
+
+    let hasEquipment = false;
+    
+    for (const [key, value] of urlParams.entries()) {
+        const name = equipmentNames[key];
+        const quantity = parseInt(value);
+        if (name && quantity > 0) {
+            hasEquipment = true;
+            const listItem = document.createElement('li');
+            listItem.className = 'list-group-item';
+            listItem.innerHTML = `
+                <div class="d-flex justify-content-between">
+                    <span>${name}</span>
+                    <strong>${quantity} ลูก</strong>
+                </div>
+            `;
+            equipmentList.appendChild(listItem);
+        }
+    }
+    
+    if (!hasEquipment) {
+        const noEquipmentItem = document.createElement('li');
+        noEquipmentItem.className = 'list-group-item text-muted';
+        noEquipmentItem.innerHTML = `
+            <div class="d-flex justify-content-between">
+                <span>ไม่มีอุปกรณ์ที่เลือก</span>
+            </div>
+        `;
+        equipmentList.appendChild(noEquipmentItem);
+    }
+});
+</script>
+
+</body>
+</html>
