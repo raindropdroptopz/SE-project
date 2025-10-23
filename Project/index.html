@@ -27,13 +27,14 @@
 <div class="container mt-4">
     <header class="blog-header py-3">
         <div class="row flex-nowrap justify-content-between align-items-center">
-            <div class="col-4 pt-1 d-flex">
-                <a class="btn btn-sm btn-outline-secondary me-2" href="login.html">เข้าสู่ระบบ</a>
-                <a class="btn btn-sm btn-outline-secondary" href="register.html">ลงทะเบียน</a>
+            
+            <div class="col-4 pt-1 d-flex" id="header-buttons">
+                <a class="btn btn-sm btn-outline-secondary me-2" href="/login">เข้าสู่ระบบ</a>
+                <a class="btn btn-sm btn-outline-secondary" href="/register">ลงทะเบียน</a>
             </div>
             <div class="col-4 text-center">
-                <a class="blog-header-logo text-dark" href="index.html">Payap Sports Reservation</a>
-            </div>
+                <a class="blog-header-logo text-dark" href="/index.html">Payap Sports Reservation</a>
+                </div>
             <div class="col-4 d-flex justify-content-end align-items-center">
                 <a class="link-secondary" href="#" aria-label="Search">
                 </a>
@@ -63,7 +64,6 @@
                 </div>
             </div>
         </div>
-
         <div class="col-md-6">
             <div class="row g-0 border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
                 <div class="col p-4 d-flex flex-column position-static">
@@ -79,7 +79,6 @@
             </div>
         </div>
     </div>
-    
     <div class="row mb-2">
         <div class="col-md-6">
             <div class="row g-0 border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
@@ -95,7 +94,6 @@
                 </div>
             </div>
         </div>
-
         <div class="col-md-6">
             <div class="row g-0 border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
                 <div class="col p-4 d-flex flex-column position-static">
@@ -111,7 +109,6 @@
             </div>
         </div>
     </div>
-    
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="card shadow-sm">
@@ -133,12 +130,46 @@
             // ถ้าล็อกอินแล้ว ให้ไปยังหน้าเป้าหมาย
             window.location.href = targetUrl;
         } else {
-            // ถ้ายังไม่ได้ล็อกอิน ให้ไปยังหน้า login.html
+            // ถ้ายังไม่ได้ล็อกอิน ให้ไปยังหน้า login
             alert('กรุณาเข้าสู่ระบบเพื่อดำเนินการจอง');
-            window.location.href = 'login.html';
+            window.location.href = '/login'; // <--- แก้ไขที่นี่
         }
     }
 </script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- 1. ตรวจสอบ "ธง" จาก URL ---
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('login') === 'success') {
+            // ถ้าเจอธง ให้บันทึกสถานะ login
+            localStorage.setItem('isLoggedIn', 'true');
+            // ลบธงออกจาก URL เพื่อความสะอาดตา
+            history.replaceState(null, '', '/index.html');
+        }
 
+        // --- 2. อัปเดตปุ่มบน Header ---
+        const isLoggedIn = localStorage.getItem('isLoggedIn');
+        const headerButtons = document.getElementById('header-buttons');
+
+        if (isLoggedIn === 'true') {
+            // ถ้า Login แล้ว: ให้แสดงปุ่ม "ออกจากระบบ"
+            headerButtons.innerHTML = '<a class="btn btn-sm btn-outline-secondary" href="#" id="logoutButton">ออกจากระบบ</a>';
+            
+            // เพิ่ม Event Listener ให้ปุ่ม Logout
+            document.getElementById('logoutButton').addEventListener('click', (e) => {
+                e.preventDefault();
+                // ลบสถานะ login ออก
+                localStorage.removeItem('isLoggedIn');
+                // พาไปหน้า Login
+                window.location.href = '/login';
+            });
+
+        } else {
+            // ถ้ายังไม่ Login: (ปุ่มจะเป็นไปตาม HTML เริ่มต้น คือ Login/Register)
+            // เราได้แก้ไข href ใน HTML ด้านบนเป็น /login และ /register แล้ว
+        }
+    });
+    
+</script>
 </body>
 </html>
