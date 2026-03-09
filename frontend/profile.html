@@ -974,10 +974,13 @@
                     eqHtml = `<div class="mt-1 small text-muted"><i class="bi bi-box-seam me-1"></i>อุปกรณ์: ${b.equipments.map(e => `${e.name} (x${e.quantity})`).join(', ')}</div>`;
                 }
 
-                // ปุ่มแก้ไข (เฉพาะถ้ายังไม่ cancelled/completed)
-                let editBtnHtml = '';
+                // ปุ่มแก้ไขและยกเลิก (เฉพาะถ้ายังไม่ cancelled/completed)
+                let actionBtnsHtml = '';
                 if (b.status === 'pending' || b.status === 'confirmed') {
-                    editBtnHtml = `<button class="btn btn-sm btn-outline-primary ms-3" onclick="openEditModal(${b.id})"><i class="bi bi-pencil"></i> แก้ไข</button>`;
+                    actionBtnsHtml = `
+                        <button class="btn btn-sm btn-outline-primary ms-3" onclick="openEditModal(${b.id})"><i class="bi bi-pencil"></i> แก้ไข</button>
+                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="cancelBooking(${b.id})"><i class="bi bi-trash"></i> ยกเลิก</button>
+                    `;
                 }
 
                 list.innerHTML += `
@@ -994,7 +997,7 @@
                         </div>
                         <div class="d-flex align-items-center">
                             <span class="booking-status ${statusClass} px-3 py-1 rounded-pill small fw-bold">${statusText}</span>
-                            ${editBtnHtml}
+                            ${actionBtnsHtml}
                         </div>
                     </div>
                 `;
@@ -1141,6 +1144,28 @@
             } finally {
                 btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>บันทึกการแก้ไข';
                 btn.disabled = false;
+            }
+        }
+
+        async function cancelBooking(id) {
+            if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกและลบการจองนี้ออกจากระบบ?')) return;
+
+            const token = localStorage.getItem('userToken');
+            try {
+                const response = await fetch('/api/bookings/' + id + '/cancel', {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('ยกเลิกการจองและลบออกจากระบบเรียบร้อยแล้ว');
+                    await fetchMyBookings();
+                } else {
+                    alert(result.message || 'ไม่สามารถยกเลิกการจองได้');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ 서버');
             }
         }
     </script>

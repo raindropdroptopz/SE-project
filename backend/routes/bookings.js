@@ -349,9 +349,24 @@ router.put('/:id/cancel', authenticateToken, async (req, res) => {
             return res.status(404).json({ success: false, message: 'ไม่พบการจอง' });
         }
 
+        // 1. คืนสต็อกอุปกรณ์
+        const [oldEqs] = await db.execute('SELECT equipment_id, quantity FROM equipment_bookings WHERE booking_id = ?', [bookingId]);
+
+        for (const old of oldEqs) {
+            const [eqRows] = await db.execute('SELECT available FROM equipment WHERE id = ?', [old.equipment_id]);
+            if (eqRows.length > 0) {
+                let newAvailable = eqRows[0].available + old.quantity;
+                let newStatus = 'available';
+                if (newAvailable <= 2 && newAvailable > 0) newStatus = 'low';
+                else if (newAvailable === 0) newStatus = 'out';
+                await db.execute('UPDATE equipment SET available = ?, status = ? WHERE id = ?', [newAvailable, newStatus, old.equipment_id]);
+            }
+        }
+
+        // 2. ลบออกไปจาก database เลยตาม request ของ user (อุปกรณ์จะถูกลบตามเพราะ CASCADE DELETE)
         await db.execute(
-            'UPDATE bookings SET status = ? WHERE id = ?',
-            ['cancelled', bookingId]
+            'DELETE FROM bookings WHERE id = ?',
+            [bookingId]
         );
 
         res.json({ success: true, message: 'ยกเลิกการจองสำเร็จ' });
