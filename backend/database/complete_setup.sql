@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS courts (
     capacity INT DEFAULT 10,
     open_time TIME DEFAULT '06:00:00',
     close_time TIME DEFAULT '20:00:00',
+    price INT DEFAULT 300,
     image_url VARCHAR(500),
     status ENUM('available', 'unavailable', 'maintenance') DEFAULT 'available',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
