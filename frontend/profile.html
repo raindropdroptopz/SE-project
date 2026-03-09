@@ -729,40 +729,15 @@
                             <h5>ประวัติการจองล่าสุด</h5>
                         </div>
 
-                        <div class="booking-item">
-                            <div class="booking-icon">
-                                <i class="bi bi-dribbble"></i>
+                        <div id="bookingsList">
+                            <!-- JS will populate bookings here -->
+                            <div class="text-center text-muted py-4">
+                                <div class="spinner-border" role="status"></div>
+                                <p class="mt-2">กำลังโหลดข้อมูลการจอง...</p>
                             </div>
-                            <div class="booking-details">
-                                <h6>สนามฟุตบอลและลู่วิ่ง</h6>
-                                <span><i class="bi bi-calendar me-1"></i>3 ก.พ. 2026 | 14:00 - 15:00 น.</span>
-                            </div>
-                            <span class="booking-status upcoming">กำลังจะมาถึง</span>
                         </div>
 
-                        <div class="booking-item">
-                            <div class="booking-icon">
-                                <i class="bi bi-circle"></i>
-                            </div>
-                            <div class="booking-details">
-                                <h6>สนามบาสเกตบอล</h6>
-                                <span><i class="bi bi-calendar me-1"></i>1 ก.พ. 2026 | 10:00 - 11:00 น.</span>
-                            </div>
-                            <span class="booking-status completed">เสร็จสิ้น</span>
-                        </div>
-
-                        <div class="booking-item">
-                            <div class="booking-icon equipment">
-                                <i class="bi bi-box-seam"></i>
-                            </div>
-                            <div class="booking-details">
-                                <h6>ยืมอุปกรณ์: ลูกฟุตบอล x2</h6>
-                                <span><i class="bi bi-calendar me-1"></i>28 ม.ค. 2026 | คืนแล้ว</span>
-                            </div>
-                            <span class="booking-status completed">เสร็จสิ้น</span>
-                        </div>
-
-                        <div class="text-center mt-4">
+                        <div class="text-center mt-4" id="viewAllBookingsBtn" style="display: none;">
                             <button class="btn-outline-custom">
                                 <i class="bi bi-arrow-down-circle me-2"></i>ดูประวัติทั้งหมด
                             </button>
@@ -818,6 +793,68 @@
         </div>
     </main>
 
+    <!-- Edit Booking Modal -->
+    <div class="modal fade" id="editBookingModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content text-dark">
+                <div class="modal-header"
+                    style="background: var(--primary-gradient); color: white; border-radius: 6px 6px 0 0;">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>แก้ไขการจอง</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="editBookingForm">
+                        <input type="hidden" id="editBookingId">
+
+                        <div class="mb-4">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-info-circle text-primary me-2"></i>ข้อมูลสนาม</h6>
+                            <div class="p-3 bg-light rounded border">
+                                <p class="mb-1"><strong>สนาม: </strong><span id="editCourtName"></span></p>
+                                <p class="mb-0"><strong>วันที่จอง: </strong><span id="editBookingDate"></span></p>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-clock text-primary me-2"></i>แก้ไขเวลา</h6>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">เวลาเริ่ม</label>
+                                <select class="form-select" id="editStartTime" required></select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">เวลาสิ้นสุด</label>
+                                <select class="form-select" id="editEndTime" required></select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-box-seam text-primary me-2"></i>แก้ไขอุปกรณ์ที่ยืม
+                            </h6>
+                            <div id="editEquipmentList" class="d-flex flex-column gap-2 p-3 border rounded bg-light">
+                                <div class="text-center text-muted">
+                                    <div class="spinner-border spinner-border-sm"></div> โหลดอุปกรณ์...
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i
+                                    class="bi bi-pencil-fill text-primary me-2"></i>หมายเหตุเพิ่มเติม</label>
+                            <textarea class="form-control" id="editNote" rows="2"
+                                placeholder="เช่น ขอตาข่ายเพิ่ม..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary px-4 py-2" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary px-4 py-2" id="saveEditBookingBtn"
+                        style="background: var(--primary-gradient); border: none;">
+                        <i class="bi bi-check-lg me-2"></i>บันทึกการแก้ไข
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
@@ -833,7 +870,7 @@
                 return;
             }
 
-            // โหลดข้อมูลผู้ใช้จาก API
+            // โหลดข้อมูลประจำตัว
             try {
                 const response = await fetch('/api/profile', {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -853,17 +890,18 @@
                 console.error('Profile load error:', error);
             }
 
-            // อัปเดตข้อมูล
+            // โหลดประวัติการจองและอุปกรณ์
+            await fetchMyBookings();
+
+            // อัปเดตข้อมูลเบื้องต้น
             document.getElementById('profileForm').addEventListener('submit', async function (e) {
                 e.preventDefault();
-
                 const updateData = {
                     fullName: document.getElementById('fullName').value,
                     phone: document.getElementById('phone').value,
                     faculty: document.getElementById('faculty').value,
                     major: document.getElementById('major').value
                 };
-
                 try {
                     const response = await fetch('/api/profile', {
                         method: 'PUT',
@@ -885,7 +923,226 @@
                     alert('เกิดข้อผิดพลาดในการบันทึก');
                 }
             });
+
+            // จัดการเปิด/ปิด Modal และเซฟข้อมูลการแก้ไข
+            document.getElementById('saveEditBookingBtn').addEventListener('click', saveEditBooking);
         });
+
+        // ---------------- Variables -----------------
+        let myBookings = [];
+        let globalEquipment = [];
+
+        // ---------------- Functions -----------------
+        async function fetchMyBookings() {
+            const token = localStorage.getItem('userToken');
+            try {
+                const response = await fetch('/api/bookings/my', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    myBookings = data.bookings;
+                    renderBookings();
+                }
+            } catch (error) {
+                console.error('Error fetching bookings:', error);
+                document.getElementById('bookingsList').innerHTML = '<p class="text-danger">ไม่สามารถโหลดข้อมูลการจองได้</p>';
+            }
+        }
+
+        function renderBookings() {
+            const list = document.getElementById('bookingsList');
+            list.innerHTML = '';
+
+            if (myBookings.length === 0) {
+                list.innerHTML = '<p class="text-muted text-center py-4">ไม่มีประวัติการจอง</p>';
+                return;
+            }
+
+            const formatTime = t => t.substring(0, 5);
+            const formatDate = d => new Date(d).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+
+            myBookings.forEach(b => {
+                let statusClass = 'upcoming';
+                let statusText = 'กำลังจะมาถึง';
+                if (b.status === 'completed' || b.status === 'confirmed') { statusClass = 'completed'; statusText = 'เสร็จสิ้น/ยืนยันแล้ว'; }
+                if (b.status === 'cancelled') { statusClass = 'cancelled'; statusText = 'ยกเลิกแล้ว'; statusClass = 'bg-danger text-white'; }
+                if (b.status === 'pending') { statusClass = 'upcoming'; statusText = 'รออนุมัติ'; }
+
+                let eqHtml = '';
+                if (b.equipments && b.equipments.length > 0) {
+                    eqHtml = `<div class="mt-1 small text-muted"><i class="bi bi-box-seam me-1"></i>อุปกรณ์: ${b.equipments.map(e => `${e.name} (x${e.quantity})`).join(', ')}</div>`;
+                }
+
+                // ปุ่มแก้ไข (เฉพาะถ้ายังไม่ cancelled/completed)
+                let editBtnHtml = '';
+                if (b.status === 'pending' || b.status === 'confirmed') {
+                    editBtnHtml = `<button class="btn btn-sm btn-outline-primary ms-3" onclick="openEditModal(${b.id})"><i class="bi bi-pencil"></i> แก้ไข</button>`;
+                }
+
+                list.innerHTML += `
+                    <div class="booking-item d-flex align-items-center justify-content-between p-3 border rounded mb-3 bg-light">
+                        <div class="d-flex align-items-center">
+                            <div class="booking-icon me-3">
+                                <i class="bi bi-dribbble"></i>
+                            </div>
+                            <div class="booking-details">
+                                <h6 class="mb-1 fw-bold">${b.court_name}</h6>
+                                <span class="d-block"><i class="bi bi-calendar me-1"></i>${formatDate(b.booking_date)} | ${formatTime(b.start_time)} - ${formatTime(b.end_time)} น.</span>
+                                ${eqHtml}
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="booking-status ${statusClass} px-3 py-1 rounded-pill small fw-bold">${statusText}</span>
+                            ${editBtnHtml}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function fetchAllEquipment() {
+            try {
+                const res = await fetch('/api/equipment');
+                const data = await res.json();
+                if (data.success) {
+                    globalEquipment = data.equipment;
+                }
+            } catch (e) {
+                console.error("Failed to load equipment list");
+            }
+        }
+
+        async function openEditModal(bookingId) {
+            const booking = myBookings.find(b => b.id === bookingId);
+            if (!booking) return;
+
+            document.getElementById('editBookingId').value = booking.id;
+            document.getElementById('editCourtName').textContent = booking.court_name;
+            document.getElementById('editBookingDate').textContent = new Date(booking.booking_date).toLocaleDateString('th-TH');
+
+            // Populate Time Slots
+            const allTimeSlots = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+            const startSelect = document.getElementById('editStartTime');
+            const endSelect = document.getElementById('editEndTime');
+            startSelect.innerHTML = '';
+            endSelect.innerHTML = '';
+
+            allTimeSlots.forEach(time => {
+                const optA = document.createElement('option');
+                optA.value = time + ':00'; optA.text = time;
+                if (time + ':00' === booking.start_time) optA.selected = true;
+                startSelect.appendChild(optA);
+
+                const optB = document.createElement('option');
+                optB.value = time + ':00'; optB.text = time;
+                if (time + ':00' === booking.end_time) optB.selected = true;
+                endSelect.appendChild(optB);
+            });
+
+            // Populate Equipment
+            if (globalEquipment.length === 0) await fetchAllEquipment();
+            const eqContainer = document.getElementById('editEquipmentList');
+            eqContainer.innerHTML = '';
+
+            // booking.equipments => [{id:1, name:'A', quantity:2}, ...]
+            globalEquipment.forEach(eq => {
+                const existing = (booking.equipments || []).find(e => e.id === eq.id);
+                const isChecked = existing ? 'checked' : '';
+                const qty = existing ? existing.quantity : 1;
+                // Add the old quantity to available so user can pick the same amount they already had without hitting "not enough stock" easily on client-side UI
+                const totalAvailForUserContext = eq.available + (existing ? existing.quantity : 0);
+
+                if (totalAvailForUserContext > 0) {
+                    eqContainer.innerHTML += `
+                        <div class="d-flex align-items-center justify-content-between border-bottom pb-2">
+                            <div class="form-check">
+                                <input class="form-check-input edit-eq-check" type="checkbox" id="edit_eq_${eq.id}" value="${eq.id}" ${isChecked} onchange="toggleEditEqQty(${eq.id})">
+                                <label class="form-check-label" for="edit_eq_${eq.id}">${eq.name} (มีสูงสุด ${totalAvailForUserContext})</label>
+                            </div>
+                            <input type="number" id="edit_qty_${eq.id}" min="1" max="${totalAvailForUserContext}" value="${qty}" class="form-control form-control-sm text-center" style="width: 70px; display: ${isChecked ? 'block' : 'none'};">
+                        </div>
+                    `;
+                }
+            });
+
+            // Note extracting roughly from original string or just empty
+            document.getElementById('editNote').value = booking.note ? booking.note.split(' | อุปกรณ์ที่ยืม:')[0] : '';
+
+            const modal = new bootstrap.Modal(document.getElementById('editBookingModal'));
+            modal.show();
+        }
+
+        window.toggleEditEqQty = function (id) {
+            const check = document.getElementById('edit_eq_' + id);
+            const qty = document.getElementById('edit_qty_' + id);
+            if (check && qty) {
+                qty.style.display = check.checked ? 'block' : 'none';
+            }
+        };
+
+        async function saveEditBooking() {
+            const bookingId = document.getElementById('editBookingId').value;
+            const token = localStorage.getItem('userToken');
+
+            const startTime = document.getElementById('editStartTime').value;
+            const endTime = document.getElementById('editEndTime').value;
+            const note = document.getElementById('editNote').value;
+
+            if (startTime >= endTime) {
+                alert('เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น');
+                return;
+            }
+
+            const selectedEquipments = [];
+            document.querySelectorAll('.edit-eq-check:checked').forEach(chk => {
+                const id = parseInt(chk.value);
+                const qtyInput = document.getElementById('edit_qty_' + id);
+                const nameLabel = chk.nextElementSibling.innerText.split(' (')[0];
+                selectedEquipments.push({
+                    id: id,
+                    name: nameLabel,
+                    quantity: parseInt(qtyInput.value) || 1
+                });
+            });
+
+            const payload = {
+                start_time: startTime,
+                end_time: endTime,
+                note: note,
+                equipments: selectedEquipments
+            };
+
+            const btn = document.getElementById('saveEditBookingBtn');
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/bookings/' + bookingId, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('บันทึกการแก้ไขเรียบร้อยแล้ว');
+                    bootstrap.Modal.getInstance(document.getElementById('editBookingModal')).hide();
+                    await fetchMyBookings(); // refresh UI
+                } else {
+                    alert(result.message || 'บันทึกไม่สำเร็จ');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ 서버');
+            } finally {
+                btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>บันทึกการแก้ไข';
+                btn.disabled = false;
+            }
+        }
     </script>
 </body>
 

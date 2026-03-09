@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS equipment_bookings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     equipment_id INT NOT NULL,
+    booking_id INT NULL,
     quantity INT DEFAULT 1,
     borrow_date DATE NOT NULL,
     return_date DATE,
@@ -90,7 +91,8 @@ CREATE TABLE IF NOT EXISTS equipment_bookings (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (equipment_id) REFERENCES equipment(id) ON DELETE CASCADE
+    FOREIGN KEY (equipment_id) REFERENCES equipment(id) ON DELETE CASCADE,
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ===============================================
