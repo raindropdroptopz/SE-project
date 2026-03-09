@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ใบเสร็จรับเงิน - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/admin-style.css">
+    <style>
+        .receipt-preview {
+            background: white;
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px dashed #e0e0e0;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .receipt-header img {
+            width: 60px;
+            margin-bottom: 10px;
+        }
+
+        .receipt-header h4 {
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .receipt-header p {
+            margin: 5px 0 0;
+            color: #6c7293;
+            font-size: 0.85rem;
+        }
+
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 0.9rem;
+        }
+
+        .receipt-row.total {
+            border-top: 2px dashed #e0e0e0;
+            margin-top: 15px;
+            padding-top: 15px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .receipt-footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px dashed #e0e0e0;
+            color: #6c7293;
+            font-size: 0.8rem;
+        }
+
+        .receipt-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png" alt="Logo">
+            <div>
+                <h4>Payap Sports</h4><span>Admin Dashboard</span>
+            </div>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/admin-dashboard.html"><i class="bi bi-grid-1x2-fill"></i> แดชบอร์ด</a></li>
+            <li><a href="/admin/bookings.html"><i class="bi bi-calendar-check"></i> การจองทั้งหมด</a></li>
+            <li><a href="/admin/users.html"><i class="bi bi-people"></i> จัดการผู้ใช้</a></li>
+            <li><a href="/admin/courts.html"><i class="bi bi-building"></i> จัดการสนาม</a></li>
+            <p class="nav-section-title">อุปกรณ์</p>
+            <li><a href="/admin/equipment.html"><i class="bi bi-box-seam"></i> รายการอุปกรณ์</a></li>
+            <li><a href="/admin/borrow-reports.html"><i class="bi bi-clipboard-data"></i> รายงานการยืม</a></li>
+            <p class="nav-section-title">การเงิน</p>
+            <li><a href="/admin/finance.html"><i class="bi bi-cash-stack"></i> รายรับ-รายจ่าย</a></li>
+            <li><a href="/admin/receipts.html" class="active"><i class="bi bi-receipt"></i> ใบเสร็จรับเงิน</a></li>
+            <p class="nav-section-title">ระบบ</p>
+            <li><a href="/index.html"><i class="bi bi-box-arrow-left"></i> กลับสู่หน้าหลัก</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div>
+                <h1><i class="bi bi-receipt me-2"></i>ใบเสร็จรับเงิน</h1>
+                <p style="margin:0; color:#6c7293; font-size:0.9rem;">จัดการใบเสร็จรับเงินทั้งหมด</p>
+            </div>
+            <button class="btn-gradient"><i class="bi bi-plus-lg me-2"></i>สร้างใบเสร็จ</button>
+        </header>
+
+        <div class="row">
+            <div class="col-lg-7">
+                <div class="content-card">
+                    <div class="filter-bar">
+                        <input type="text" class="form-control" placeholder="ค้นหาเลขใบเสร็จ..."
+                            style="max-width:200px;">
+                        <input type="date" class="form-control" style="max-width:150px;">
+                        <button class="btn-gradient"><i class="bi bi-search"></i></button>
+                    </div>
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>เลขที่</th>
+                                <th>ผู้ชำระ</th>
+                                <th>รายการ</th>
+                                <th>จำนวน</th>
+                                <th>วันที่</th>
+                                <th>การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>#RC2026-001</strong></td>
+                                <td>สมชาย ใจดี</td>
+                                <td>ค่าจองสนามฟุตบอล</td>
+                                <td style="font-weight:600;">฿150</td>
+                                <td>3 ก.พ. 2026</td>
+                                <td>
+                                    <div class="action-btns"><button class="action-btn view"><i
+                                                class="bi bi-eye"></i></button><button class="action-btn edit"><i
+                                                class="bi bi-printer"></i></button></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>#RC2026-002</strong></td>
+                                <td>สมหญิง รักเรียน</td>
+                                <td>ค่าจองสนามบาสเกตบอล</td>
+                                <td style="font-weight:600;">฿100</td>
+                                <td>4 ก.พ. 2026</td>
+                                <td>
+                                    <div class="action-btns"><button class="action-btn view"><i
+                                                class="bi bi-eye"></i></button><button class="action-btn edit"><i
+                                                class="bi bi-printer"></i></button></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>#RC2026-003</strong></td>
+                                <td>วิภา สดใส</td>
+                                <td>ค่าจองสนามแบดมินตัน</td>
+                                <td style="font-weight:600;">฿80</td>
+                                <td>6 ก.พ. 2026</td>
+                                <td>
+                                    <div class="action-btns"><button class="action-btn view"><i
+                                                class="bi bi-eye"></i></button><button class="action-btn edit"><i
+                                                class="bi bi-printer"></i></button></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>#RC2026-004</strong></td>
+                                <td>ประเสริฐ มั่งมี</td>
+                                <td>ค่าจองสนามเทนนิส</td>
+                                <td style="font-weight:600;">฿200</td>
+                                <td>5 ก.พ. 2026</td>
+                                <td>
+                                    <div class="action-btns"><button class="action-btn view"><i
+                                                class="bi bi-eye"></i></button><button class="action-btn edit"><i
+                                                class="bi bi-printer"></i></button></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="content-card" style="padding:20px;">
+                    <h5 style="margin-bottom:20px; font-weight:600;"><i class="bi bi-eye me-2"></i>ตัวอย่างใบเสร็จ</h5>
+                    <div class="receipt-preview">
+                        <div class="receipt-header">
+                            <img src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png"
+                                alt="Logo">
+                            <h4>Payap Sports</h4>
+                            <p>ใบเสร็จรับเงิน</p>
+                            <p style="font-weight:600;">#RC2026-001</p>
+                        </div>
+                        <div class="receipt-row"><span>วันที่:</span><span>3 กุมภาพันธ์ 2026</span></div>
+                        <div class="receipt-row"><span>ผู้ชำระ:</span><span>สมชาย ใจดี</span></div>
+                        <div class="receipt-row"><span>รหัส:</span><span>6512345</span></div>
+                        <div
+                            style="margin:15px 0; padding:15px 0; border-top:1px solid #f0f0f0; border-bottom:1px solid #f0f0f0;">
+                            <div class="receipt-row"><span>สนามฟุตบอล (1 ชม.)</span><span>฿150</span></div>
+                        </div>
+                        <div class="receipt-row total"><span>รวมทั้งสิ้น:</span><span>฿150</span></div>
+                        <div class="receipt-footer">
+                            <p>ขอบคุณที่ใช้บริการ</p>
+                            <p>Payap Sports Reservation System</p>
+                        </div>
+                        <div class="receipt-actions">
+                            <button class="btn-gradient"><i class="bi bi-printer me-1"></i> พิมพ์</button>
+                            <button class="btn-gradient"
+                                style="background:linear-gradient(135deg, #11998e 0%, #38ef7d 100%);"><i
+                                    class="bi bi-download me-1"></i> PDF</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

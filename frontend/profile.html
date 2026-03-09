@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรไฟล์ผู้ใช้ - Payap Sports</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --card-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+            --sidebar-bg: #1a1c2e;
+            --sidebar-hover: #2d3154;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 1050;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            padding: 20px 10px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+
+        .sidebar-brand img {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            margin-right: 15px;
+        }
+
+        .sidebar-brand h4 {
+            color: #fff;
+            font-weight: 600;
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .sidebar-brand span {
+            color: #667eea;
+            font-size: 0.8rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+        }
+
+        .nav-menu li {
+            margin-bottom: 8px;
+        }
+
+        .nav-menu a {
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            color: #a4a6b3;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            background: var(--sidebar-hover);
+            color: #fff;
+        }
+
+        .nav-menu a.active {
+            background: var(--primary-gradient);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-menu i {
+            font-size: 1.3rem;
+            margin-right: 15px;
+            width: 25px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a1c2e;
+            margin: 0;
+        }
+
+        .mobile-toggle {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            color: #1a1c2e;
+            cursor: pointer;
+        }
+
+        .content-container {
+            padding-bottom: 50px;
+        }
+
+        /* Main Content Wrapper */
+        .main-content {
+            margin-left: 280px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+
+        /* Profile Header */
+        .profile-header {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 150px;
+            background: var(--primary-gradient);
+            border-radius: 30px 30px 0 0;
+        }
+
+        .profile-avatar-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 60px;
+        }
+
+        .profile-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 6px solid white;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            object-fit: cover;
+            background: white;
+        }
+
+        .profile-avatar-edit {
+            position: absolute;
+            bottom: 80px;
+            right: calc(50% - 70px);
+            width: 40px;
+            height: 40px;
+            background: var(--primary-gradient);
+            border-radius: 50%;
+            border: 3px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .profile-avatar-edit:hover {
+            transform: scale(1.1);
+        }
+
+        .profile-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1a1c2e;
+            margin-top: 20px;
+            margin-bottom: 5px;
+        }
+
+        .profile-role {
+            color: #667eea;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .profile-stats {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            padding: 25px 0;
+            border-top: 1px solid #f0f0f0;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .stat-item span {
+            color: #6c7293;
+            font-size: 0.9rem;
+        }
+
+        /* Content Cards */
+        .content-card {
+            background: white;
+            border-radius: 25px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .card-title-custom {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .card-title-custom i {
+            width: 45px;
+            height: 45px;
+            background: var(--primary-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .card-title-custom h5 {
+            margin: 0;
+            font-weight: 600;
+            color: #1a1c2e;
+        }
+
+        /* Form Styles */
+        .form-group-custom {
+            margin-bottom: 25px;
+        }
+
+        .form-label-custom {
+            font-weight: 600;
+            color: #1a1c2e;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-label-custom i {
+            color: #667eea;
+        }
+
+        .form-control-custom {
+            padding: 15px 20px;
+            border: 2px solid #e8e8e8;
+            border-radius: 15px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control-custom:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+
+        .form-control-custom:disabled {
+            background: #f8f9fa;
+            color: #6c7293;
+        }
+
+        /* Buttons */
+        .btn-gradient {
+            padding: 14px 35px;
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+
+        .btn-outline-custom {
+            padding: 14px 35px;
+            background: transparent;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            color: #667eea;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-custom:hover {
+            background: var(--primary-gradient);
+            border-color: transparent;
+            color: white;
+        }
+
+        /* Booking History */
+        .booking-item {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border-radius: 15px;
+            background: #f8f9fa;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .booking-item:hover {
+            background: #f0f4ff;
+            transform: translateX(5px);
+        }
+
+        .booking-icon {
+            width: 55px;
+            height: 55px;
+            background: var(--primary-gradient);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 20px;
+        }
+
+        .booking-icon.equipment {
+            background: var(--secondary-gradient);
+        }
+
+        .booking-details {
+            flex: 1;
+        }
+
+        .booking-details h6 {
+            margin: 0 0 5px 0;
+            font-weight: 600;
+            color: #1a1c2e;
+        }
+
+        .booking-details span {
+            color: #6c7293;
+            font-size: 0.9rem;
+        }
+
+        .booking-status {
+            padding: 8px 18px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .booking-status.completed {
+            background: rgba(17, 153, 142, 0.15);
+            color: #11998e;
+        }
+
+        .booking-status.upcoming {
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+        }
+
+        /* Notification Settings */
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-info h6 {
+            margin: 0 0 5px 0;
+            font-weight: 600;
+            color: #1a1c2e;
+        }
+
+        .setting-info span {
+            color: #6c7293;
+            font-size: 0.9rem;
+        }
+
+        .form-switch .form-check-input {
+            width: 55px;
+            height: 28px;
+            cursor: pointer;
+        }
+
+        .form-switch .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+
+        /* Quick Actions */
+        .quick-action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+        }
+
+        .quick-action-item {
+            padding: 25px 15px;
+            text-align: center;
+            border-radius: 20px;
+            border: 2px dashed #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .quick-action-item:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+            transform: translateY(-3px);
+        }
+
+        .quick-action-item i {
+            font-size: 2rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .quick-action-item span {
+            display: block;
+            color: #1a1c2e;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        .footer-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px 0;
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .footer-section p {
+            color: rgba(255, 255, 255, 0.7);
+            margin: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .profile-stats {
+                flex-wrap: wrap;
+                gap: 30px;
+            }
+
+            .stat-item {
+                flex: 1 1 100px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <a href="/index.html" class="sidebar-brand">
+            <img src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png" alt="Logo">
+            <div>
+                <h4>Payap Sports</h4>
+                <span>ระบบจองสนามกีฬา</span>
+            </div>
+        </a>
+
+        <ul class="nav-menu">
+            <li><a href="/index.html"><i class="bi bi-house-door"></i> หน้าหลัก</a></li>
+            <li><a href="/sportarea.html"><i class="bi bi-building"></i> สนามกีฬา</a></li>
+            <li><a href="/items.html"><i class="bi bi-box-seam"></i> ยืมอุปกรณ์</a></li>
+            <li><a href="/calendar.html"><i class="bi bi-calendar3"></i> ปฏิทิน</a></li>
+            <li><a href="/profile.html" class="active"><i class="bi bi-person-circle"></i> โปรไฟล์</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content wrapper -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="d-flex align-items-center gap-3">
+                <button class="mobile-toggle d-lg-none"
+                    onclick="document.querySelector('.sidebar').classList.toggle('show')">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h1 class="header-title d-none d-md-block">โปรไฟล์ผู้ใช้</h1>
+            </div>
+            <div class="d-flex gap-2" id="header-buttons">
+                <button onclick="
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userEmail');
+                    localStorage.removeItem('userName');
+                    localStorage.removeItem('userToken');
+                    localStorage.removeItem('isAdmin');
+                    localStorage.removeItem('adminToken');
+                    window.location.href='/login.html';
+                " class="btn btn-outline-danger rounded-pill px-4">ออกจากระบบ</button>
+            </div>
+        </header>
+
+        <div class="container py-4">
+            <div class="row">
+                <!-- Left Column -->
+                <div class="col-lg-4">
+                    <!-- Profile Header Card -->
+                    <div class="profile-header">
+                        <div class="profile-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300" alt="Profile"
+                                class="profile-avatar" id="profileImage">
+                            <div class="profile-avatar-edit">
+                                <i class="bi bi-camera"></i>
+                            </div>
+                            <h2 class="profile-name" id="displayName">สมชาย ใจดี</h2>
+                            <span class="profile-role">นักศึกษา</span>
+                        </div>
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <h3>24</h3>
+                                <span>การจองทั้งหมด</span>
+                            </div>
+                            <div class="stat-item">
+                                <h3>18</h3>
+                                <span>สำเร็จแล้ว</span>
+                            </div>
+                            <div class="stat-item">
+                                <h3>3</h3>
+                                <span>กำลังจะมาถึง</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="content-card">
+                        <div class="card-title-custom">
+                            <i class="bi bi-lightning-charge"></i>
+                            <h5>การดำเนินการด่วน</h5>
+                        </div>
+                        <div class="quick-action-grid">
+                            <a href="/Payment/confirmre.html" class="quick-action-item">
+                                <i class="bi bi-plus-circle"></i>
+                                <span>จองสนาม</span>
+                            </a>
+                            <a href="/items.html" class="quick-action-item">
+                                <i class="bi bi-box-seam"></i>
+                                <span>ยืมอุปกรณ์</span>
+                            </a>
+                            <a href="/calendar.html" class="quick-action-item">
+                                <i class="bi bi-calendar-check"></i>
+                                <span>ดูปฏิทิน</span>
+                            </a>
+                            <a href="#" class="quick-action-item">
+                                <i class="bi bi-headset"></i>
+                                <span>ติดต่อเรา</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="col-lg-8">
+                    <!-- Personal Information -->
+                    <div class="content-card">
+                        <div class="card-title-custom">
+                            <i class="bi bi-person-vcard"></i>
+                            <h5>ข้อมูลส่วนตัว</h5>
+                        </div>
+                        <form id="profileForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group-custom">
+                                        <label class="form-label-custom">
+                                            <i class="bi bi-person"></i> ชื่อ-นามสกุล
+                                        </label>
+                                        <input type="text" class="form-control form-control-custom" id="fullName"
+                                            value="สมชาย ใจดี">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group-custom">
+                                        <label class="form-label-custom">
+                                            <i class="bi bi-hash"></i> รหัสนักศึกษา/อาจารย์
+                                        </label>
+                                        <input type="text" class="form-control form-control-custom" id="studentId"
+                                            value="6512345" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group-custom">
+                                        <label class="form-label-custom">
+                                            <i class="bi bi-envelope"></i> อีเมล
+                                        </label>
+                                        <input type="email" class="form-control form-control-custom" id="email"
+                                            value="somchai@payap.ac.th">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group-custom">
+                                        <label class="form-label-custom">
+                                            <i class="bi bi-telephone"></i> เบอร์โทรศัพท์
+                                        </label>
+                                        <input type="tel" class="form-control form-control-custom" id="phone"
+                                            value="081-234-5678">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group-custom">
+                                        <label class="form-label-custom">
+                                            <i class="bi bi-mortarboard"></i> คณะ
+                                        </label>
+                                        <input type="text" class="form-control form-control-custom" id="faculty"
+                                            value="คณะวิทยาศาสตร์">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group-custom">
+                                        <label class="form-label-custom">
+                                            <i class="bi bi-book"></i> สาขาวิชา
+                                        </label>
+                                        <input type="text" class="form-control form-control-custom" id="major"
+                                            value="วิทยาการคอมพิวเตอร์">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-3 mt-3">
+                                <button type="submit" class="btn-gradient">
+                                    <i class="bi bi-check-lg me-2"></i>บันทึกการเปลี่ยนแปลง
+                                </button>
+                                <button type="button" class="btn-outline-custom">
+                                    <i class="bi bi-x-lg me-2"></i>ยกเลิก
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Booking History -->
+                    <div class="content-card">
+                        <div class="card-title-custom">
+                            <i class="bi bi-clock-history"></i>
+                            <h5>ประวัติการจองล่าสุด</h5>
+                        </div>
+
+                        <div class="booking-item">
+                            <div class="booking-icon">
+                                <i class="bi bi-dribbble"></i>
+                            </div>
+                            <div class="booking-details">
+                                <h6>สนามฟุตบอลและลู่วิ่ง</h6>
+                                <span><i class="bi bi-calendar me-1"></i>3 ก.พ. 2026 | 14:00 - 15:00 น.</span>
+                            </div>
+                            <span class="booking-status upcoming">กำลังจะมาถึง</span>
+                        </div>
+
+                        <div class="booking-item">
+                            <div class="booking-icon">
+                                <i class="bi bi-circle"></i>
+                            </div>
+                            <div class="booking-details">
+                                <h6>สนามบาสเกตบอล</h6>
+                                <span><i class="bi bi-calendar me-1"></i>1 ก.พ. 2026 | 10:00 - 11:00 น.</span>
+                            </div>
+                            <span class="booking-status completed">เสร็จสิ้น</span>
+                        </div>
+
+                        <div class="booking-item">
+                            <div class="booking-icon equipment">
+                                <i class="bi bi-box-seam"></i>
+                            </div>
+                            <div class="booking-details">
+                                <h6>ยืมอุปกรณ์: ลูกฟุตบอล x2</h6>
+                                <span><i class="bi bi-calendar me-1"></i>28 ม.ค. 2026 | คืนแล้ว</span>
+                            </div>
+                            <span class="booking-status completed">เสร็จสิ้น</span>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button class="btn-outline-custom">
+                                <i class="bi bi-arrow-down-circle me-2"></i>ดูประวัติทั้งหมด
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Notification Settings -->
+                    <div class="content-card">
+                        <div class="card-title-custom">
+                            <i class="bi bi-bell"></i>
+                            <h5>การตั้งค่าการแจ้งเตือน</h5>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h6>การแจ้งเตือนทางอีเมล</h6>
+                                <span>รับการแจ้งเตือนการจองและการยืมอุปกรณ์ทางอีเมล</span>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="emailNotif" checked>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h6>การแจ้งเตือนก่อนการจอง</h6>
+                                <span>รับการแจ้งเตือน 1 ชั่วโมงก่อนเวลาจอง</span>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="reminderNotif" checked>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h6>ข่าวสารและโปรโมชั่น</h6>
+                                <span>รับข่าวสารเกี่ยวกับสนามกีฬาและโปรโมชั่นพิเศษ</span>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="promoNotif">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-section">
+            <div class="container">
+                <p>&copy; 2026 Payap Sports Reservation System. All rights reserved.</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            if (isLoggedIn !== 'true') {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const token = localStorage.getItem('userToken');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // โหลดข้อมูลผู้ใช้จาก API
+            try {
+                const response = await fetch('/api/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.success && data.user) {
+                    document.getElementById('displayName').textContent = data.user.full_name;
+                    document.getElementById('fullName').value = data.user.full_name;
+                    document.getElementById('email').value = data.user.email;
+                    document.getElementById('studentId').value = data.user.student_id || '';
+                    document.getElementById('phone').value = data.user.phone || '';
+                    document.getElementById('faculty').value = data.user.faculty || '';
+                    document.getElementById('major').value = data.user.major || '';
+                }
+            } catch (error) {
+                console.error('Profile load error:', error);
+            }
+
+            // อัปเดตข้อมูล
+            document.getElementById('profileForm').addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                const updateData = {
+                    fullName: document.getElementById('fullName').value,
+                    phone: document.getElementById('phone').value,
+                    faculty: document.getElementById('faculty').value,
+                    major: document.getElementById('major').value
+                };
+
+                try {
+                    const response = await fetch('/api/profile', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(updateData)
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
+                        location.reload();
+                    } else {
+                        alert('เกิดข้อผิดพลาด: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('Update error:', error);
+                    alert('เกิดข้อผิดพลาดในการบันทึก');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - Payap Sports</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        /* Decorative circles */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -15%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            left: -10%;
+            width: 600px;
+            height: 600px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+        }
+
+        .login-container {
+            display: flex;
+            width: 100%;
+            max-width: 1000px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Left Side - Branding */
+        .brand-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 50px;
+            color: white;
+        }
+
+        .brand-logo {
+            width: 120px;
+            height: 120px;
+            background: white;
+            border-radius: 30px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .brand-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .brand-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .brand-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .brand-features {
+            margin-top: 50px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .feature-item i {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Right Side - Form */
+        .form-side {
+            width: 500px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px;
+            position: relative;
+        }
+
+        .form-side::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(to bottom, #667eea, #764ba2);
+        }
+
+        .form-header {
+            margin-bottom: 40px;
+        }
+
+        .form-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a1c2e;
+            margin-bottom: 10px;
+        }
+
+        .form-header p {
+            color: #6c7293;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #1a1c2e;
+        }
+
+        .input-group-custom {
+            position: relative;
+        }
+
+        .input-group-custom i {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c7293;
+            font-size: 1.1rem;
+        }
+
+        .form-control-custom {
+            width: 100%;
+            padding: 16px 20px 16px 50px;
+            border: 2px solid #e8e8e8;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-control-custom:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .remember-me input {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+
+        .forgot-password {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .forgot-password:hover {
+            color: #764ba2;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-login:hover {
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 30px 0;
+            color: #6c7293;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e8e8e8;
+        }
+
+        .register-link {
+            text-align: center;
+            color: #6c7293;
+        }
+
+        .register-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+
+        .alert-custom {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-danger-custom {
+            background: rgba(245, 87, 108, 0.1);
+            color: #f5576c;
+            border: 1px solid rgba(245, 87, 108, 0.2);
+        }
+
+        @media (max-width: 992px) {
+            .login-container {
+                flex-direction: column;
+            }
+
+            .brand-side {
+                padding: 40px 30px;
+                min-height: auto;
+            }
+
+            .brand-features {
+                display: none;
+            }
+
+            .form-side {
+                width: 100%;
+                padding: 40px 30px;
+            }
+
+            .form-side::before {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-container">
+        <!-- Brand Side -->
+        <div class="brand-side">
+            <div class="brand-logo">
+                <img src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png" alt="Payap Logo">
+            </div>
+            <h1 class="brand-title">Payap Sports</h1>
+            <p class="brand-subtitle">ระบบจองสนามกีฬาและยืมอุปกรณ์ มหาวิทยาลัยพายัพ</p>
+
+            <div class="brand-features">
+                <div class="feature-item">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>จองสนามกีฬาได้ง่ายๆ</span>
+                </div>
+                <div class="feature-item">
+                    <i class="bi bi-box-seam"></i>
+                    <span>ยืมอุปกรณ์กีฬาออนไลน์</span>
+                </div>
+                <div class="feature-item">
+                    <i class="bi bi-clock-history"></i>
+                    <span>ตรวจสอบสถานะแบบเรียลไทม์</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Side -->
+        <div class="form-side">
+            <div class="form-header">
+                <h2>เข้าสู่ระบบ</h2>
+                <p>ยินดีต้อนรับกลับมา! กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ</p>
+            </div>
+
+            <div id="errorMessage" class="alert-custom alert-danger-custom" style="display: none;">
+                <i class="bi bi-exclamation-circle"></i>
+                <span id="errorText"></span>
+            </div>
+
+            <form id="loginForm" action="/login" method="POST">
+                <div class="form-group">
+                    <label for="username">รหัสนักศึกษา / รหัสบุคลากร</label>
+                    <div class="input-group-custom">
+                        <i class="bi bi-person"></i>
+                        <input type="text" class="form-control-custom" id="username" name="identificationNumber"
+                            placeholder="กรอกรหัสประจำตัว" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">รหัสผ่าน</label>
+                    <div class="input-group-custom">
+                        <i class="bi bi-lock"></i>
+                        <input type="password" class="form-control-custom" id="password" name="password"
+                            placeholder="กรอกรหัสผ่าน" required>
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input type="checkbox" name="remember">
+                        <span>จดจำฉัน</span>
+                    </label>
+                    <a href="/resetpass.html" class="forgot-password">ลืมรหัสผ่าน?</a>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    เข้าสู่ระบบ
+                </button>
+            </form>
+
+            <div class="divider">หรือ</div>
+
+            <p class="register-link">
+                ยังไม่มีบัญชี? <a href="/register.html">สมัครสมาชิกใหม่</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            const errorDiv = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+
+            // เช็ค URL error parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            if (error) {
+                if (error === 'invalid') {
+                    errorText.textContent = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+                } else if (error === 'server') {
+                    errorText.textContent = 'เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง';
+                }
+                errorDiv.style.display = 'flex';
+            }
+
+            // Handle login form submission
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errorDiv.style.display = 'none';
+
+                const email = document.getElementById('username').value; // Changed from 'email' to 'username' to match HTML
+                const password = document.getElementById('password').value;
+
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // เก็บข้อมูลใน localStorage
+                        localStorage.setItem('isLoggedIn', 'true');
+                        localStorage.setItem('userEmail', data.user.email);
+                        localStorage.setItem('userName', data.user.fullName);
+                        localStorage.setItem('userToken', data.token);
+
+                        // ถ้าเป็น admin ให้เก็บ adminToken
+                        if (data.user.role === 'admin') {
+                            localStorage.setItem('adminToken', data.token);
+                            localStorage.setItem('isAdmin', 'true');
+                            window.location.href = '/admin-dashboard.html';
+                        } else {
+                            window.location.href = '/index.html';
+                        }
+                    } else {
+                        errorText.textContent = data.message || 'เข้าสู่ระบบไม่สำเร็จ';
+                        errorDiv.style.display = 'flex';
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    errorText.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
+                    errorDiv.style.display = 'flex';
+                }
+            });
+        });
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payap Sports - ระบบจองสนามกีฬาและยืมอุปกรณ์</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --accent-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --sidebar-bg: #1a1c2e;
+            --sidebar-hover: #2d3154;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 1050;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            padding: 20px 10px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+
+        .sidebar-brand img {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            margin-right: 15px;
+        }
+
+        .sidebar-brand h4 {
+            color: #fff;
+            font-weight: 600;
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .sidebar-brand span {
+            color: #667eea;
+            font-size: 0.8rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+        }
+
+        .nav-menu li {
+            margin-bottom: 8px;
+        }
+
+        .nav-menu a {
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            color: #a4a6b3;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            background: var(--sidebar-hover);
+            color: #fff;
+        }
+
+        .nav-menu a.active {
+            background: var(--primary-gradient);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-menu i {
+            font-size: 1.3rem;
+            margin-right: 15px;
+            width: 25px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a1c2e;
+            margin: 0;
+        }
+
+        .mobile-toggle {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            color: #1a1c2e;
+            cursor: pointer;
+        }
+
+        .btn-login {
+            padding: 10px 25px;
+            border: 2px solid #667eea;
+            border-radius: 25px;
+            color: #667eea;
+            font-weight: 600;
+            transition: all 0.3s;
+            background: transparent;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-login:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-register {
+            padding: 10px 25px;
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-register:hover {
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            min-height: calc(100vh - 80px);
+            /* header is approx 80px */
+            background: var(--primary-gradient);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            padding-top: 40px;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -30%;
+            right: -15%;
+            width: 700px;
+            height: 700px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .hero-section::after {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-30px);
+            }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            color: white;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            max-width: 500px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn-hero-primary {
+            padding: 16px 35px;
+            background: white;
+            border: none;
+            border-radius: 50px;
+            color: #667eea;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .btn-hero-primary:hover {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            transform: translateY(-3px);
+            color: #667eea;
+        }
+
+        .btn-hero-secondary {
+            padding: 16px 35px;
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-hero-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+            color: white;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .hero-image {
+            position: relative;
+            z-index: 10;
+        }
+
+        .hero-image img {
+            max-width: 100%;
+            border-radius: 30px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 100px 0;
+            background: white;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a1c2e;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .section-subtitle {
+            color: #6c7293;
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 60px;
+        }
+
+        .feature-card {
+            padding: 40px 30px;
+            border-radius: 20px;
+            background: #f8f9fa;
+            text-align: center;
+            transition: all 0.3s;
+            height: 100%;
+        }
+
+        .feature-card:hover {
+            background: white;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+            transform: translateY(-10px);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .feature-icon.primary {
+            background: var(--primary-gradient);
+        }
+
+        .feature-icon.secondary {
+            background: var(--secondary-gradient);
+        }
+
+        .feature-icon.accent {
+            background: var(--accent-gradient);
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1a1c2e;
+            margin-bottom: 15px;
+        }
+
+        .feature-desc {
+            color: #6c7293;
+            line-height: 1.7;
+        }
+
+        /* Courts Section */
+        .courts-section {
+            padding: 100px 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+        }
+
+        .court-card {
+            background: white;
+            border-radius: 25px;
+            overflow: hidden;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.08);
+            transition: all 0.4s;
+            height: 100%;
+        }
+
+        .court-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .court-img-wrap {
+            position: relative;
+            height: 220px;
+            overflow: hidden;
+        }
+
+        .court-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .court-card:hover .court-img {
+            transform: scale(1.1);
+        }
+
+        .court-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            padding: 8px 18px;
+            border-radius: 25px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+
+        .court-badge.popular {
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+        }
+
+        .court-badge.available {
+            background: rgba(17, 153, 142, 0.9);
+            color: white;
+        }
+
+        .court-body {
+            padding: 30px;
+        }
+
+        .court-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1a1c2e;
+            margin-bottom: 10px;
+        }
+
+        .court-desc {
+            color: #6c7293;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+
+        .court-features {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .court-feature {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: #6c7293;
+        }
+
+        .court-feature i {
+            color: #667eea;
+        }
+
+        .court-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .court-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #38ef7d;
+        }
+
+        .btn-book {
+            padding: 12px 25px;
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-book:hover {
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Equipment Section */
+        .equipment-section {
+            padding: 100px 0;
+            background: white;
+        }
+
+        .equipment-banner {
+            background: var(--secondary-gradient);
+            border-radius: 30px;
+            padding: 60px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .equipment-content h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .equipment-content p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 500px;
+        }
+
+        .btn-equipment {
+            padding: 16px 35px;
+            background: white;
+            border: none;
+            border-radius: 50px;
+            color: #11998e;
+            font-size: 1.1rem;
+            font-weight: 700;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-equipment:hover {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            transform: translateY(-3px);
+            color: #11998e;
+        }
+
+        /* Footer */
+        .footer {
+            background: #1a1c2e;
+            color: white;
+            padding: 60px 0 30px;
+        }
+
+        .footer-brand img {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+
+        .footer-brand h5 {
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .footer-brand p {
+            color: #a4a6b3;
+            font-size: 0.9rem;
+        }
+
+        .footer-links h6 {
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .footer-links a {
+            display: block;
+            color: #a4a6b3;
+            text-decoration: none;
+            padding: 8px 0;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 40px;
+            padding-top: 30px;
+            text-align: center;
+            color: #6c7293;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 992px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .hero-stats {
+                gap: 25px;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+
+            .hero-image {
+                margin-top: 50px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 120px 0 80px;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+            }
+
+            .equipment-banner {
+                text-align: center;
+                flex-direction: column;
+                padding: 40px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <a href="/index.html" class="sidebar-brand">
+            <img src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png" alt="Logo">
+            <div>
+                <h4>Payap Sports</h4>
+                <span>ระบบจองสนามกีฬา</span>
+            </div>
+        </a>
+
+        <ul class="nav-menu">
+            <li><a href="/index.html" class="active"><i class="bi bi-house-door"></i> หน้าหลัก</a></li>
+            <li><a href="/sportarea.html"><i class="bi bi-building"></i> สนามกีฬา</a></li>
+            <li><a href="/items.html"><i class="bi bi-box-seam"></i> ยืมอุปกรณ์</a></li>
+            <li><a href="/calendar.html"><i class="bi bi-calendar3"></i> ปฏิทิน</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="d-flex align-items-center gap-3">
+                <button class="mobile-toggle d-lg-none"
+                    onclick="document.querySelector('.sidebar').classList.toggle('show')">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h1 class="header-title d-none d-md-block">หน้าหลัก</h1>
+            </div>
+            <div class="d-flex gap-2" id="header-buttons">
+                <a href="/login.html" class="btn-login">เข้าสู่ระบบ</a>
+                <a href="/register.html" class="btn-register">สมัครสมาชิก</a>
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-6">
+                        <div class="hero-content">
+                            <h1 class="hero-title">ระบบจองสนามกีฬา<br>มหาวิทยาลัยพายัพ</h1>
+                            <p class="hero-subtitle">จองสนามกีฬาและยืมอุปกรณ์ออนไลน์ได้ง่ายๆ
+                                ตรวจสอบความพร้อมแบบเรียลไทม์
+                            </p>
+                            <div class="hero-buttons">
+                                <a href="#courts" class="btn-hero-primary"><i class="bi bi-calendar-plus"></i>
+                                    จองสนามเลย</a>
+                                <a href="/items.html" class="btn-hero-secondary"><i class="bi bi-box-seam"></i>
+                                    ยืมอุปกรณ์</a>
+                            </div>
+                            <div class="hero-stats">
+                                <div class="stat-item">
+                                    <div class="stat-number">4+</div>
+                                    <div class="stat-label">สนามกีฬา</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">50+</div>
+                                    <div class="stat-label">อุปกรณ์</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">2,400+</div>
+                                    <div class="stat-label">ผู้ใช้งาน</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="hero-image">
+                            <img src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600"
+                                alt="Sports Court">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section">
+            <div class="container">
+                <h2 class="section-title">ทำไมต้องใช้ Payap Sports?</h2>
+                <p class="section-subtitle">ระบบที่ออกแบบมาเพื่ออำนวยความสะดวกให้กับนักศึกษาและบุคลากร</p>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon primary"><i class="bi bi-lightning-charge"></i></div>
+                            <h5 class="feature-title">จองง่ายรวดเร็ว</h5>
+                            <p class="feature-desc">จองสนามได้ภายใน 3 คลิก เลือกวันและเวลาที่ต้องการได้ทันที</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon secondary"><i class="bi bi-clock-history"></i></div>
+                            <h5 class="feature-title">ตรวจสอบแบบเรียลไทม์</h5>
+                            <p class="feature-desc">ดูสถานะสนามและอุปกรณ์ได้ตลอด 24 ชั่วโมง ผ่านปฏิทินออนไลน์</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon accent"><i class="bi bi-shield-check"></i></div>
+                            <h5 class="feature-title">ปลอดภัย ฟรีค่าใช้จ่าย</h5>
+                            <p class="feature-desc">นักศึกษาและบุคลากรใช้บริการฟรี พร้อมระบบยืนยันตัวตน</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Courts Section -->
+        <section class="courts-section" id="courts">
+            <div class="container">
+                <h2 class="section-title">สนามกีฬาพร้อมใช้งาน</h2>
+                <p class="section-subtitle">เลือกสนามที่คุณต้องการและเริ่มทำการจองได้เลย</p>
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="court-card">
+                            <div class="court-img-wrap">
+                                <img class="court-img" src="/photo/football_court_hq_1770146504283.png"
+                                    alt="สนามฟุตบอล">
+                                <span class="court-badge popular"><i class="bi bi-star-fill me-1"></i>ยอดนิยม</span>
+                            </div>
+                            <div class="court-body">
+                                <h3 class="court-name">สนามฟุตบอลและลู่วิ่ง</h3>
+                                <p class="court-desc">สำหรับกิจกรรมฟุตบอลและการฝึกซ้อมวิ่งรอบสนาม
+                                    รองรับได้ทั้งทีมและบุคคล
+                                </p>
+                                <div class="court-features">
+                                    <div class="court-feature"><i class="bi bi-people"></i> 22 คน</div>
+                                    <div class="court-feature"><i class="bi bi-clock"></i> 06:00-20:00</div>
+                                    <div class="court-feature"><i class="bi bi-lightbulb"></i> มีไฟส่องสนาม</div>
+                                </div>
+                                <div class="court-footer">
+                                    <div class="court-status"><span class="status-dot"></span> พร้อมใช้งาน</div>
+                                    <a href="/court-booking.html?court=football" class="btn-book"
+                                        onclick="checkLoginAndRedirect('/court-booking.html?court=football'); return false;"><i
+                                            class="bi bi-calendar-plus"></i> จองสนาม</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="court-card">
+                            <div class="court-img-wrap">
+                                <img class="court-img" src="/photo/basketball_court_hq_1770146518588.png"
+                                    alt="สนามบาสเกตบอล">
+                                <span class="court-badge popular"><i class="bi bi-star-fill me-1"></i>ยอดนิยม</span>
+                            </div>
+                            <div class="court-body">
+                                <h3 class="court-name">สนามบาสเกตบอล</h3>
+                                <p class="court-desc">สนามบาสเกตบอลในร่มสำหรับทั้งการฝึกซ้อมและแข่งขัน พื้นสนามมาตรฐาน
+                                </p>
+                                <div class="court-features">
+                                    <div class="court-feature"><i class="bi bi-people"></i> 10 คน</div>
+                                    <div class="court-feature"><i class="bi bi-clock"></i> 08:00-20:00</div>
+                                    <div class="court-feature"><i class="bi bi-snow"></i> ปรับอากาศ</div>
+                                </div>
+                                <div class="court-footer">
+                                    <div class="court-status"><span class="status-dot"></span> พร้อมใช้งาน</div>
+                                    <a href="/court-booking.html?court=basketball" class="btn-book"
+                                        onclick="checkLoginAndRedirect('/court-booking.html?court=basketball'); return false;"><i
+                                            class="bi bi-calendar-plus"></i> จองสนาม</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="court-card">
+                            <div class="court-img-wrap">
+                                <img class="court-img" src="/photo/tennis_court_hq_1770146533333.png" alt="สนามเทนนิส">
+                                <span class="court-badge available"><i class="bi bi-check-circle me-1"></i>ว่าง</span>
+                            </div>
+                            <div class="court-body">
+                                <h3 class="court-name">สนามเทนนิส</h3>
+                                <p class="court-desc">สนามเทนนิสมาตรฐานพร้อมอุปกรณ์ให้เช่าสำหรับผู้ที่ต้องการเล่น</p>
+                                <div class="court-features">
+                                    <div class="court-feature"><i class="bi bi-people"></i> 4 คน</div>
+                                    <div class="court-feature"><i class="bi bi-clock"></i> 06:00-18:00</div>
+                                    <div class="court-feature"><i class="bi bi-box-seam"></i> มีอุปกรณ์ให้ยืม</div>
+                                </div>
+                                <div class="court-footer">
+                                    <div class="court-status"><span class="status-dot"></span> พร้อมใช้งาน</div>
+                                    <a href="/court-booking.html?court=tennis" class="btn-book"
+                                        onclick="checkLoginAndRedirect('/court-booking.html?court=tennis'); return false;"><i
+                                            class="bi bi-calendar-plus"></i> จองสนาม</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="court-card">
+                            <div class="court-img-wrap">
+                                <img class="court-img" src="/photo/badminton_court_hq_1770146551487.png"
+                                    alt="สนามแบดมินตัน">
+                                <span class="court-badge available"><i class="bi bi-check-circle me-1"></i>ว่าง</span>
+                            </div>
+                            <div class="court-body">
+                                <h3 class="court-name">สนามแบดมินตันและวอลเลย์บอล</h3>
+                                <p class="court-desc">สามารถเลือกใช้ได้ทั้งสองประเภทกีฬา มีตาข่ายและเสาพร้อมใช้งาน</p>
+                                <div class="court-features">
+                                    <div class="court-feature"><i class="bi bi-people"></i> 12 คน</div>
+                                    <div class="court-feature"><i class="bi bi-clock"></i> 08:00-20:00</div>
+                                    <div class="court-feature"><i class="bi bi-snow"></i> ปรับอากาศ</div>
+                                </div>
+                                <div class="court-footer">
+                                    <div class="court-status"><span class="status-dot"></span> พร้อมใช้งาน</div>
+                                    <a href="/court-booking.html?court=badminton" class="btn-book"
+                                        onclick="checkLoginAndRedirect('/court-booking.html?court=badminton'); return false;"><i
+                                            class="bi bi-calendar-plus"></i> จองสนาม</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Equipment Section -->
+        <section class="equipment-section">
+            <div class="container">
+                <div class="equipment-banner">
+                    <div class="equipment-content">
+                        <h3><i class="bi bi-box-seam me-2"></i>ต้องการยืมอุปกรณ์กีฬา?</h3>
+                        <p>ลูกบอล, ไม้แร็กเก็ต, อุปกรณ์ฝึกซ้อม และอีกมากมาย พร้อมให้ยืมฟรีสำหรับนักศึกษาและบุคลากร</p>
+                    </div>
+                    <a href="/items.html" class="btn-equipment"><i class="bi bi-arrow-right"></i> ดูรายการอุปกรณ์</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-4 mb-4">
+                        <div class="footer-brand">
+                            <img src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png"
+                                alt="Logo">
+                            <h5>Payap Sports</h5>
+                            <p>ระบบจองสนามกีฬาและยืมอุปกรณ์ออนไลน์ มหาวิทยาลัยพายัพ</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-4 mb-4">
+                        <div class="footer-links">
+                            <h6>ลิงก์ด่วน</h6>
+                            <a href="/index.html">หน้าแรก</a>
+                            <a href="/sportarea.html">สนามกีฬา</a>
+                            <a href="/items.html">อุปกรณ์</a>
+                            <a href="/calendar.html">ปฏิทิน</a>
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-4 mb-4">
+                        <div class="footer-links">
+                            <h6>บัญชี</h6>
+                            <a href="/login.html">เข้าสู่ระบบ</a>
+                            <a href="/register.html">สมัครสมาชิก</a>
+                            <a href="/profile.html">โปรไฟล์</a>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-4 mb-4">
+                        <div class="footer-links">
+                            <h6>ติดต่อเรา</h6>
+                            <a href="#"><i class="bi bi-geo-alt me-2"></i>มหาวิทยาลัยพายัพ เชียงใหม่</a>
+                            <a href="#"><i class="bi bi-telephone me-2"></i>053-xxx-xxx</a>
+                            <a href="#"><i class="bi bi-envelope me-2"></i>sports@payap.ac.th</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>© 2026 Payap Sports. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function handleLogout() {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('isAdmin');
+            localStorage.removeItem('adminToken');
+            window.location.reload();
+        }
+
+        function checkLoginAndRedirect(targetUrl) {
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            if (isLoggedIn === 'true') {
+                window.location.href = targetUrl;
+            } else {
+                alert('กรุณาเข้าสู่ระบบเพื่อดำเนินการจอง');
+                window.location.href = '/login.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('login') === 'success') {
+                localStorage.setItem('isLoggedIn', 'true');
+                const email = urlParams.get('email');
+                if (email) localStorage.setItem('userEmail', email);
+                history.replaceState(null, '', '/index.html');
+            }
+
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const userName = localStorage.getItem('userName');
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+            const headerButtons = document.getElementById('header-buttons');
+
+            if (isLoggedIn && headerButtons) {
+                let profileLink = '/profile.html';
+                if (isAdmin) {
+                    profileLink = '/admin-dashboard.html';
+                }
+
+                headerButtons.innerHTML = `
+                    <a href="${profileLink}" class="btn btn-outline-primary rounded-pill px-4" style="display:flex; align-items:center;">
+                        <i class="bi bi-person-circle me-1"></i> ${userName || 'โปรไฟล์'}
+                    </a>
+                    <button onclick="handleLogout()" class="btn btn-danger rounded-pill px-4" style="display:flex; align-items:center;">
+                        <i class="bi bi-box-arrow-right me-1"></i> ออกจากระบบ
+                    </button>
+                `;
+            }
+        });
+    </script>
+</body>
+
+</html>

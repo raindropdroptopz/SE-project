@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>การจองทั้งหมด - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --sidebar-bg: #1a1c2e;
+            --sidebar-hover: #2d3154;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            padding: 15px 10px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-brand img {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            margin-right: 12px;
+        }
+
+        .sidebar-brand h4 {
+            color: #fff;
+            font-weight: 600;
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .sidebar-brand span {
+            color: #667eea;
+            font-size: 0.75rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+        }
+
+        .nav-menu li {
+            margin-bottom: 5px;
+        }
+
+        .nav-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 18px;
+            color: #a4a6b3;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            background: var(--sidebar-hover);
+            color: #fff;
+        }
+
+        .nav-menu a.active {
+            background: var(--primary-gradient);
+        }
+
+        .nav-menu i {
+            font-size: 1.2rem;
+            margin-right: 12px;
+            width: 22px;
+        }
+
+        .nav-section-title {
+            font-size: 0.7rem;
+            color: #6c7293;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 15px 18px 8px;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 25px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 20px 25px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .page-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a1c2e;
+            margin: 0;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+
+        .card-header-custom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .card-header-custom h5 {
+            margin: 0;
+            font-weight: 600;
+            color: #1a1c2e;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            padding: 20px 25px;
+            background: #f8f9fa;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar .form-control,
+        .filter-bar .form-select {
+            border-radius: 10px;
+            padding: 10px 15px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .btn-gradient {
+            padding: 10px 20px;
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-gradient:hover {
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        .table-custom {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-custom th {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            text-align: left;
+            font-weight: 600;
+            color: #6c7293;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .table-custom td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+
+        .table-custom tr:hover {
+            background: #fafbfc;
+        }
+
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-cell img {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .user-cell-info h6 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .user-cell-info span {
+            font-size: 0.75rem;
+            color: #6c7293;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-badge.confirmed {
+            background: rgba(56, 239, 125, 0.15);
+            color: #11998e;
+        }
+
+        .status-badge.pending {
+            background: rgba(79, 172, 254, 0.15);
+            color: #4facfe;
+        }
+
+        .status-badge.cancelled {
+            background: rgba(245, 87, 108, 0.15);
+            color: #f5576c;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 6px;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+        }
+
+        .action-btn.view {
+            background: rgba(79, 172, 254, 0.15);
+            color: #4facfe;
+        }
+
+        .action-btn.edit {
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+        }
+
+        .action-btn.delete {
+            background: rgba(245, 87, 108, 0.15);
+            color: #f5576c;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .pagination-custom {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 20px;
+        }
+
+        .pagination-custom button {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pagination-custom button.active,
+        .pagination-custom button:hover {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png" alt="Logo">
+            <div>
+                <h4>Payap Sports</h4><span>Admin Dashboard</span>
+            </div>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/admin-dashboard.html"><i class="bi bi-grid-1x2-fill"></i> แดชบอร์ด</a></li>
+            <li><a href="/admin/bookings.html" class="active"><i class="bi bi-calendar-check"></i> การจองทั้งหมด</a>
+            </li>
+            <li><a href="/admin/users.html"><i class="bi bi-people"></i> จัดการผู้ใช้</a></li>
+            <li><a href="/admin/courts.html"><i class="bi bi-building"></i> จัดการสนาม</a></li>
+            <p class="nav-section-title">อุปกรณ์</p>
+            <li><a href="/admin/equipment.html"><i class="bi bi-box-seam"></i> รายการอุปกรณ์</a></li>
+            <li><a href="/admin/borrow-reports.html"><i class="bi bi-clipboard-data"></i> รายงานการยืม</a></li>
+            <p class="nav-section-title">การเงิน</p>
+            <li><a href="/admin/finance.html"><i class="bi bi-cash-stack"></i> รายรับ-รายจ่าย</a></li>
+            <li><a href="/admin/receipts.html"><i class="bi bi-receipt"></i> ใบเสร็จรับเงิน</a></li>
+            <p class="nav-section-title">ระบบ</p>
+            <li><a href="/index.html"><i class="bi bi-box-arrow-left"></i> กลับสู่หน้าหลัก</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div>
+                <h1><i class="bi bi-calendar-check me-2"></i>การจองทั้งหมด</h1>
+                <p style="margin:0; color:#6c7293; font-size:0.9rem;">จัดการและตรวจสอบการจองสนามกีฬาทั้งหมด</p>
+            </div>
+            <button class="btn-gradient"><i class="bi bi-plus-lg me-2"></i>เพิ่มการจอง</button>
+        </header>
+
+        <div class="content-card">
+            <div class="filter-bar">
+                <input type="text" class="form-control" placeholder="ค้นหาชื่อผู้จอง..." style="max-width:250px;">
+                <select class="form-select" style="max-width:180px;">
+                    <option value="">สนามทั้งหมด</option>
+                    <option>สนามฟุตบอล</option>
+                    <option>สนามบาสเกตบอล</option>
+                    <option>สนามเทนนิส</option>
+                    <option>สนามแบดมินตัน</option>
+                </select>
+                <select class="form-select" style="max-width:150px;">
+                    <option value="">สถานะทั้งหมด</option>
+                    <option>ยืนยันแล้ว</option>
+                    <option>รอชำระเงิน</option>
+                    <option>ยกเลิก</option>
+                </select>
+                <input type="date" class="form-control" style="max-width:180px;">
+                <button class="btn-gradient"><i class="bi bi-search"></i></button>
+            </div>
+
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>รหัสการจอง</th>
+                        <th>ผู้จอง</th>
+                        <th>สนาม</th>
+                        <th>วันที่</th>
+                        <th>เวลา</th>
+                        <th>ราคา</th>
+                        <th>สถานะ</th>
+                        <th>การจัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="bookingsTableBody">
+                    <tr>
+                        <td colspan="8" class="text-center py-4">กำลังโหลดข้อมูล...</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="pagination-custom">
+                <button><i class="bi bi-chevron-left"></i></button>
+                <button class="active">1</button>
+                <button><i class="bi bi-chevron-right"></i></button>
+            </div>
+        </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const token = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        // โหลดข้อมูลการจอง
+        async function loadBookings() {
+            try {
+                const response = await fetch('/api/admin/bookings', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    renderBookings(data.bookings);
+                } else {
+                    alert('ไม่สามารถโหลดข้อมูลได้');
+                }
+            } catch (error) {
+                console.error('Load bookings error:', error);
+            }
+        }
+
+        // แสดงข้อมูลในตาราง
+        function renderBookings(bookings) {
+            const tbody = document.getElementById('bookingsTableBody');
+
+            if (bookings.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4">ไม่มีรายการจอง</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = bookings.map(b => {
+                const date = new Date(b.booking_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+                const time = b.start_time.substring(0, 5) + ' - ' + b.end_time.substring(0, 5);
+                const statusClass = b.status === 'confirmed' ? 'confirmed' : (b.status === 'pending' ? 'pending' : 'cancelled');
+                const statusText = b.status === 'confirmed' ? 'ยืนยันแล้ว' : (b.status === 'pending' ? 'รออนุมัติ' : 'ยกเลิก');
+
+                let actionBtns = `
+                    <button class="action-btn view" onclick="viewBooking(${b.id})"><i class="bi bi-eye"></i></button>
+                `;
+
+                if (b.status === 'pending') {
+                    actionBtns += `
+                        <button class="action-btn" style="background:rgba(56,239,125,0.15);color:#11998e;" onclick="approveBooking(${b.id})">
+                            <i class="bi bi-check-lg"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="rejectBooking(${b.id})">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    `;
+                } else {
+                    actionBtns += `
+                        <button class="action-btn delete" onclick="deleteBooking(${b.id})"><i class="bi bi-trash"></i></button>
+                    `;
+                }
+
+                return `
+                    <tr>
+                        <td><strong>#BK${String(b.id).padStart(3, '0')}</strong></td>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-cell-info">
+                                    <h6>${b.user_name}</h6>
+                                    <span>${b.user_email}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${b.court_name}</td>
+                        <td>${date}</td>
+                        <td>${time}</td>
+                        <td>฿0</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td><div class="action-btns">${actionBtns}</div></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // อนุมัติการจอง
+        async function approveBooking(id) {
+            if (!confirm('ต้องการอนุมัติการจองนี้?')) return;
+
+            try {
+                const response = await fetch(`/api/admin/bookings/${id}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ status: 'confirmed' })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('อนุมัติการจองสำเร็จ');
+                    loadBookings();
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Approve error:', error);
+            }
+        }
+
+        // ปฏิเสธการจอง
+        async function rejectBooking(id) {
+            if (!confirm('ต้องการปฏิเสธการจองนี้?')) return;
+
+            try {
+                const response = await fetch(`/api/admin/bookings/${id}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ status: 'cancelled' })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('ปฏิเสธการจองสำเร็จ');
+                    loadBookings();
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Reject error:', error);
+            }
+        }
+
+        function viewBooking(id) {
+            alert('ดูรายละเอียดการจอง #' + id);
+        }
+
+        function deleteBooking(id) {
+            alert('ลบการจอง #' + id);
+        }
+
+        // โหลดข้อมูลเมื่อหน้าโหลด
+        loadBookings();
+    </script>
+</body>
+
+</html>
