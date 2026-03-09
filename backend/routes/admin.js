@@ -212,16 +212,71 @@ router.post('/equipment', authenticateAdmin, async (req, res) => {
 });
 
 // ===============================================
+// GET /api/admin/courts - ดึงรายการสนามทั้งหมด
+// ===============================================
+router.get('/courts', authenticateAdmin, async (req, res) => {
+    try {
+        const [courts] = await db.execute('SELECT * FROM courts ORDER BY id ASC');
+        res.json({ success: true, courts });
+    } catch (error) {
+        console.error('Get admin courts error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    }
+});
+
+// ===============================================
+// PUT /api/admin/courts/:id - อัปเดตข้อมูลสนาม
+// ===============================================
+router.put('/courts/:id', authenticateAdmin, async (req, res) => {
+    try {
+        const { name, description, capacity, open_time, close_time, price, status } = req.body;
+
+        if (price !== undefined && price < 0) {
+            return res.status(400).json({ success: false, message: 'ราคาไม่สามารถติดลบได้' });
+        }
+
+        await db.execute(`
+            UPDATE courts 
+            SET name = ?, description = ?, capacity = ?, open_time = ?, close_time = ?, price = ?, status = ?
+            WHERE id = ?
+        `, [name, description, capacity, open_time, close_time, price, status, req.params.id]);
+
+        res.json({ success: true, message: 'อัปเดตข้อมูลสนามสำเร็จ' });
+
+    } catch (error) {
+        console.error('Update court error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    }
+});
+
+// ===============================================
+// DELETE /api/admin/courts/:id - ลบสนามกีฬา
+// ===============================================
+router.delete('/courts/:id', authenticateAdmin, async (req, res) => {
+    try {
+        await db.execute('DELETE FROM courts WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'ลบสนามกีฬาสำเร็จ' });
+    } catch (error) {
+        console.error('Delete court error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    }
+});
+
+// ===============================================
 // POST /api/admin/courts - เพิ่มสนามกีฬาใหม่
 // ===============================================
 router.post('/courts', authenticateAdmin, async (req, res) => {
     try {
-        const { name, description, capacity, open_time, close_time, image_url, status } = req.body;
+        const { name, description, capacity, open_time, close_time, price, image_url, status } = req.body;
+
+        if (price !== undefined && price < 0) {
+            return res.status(400).json({ success: false, message: 'ราคาไม่สามารถติดลบได้' });
+        }
 
         const [result] = await db.execute(`
-            INSERT INTO courts (name, description, capacity, open_time, close_time, image_url, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [name, description, capacity || 10, open_time || '08:00:00', close_time || '20:00:00', image_url, status || 'available']);
+            INSERT INTO courts (name, description, capacity, open_time, close_time, price, image_url, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [name, description, capacity || 10, open_time || '06:00:00', close_time || '20:00:00', price || 300, image_url, status || 'available']);
 
         res.status(201).json({
             success: true,
