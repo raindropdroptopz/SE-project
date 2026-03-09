@@ -537,8 +537,28 @@
             alert('ดูรายละเอียดการจอง #' + id);
         }
 
-        function deleteBooking(id) {
-            alert('ลบการจอง #' + id);
+        async function deleteBooking(id) {
+            if (!confirm('ต้องการลบการจองนี้หรือไม่? การลบจะไม่สามารถกู้คืนได้')) return;
+
+            try {
+                const response = await fetch(`/api/admin/bookings/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('ลบการจองสำเร็จ');
+                    loadBookings();
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Delete booking error:', error);
+                alert('เกิดข้อผิดพลาดในการลบ');
+            }
         }
 
         // โหลดข้อมูลเมื่อหน้าโหลด

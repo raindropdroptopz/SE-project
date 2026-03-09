@@ -154,6 +154,30 @@ router.put('/bookings/:id/status', authenticateAdmin, async (req, res) => {
 });
 
 // ===============================================
+// DELETE /api/admin/bookings/:id - ลบการจอง
+// ===============================================
+router.delete('/bookings/:id', authenticateAdmin, async (req, res) => {
+    try {
+        const bookingId = req.params.id;
+
+        // ตรวจสอบว่ามีการจองนี้อยู่หรือไม่
+        const [bookings] = await db.execute('SELECT * FROM bookings WHERE id = ?', [bookingId]);
+        if (bookings.length === 0) {
+            return res.status(404).json({ success: false, message: 'ไม่พบการจอง' });
+        }
+
+        // ลบการจอง
+        await db.execute('DELETE FROM bookings WHERE id = ?', [bookingId]);
+
+        res.json({ success: true, message: 'ลบการจองสำเร็จ' });
+
+    } catch (error) {
+        console.error('Delete booking error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    }
+});
+
+// ===============================================
 // GET /api/admin/equipment - รายการอุปกรณ์ทั้งหมด
 // ===============================================
 router.get('/equipment', authenticateAdmin, async (req, res) => {
