@@ -167,7 +167,8 @@ router.delete('/users/:id', authenticateAdmin, async (req, res) => {
 router.get('/bookings', authenticateAdmin, async (req, res) => {
     try {
         const [bookings] = await db.execute(`
-            SELECT b.*, c.name as court_name, u.full_name as user_name, u.email as user_email
+            SELECT b.*, c.name as court_name, u.full_name as user_name, u.email as user_email,
+                   ((HOUR(b.end_time) - HOUR(b.start_time)) * c.price) as price
             FROM bookings b
             JOIN courts c ON b.court_id = c.id
             JOIN users u ON b.user_id = u.id

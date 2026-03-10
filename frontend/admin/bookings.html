@@ -400,12 +400,77 @@
             </div>
         </div>
     </main>
+
+    <!-- View Booking Modal -->
+    <div class="modal fade" id="viewBookingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">รายละเอียดการจอง</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-bordered">
+                        <tbody>
+                            <tr>
+                                <th width="35%">รหัสการจอง</th>
+                                <td id="viewBookingId"></td>
+                            </tr>
+                            <tr>
+                                <th>ผู้จอง</th>
+                                <td id="viewBookingUserName"></td>
+                            </tr>
+                            <tr>
+                                <th>อีเมล</th>
+                                <td id="viewBookingUserEmail"></td>
+                            </tr>
+                            <tr>
+                                <th>สนาม</th>
+                                <td id="viewBookingCourtName"></td>
+                            </tr>
+                            <tr>
+                                <th>วันที่จอง</th>
+                                <td id="viewBookingDate"></td>
+                            </tr>
+                            <tr>
+                                <th>เวลา</th>
+                                <td id="viewBookingTime"></td>
+                            </tr>
+                            <tr>
+                                <th>ราคา</th>
+                                <td id="viewBookingPrice"></td>
+                            </tr>
+                            <tr>
+                                <th>สถานะ</th>
+                                <td id="viewBookingStatus"></td>
+                            </tr>
+                            <tr>
+                                <th>วันที่ทำรายการ</th>
+                                <td id="viewBookingCreatedAt"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const token = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
         if (!token) {
             window.location.href = '/login.html';
         }
+
+        let allBookings = [];
+        let viewBookingModalWrapper;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            viewBookingModalWrapper = new bootstrap.Modal(document.getElementById('viewBookingModal'));
+        });
 
         // โหลดข้อมูลการจอง
         async function loadBookings() {
@@ -416,6 +481,7 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    allBookings = data.bookings;
                     renderBookings(data.bookings);
                 } else {
                     alert('ไม่สามารถโหลดข้อมูลได้');
@@ -473,7 +539,7 @@
                         <td>${b.court_name}</td>
                         <td>${date}</td>
                         <td>${time}</td>
-                        <td>฿0</td>
+                        <td>฿${b.price || 0}</td>
                         <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                         <td><div class="action-btns">${actionBtns}</div></td>
                     </tr>
@@ -534,7 +600,30 @@
         }
 
         function viewBooking(id) {
-            alert('ดูรายละเอียดการจอง #' + id);
+            const b = allBookings.find(booking => booking.id === id);
+            if (!b) return;
+
+            document.getElementById('viewBookingId').innerText = '#BK' + String(b.id).padStart(3, '0');
+            document.getElementById('viewBookingUserName').innerText = b.user_name || '-';
+            document.getElementById('viewBookingUserEmail').innerText = b.user_email || '-';
+            document.getElementById('viewBookingCourtName').innerText = b.court_name || '-';
+
+            const date = new Date(b.booking_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+            document.getElementById('viewBookingDate').innerText = date;
+
+            const time = b.start_time.substring(0, 5) + ' - ' + b.end_time.substring(0, 5);
+            document.getElementById('viewBookingTime').innerText = time;
+
+            // display calculated price from backend
+            document.getElementById('viewBookingPrice').innerText = '฿' + (b.price || 0);
+
+            const statusText = b.status === 'confirmed' ? 'ยืนยันแล้ว' : (b.status === 'pending' ? 'รออนุมัติ' : 'ยกเลิก');
+            document.getElementById('viewBookingStatus').innerHTML = `<span class="status-badge ${b.status === 'confirmed' ? 'confirmed' : (b.status === 'pending' ? 'pending' : 'cancelled')}">${statusText}</span>`;
+
+            const createdDate = new Date(b.created_at).toLocaleString('th-TH');
+            document.getElementById('viewBookingCreatedAt').innerText = createdDate;
+
+            viewBookingModalWrapper.show();
         }
 
         async function deleteBooking(id) {
