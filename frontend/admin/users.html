@@ -413,7 +413,8 @@
                 <h1><i class="bi bi-people me-2"></i>จัดการผู้ใช้</h1>
                 <p style="margin:0; color:#6c7293; font-size:0.9rem;">จัดการข้อมูลผู้ใช้งานในระบบ</p>
             </div>
-            <button class="btn-gradient"><i class="bi bi-person-plus me-2"></i>เพิ่มผู้ใช้ใหม่</button>
+            <button class="btn-gradient" onclick="openUserModal()"><i
+                    class="bi bi-person-plus me-2"></i>เพิ่มผู้ใช้ใหม่</button>
         </header>
 
         <div class="stats-row">
@@ -435,7 +436,7 @@
                 <div class="stat-mini-icon staff"><i class="bi bi-person-badge"></i></div>
                 <div>
                     <h3>456</h3>
-                    <p>บุคลากร</p>
+                    <p>อาจารย์</p>
                 </div>
             </div>
             <div class="stat-mini">
@@ -451,10 +452,10 @@
             <div class="filter-bar">
                 <input type="text" id="searchInput" class="form-control" placeholder="ค้นหาชื่อ, รหัส, อีเมล..."
                     style="max-width:280px;">
-                <select id="typeFilter" class="form-select" style="max-width:160px;">
+                <select id="typeFilter" class="form-select" style="max-width:140px;">
                     <option value="">ประเภททั้งหมด</option>
                     <option value="student">นักศึกษา</option>
-                    <option value="staff">บุคลากร</option>
+                    <option value="staff">อาจารย์</option>
                     <option value="external">บุคคลภายนอก</option>
                     <option value="admin">ผู้ดูแลระบบ</option>
                 </select>
@@ -462,7 +463,7 @@
                     title="ระบบยังไม่รองรับการจัดการสถานะในขณะนี้">
                     <option value="">สถานะทั้งหมด</option>
                     <option value="active">ใช้งานอยู่</option>
-                    <option value="inactive">ไม่ใช้งาน</option>
+                    <option value="suspended">ระงับการใช้งาน</option>
                 </select>
                 <button id="searchBtn" class="btn-gradient"><i class="bi bi-search"></i> ค้นหา</button>
             </div>
@@ -495,8 +496,143 @@
             </div>
         </div>
     </main>
+
+    <!-- User Modal (Add/Edit) -->
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalTitle">เพิ่มผู้ใช้ใหม่</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <input type="hidden" id="userId">
+                        <div class="mb-3">
+                            <label class="form-label">ชื่อ-นามสกุล <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="userFullName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">อีเมล <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="userEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" id="passwordLabel">รหัสผ่าน <span class="text-danger"
+                                    id="passwordReq">*</span></label>
+                            <input type="password" class="form-control" id="userPassword"
+                                placeholder="รหัสผ่าน (เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน)">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">ประเภทผู้ใช้ <span class="text-danger">*</span></label>
+                                <select class="form-select" id="userType" required>
+                                    <option value="student">นักศึกษา</option>
+                                    <option value="staff">อาจารย์</option>
+                                    <option value="external">บุคคลภายนอก</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">สิทธิ์ <span class="text-danger">*</span></label>
+                                <select class="form-select" id="userRole" required>
+                                    <option value="user">ผู้ใช้ทั่วไป</option>
+                                    <option value="admin">ผู้ดูแลระบบ</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">รหัสนักศึกษา (ถ้ามี)</label>
+                                <input type="text" class="form-control" id="userStudentId">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">เบอร์โทรศัพท์ (ถ้ามี)</label>
+                                <input type="text" class="form-control" id="userPhone">
+                            </div>
+                        </div>
+                        <div class="mb-3" id="statusContainer" style="display: none;">
+                            <label class="form-label">สถานะการใช้งาน</label>
+                            <select class="form-select" id="userStatus">
+                                <option value="active">ใช้งานอยู่</option>
+                                <option value="suspended">ระงับการใช้งาน</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUser()"
+                        style="background: var(--primary-gradient); border: none;">บันทึก</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View User Modal -->
+    <div class="modal fade" id="viewUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ข้อมูลผู้ใช้</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <div class="stat-mini-icon mx-auto mb-2" id="viewUserAvatar"
+                            style="width: 80px; height: 80px; font-size: 2.5rem; background: var(--primary-gradient);">
+                            <i class="bi bi-person"></i>
+                        </div>
+                        <h4 id="viewUserName" class="mb-1"></h4>
+                        <p id="viewUserRoleBadge" class="mb-0"></p>
+                    </div>
+                    <table class="table table-bordered">
+                        <tbody>
+                            <tr>
+                                <th width="35%">อีเมล</th>
+                                <td id="viewUserEmail"></td>
+                            </tr>
+                            <tr>
+                                <th>รหัสนักศึกษา/อาจารย์</th>
+                                <td id="viewUserStudentId"></td>
+                            </tr>
+                            <tr>
+                                <th>เบอร์โทรศัพท์</th>
+                                <td id="viewUserPhone"></td>
+                            </tr>
+                            <tr>
+                                <th>ประเภทผู้ใช้</th>
+                                <td id="viewUserType"></td>
+                            </tr>
+                            <tr>
+                                <th>สิทธิ์การใช้งาน</th>
+                                <td id="viewUserRole"></td>
+                            </tr>
+                            <tr>
+                                <th>สถานะการใช้งาน</th>
+                                <td id="viewUserStatus"></td>
+                            </tr>
+                            <tr>
+                                <th>วันที่สมัคร</th>
+                                <td id="viewUserCreated"></td>
+                            </tr>
+                            <tr>
+                                <th>จำนวนการจองทั้งหมด</th>
+                                <td id="viewUserBookings"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        let userModalWrapper;
+        let viewUserModalWrapper;
+
         document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('adminToken');
             if (!token) {
@@ -512,7 +648,7 @@
             const getRoleBadge = (type) => {
                 switch (type) {
                     case 'student': return '<span class="role-badge student">นักศึกษา</span>';
-                    case 'staff': return '<span class="role-badge staff">บุคลากร</span>';
+                    case 'staff': return '<span class="role-badge staff">อาจารย์</span>';
                     case 'external': return '<span class="role-badge external">บุคคลภายนอก</span>';
                     case 'admin': return '<span class="role-badge admin">ผู้ดูแลระบบ</span>';
                     default: return `<span class="role-badge">${type}</span>`;
@@ -531,7 +667,12 @@
 
                     let url = '/api/admin/users?';
                     if (search) url += `search=${encodeURIComponent(search)}&`;
-                    if (type) url += `type=${encodeURIComponent(type)}`;
+                    if (type) url += `type=${encodeURIComponent(type)}&`;
+
+                    // Remove trailing & if no more params
+                    if (url.endsWith('&')) {
+                        url = url.slice(0, -1);
+                    }
 
                     tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>';
 
@@ -556,6 +697,7 @@
                         }
 
                         result.users.forEach(user => {
+                            const userJson = JSON.stringify(user).replace(/'/g, "&#39;");
                             const tr = document.createElement('tr');
                             tr.innerHTML = `
                                 <td>
@@ -569,9 +711,11 @@
                                 <td>${user.email}</td>
                                 <td>${getRoleBadge(user.user_type)}</td>
                                 <td>${user.role === 'admin' ? '-' : (user.total_bookings + ' ครั้ง')}</td>
-                                <td><span class="status-dot active"></span>ใช้งานอยู่</td>
+                                <td><span class="status-dot active"></span><span class="text-success">ใช้งานอยู่</span></td>
                                 <td>
                                     <div class="action-btns">
+                                        <button class="action-btn view" title="ดูข้อมูล" onclick="openViewUserModal(this.dataset.user)" data-user='${userJson}'><i class="bi bi-eye"></i></button>
+                                        <button class="action-btn edit" title="แก้ไข" onclick="openUserModal(this.dataset.user)" data-user='${userJson}'><i class="bi bi-pencil"></i></button>
                                         <button class="action-btn delete" onclick="deleteUser(${user.id}, '${user.full_name}')" title="ลบผู้ใช้"><i class="bi bi-trash"></i></button>
                                     </div>
                                 </td>
@@ -593,6 +737,127 @@
                 if (e.key === 'Enter') fetchUsers();
             });
             typeFilter.addEventListener('change', fetchUsers);
+
+            // document.getElementById('statusFilter').addEventListener('change', fetchUsers); // Removed
+
+            userModalWrapper = new bootstrap.Modal(document.getElementById('userModal'));
+            viewUserModalWrapper = new bootstrap.Modal(document.getElementById('viewUserModal'));
+
+            window.openUserModal = (userDataStr = null) => {
+                let user = null;
+                if (userDataStr) {
+                    try {
+                        user = typeof userDataStr === 'string' ? JSON.parse(userDataStr) : userDataStr;
+                    } catch (e) { console.error('Error parsing user data:', e); return; }
+                }
+
+                document.getElementById('userId').value = user ? user.id : '';
+                document.getElementById('userFullName').value = user ? user.full_name : '';
+                document.getElementById('userEmail').value = user ? user.email : '';
+                document.getElementById('userType').value = user ? user.user_type : 'student';
+                document.getElementById('userRole').value = user ? user.role : 'user';
+                document.getElementById('userStudentId').value = user ? (user.student_id || '') : '';
+                document.getElementById('userPhone').value = user ? (user.phone || '') : '';
+                // const userStatusSelect = document.getElementById('userStatus'); // Removed
+                // const statusContainer = document.getElementById('statusContainer'); // Removed
+
+                const pwdInput = document.getElementById('userPassword');
+                const pwdReq = document.getElementById('passwordReq');
+
+                if (user) {
+                    document.getElementById('userModalTitle').innerText = 'แก้ไขผู้ใช้';
+                    pwdInput.placeholder = 'รหัสผ่าน (เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน)';
+                    pwdInput.required = false;
+                    pwdReq.style.display = 'none';
+                    // statusContainer.style.display = 'block'; // Removed
+                    // userStatusSelect.value = user.status || 'active'; // Removed
+                } else {
+                    document.getElementById('userModalTitle').innerText = 'เพิ่มผู้ใช้ใหม่';
+                    pwdInput.placeholder = 'รหัสผ่านใหม่';
+                    pwdInput.required = true;
+                    pwdReq.style.display = 'inline';
+                    // statusContainer.style.display = 'none'; // Removed
+                    // userStatusSelect.value = 'active'; // Removed
+                }
+
+                pwdInput.value = ''; // Always clear password on open
+                userModalWrapper.show();
+            };
+
+            window.openViewUserModal = (userDataStr) => {
+                try {
+                    const user = typeof userDataStr === 'string' ? JSON.parse(userDataStr) : userDataStr;
+
+                    document.getElementById('viewUserName').innerText = user.full_name;
+                    document.getElementById('viewUserRoleBadge').innerHTML = getRoleBadge(user.user_type);
+                    document.getElementById('viewUserEmail').innerText = user.email || '-';
+                    document.getElementById('viewUserStudentId').innerText = user.student_id || '-';
+                    document.getElementById('viewUserPhone').innerText = user.phone || '-';
+
+                    let userTypeText = 'นักศึกษา';
+                    if (user.user_type === 'staff') userTypeText = 'อาจารย์';
+                    if (user.user_type === 'external') userTypeText = 'บุคคลภายนอก';
+                    document.getElementById('viewUserType').innerText = userTypeText;
+
+                    document.getElementById('viewUserRole').innerText = user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้ทั่วไป';
+                    document.getElementById('viewUserCreated').innerText = formatDate(user.created_at);
+                    document.getElementById('viewUserBookings').innerText = user.role === 'admin' ? '-' : (user.total_bookings + ' ครั้ง');
+
+                    const statusText = '<span class="text-success">ใช้งานอยู่</span>';
+                    document.getElementById('viewUserStatus').innerHTML = statusText;
+
+                    viewUserModalWrapper.show();
+                } catch (e) {
+                    console.error('Error parsing user data:', e);
+                }
+            };
+
+            window.saveUser = async () => {
+                const id = document.getElementById('userId').value;
+                const full_name = document.getElementById('userFullName').value.trim();
+                const email = document.getElementById('userEmail').value.trim();
+                const password = document.getElementById('userPassword').value;
+                const user_type = document.getElementById('userType').value;
+                const role = document.getElementById('userRole').value;
+                const student_id = document.getElementById('userStudentId').value.trim();
+                const phone = document.getElementById('userPhone').value.trim();
+
+                if (!full_name || !email || !user_type || !role) {
+                    alert('กรุณากรอกข้อมูลที่จำเป็น (*) ให้ครบถ้วน');
+                    return;
+                }
+
+                if (!id && !password) {
+                    alert('กรุณากำหนดรหัสผ่านสำหรับผู้ใช้ใหม่');
+                    return;
+                }
+
+                const url = id ? `/api/admin/users/${id}` : '/api/admin/users';
+                const method = id ? 'PUT' : 'POST';
+
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ full_name, email, password, user_type, role, student_id, phone })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        userModalWrapper.hide();
+                        fetchUsers(); // Refresh the list
+                    } else {
+                        alert('ข้อผิดพลาด: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Save user error:', error);
+                    alert('เกิดข้อผิดพลาดในการบันทึกข้อมูลผู้ใช้');
+                }
+            };
 
             window.deleteUser = async (id, name) => {
                 if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้ "${name}"? ข้อมูลที่เกี่ยวข้องจะถูกลบทั้งหมด`)) {

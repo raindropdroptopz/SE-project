@@ -85,7 +85,7 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
 // ===============================================
 router.get('/users', authenticateAdmin, async (req, res) => {
     try {
-        const { search, type, status } = req.query;
+        const { search, type } = req.query;
         let query = `
             SELECT 
                 u.id, u.email, u.full_name, u.student_id, u.phone, u.user_type, u.role, u.created_at,
@@ -494,6 +494,288 @@ router.get('/receipts', authenticateAdmin, async (req, res) => {
     } catch (error) {
         console.error('Get receipts error:', error);
         res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการโหลดใบเสร็จ' });
+    }
+});
+
+// ===============================================
+// GET /api/admin/equipment-borrows - รายงานการยืม-คืนอุปกรณ์
+// ===============================================
+router.get('/equipment-borrows', authenticateAdmin, async (req, res) => {
+    try {
+        const { search, equipment, status, date } = req.query;
+
+        // 1. Calculate Stats
+        const [[{ total }]] = await db.execute('SELECT COUNT(*) as total FROM equipment_bookings');
+        const [[{ borrowed }]] = await db.execute(`SELECT COUNT(*) as borrowed FROM equipment_bookings WHERE status IN ('pending', 'borrowed')`);
+        const [[{ returned }]] = await db.execute(`SELECT COUNT(*) as returned FROM equipment_bookings WHERE status = 'returned'`);
+        const [[{ overdue }]] = await db.execute(`SELECT COUNT(*) as overdue FROM equipment_bookings WHERE status = 'overdue'`);
+
+        // 2. Build Query for Data
+        let query = `
+            SELECT 
+                eb.id as borrow_id,
+                CONCAT('BR', LPAD(eb.id, 4, '0')) as borrow_ref,
+                u.full_name as user_name,
+                u.student_id,
+                e.name as equipment_name,
+                eb.quantity,
+                eb.borrow_date,
+                eb.return_date,
+                eb.status
+            FROM equipment_bookings eb
+            JOIN users u ON eb.user_id = u.id
+            JOIN equipment e ON eb.equipment_id = e.id
+            WHERE 1=1
+        `;
+        const queryParams = [];
+
+        if (search) {
+            query += ` AND (CONCAT('BR', LPAD(eb.id, 4, '0')) LIKE ? 
+                        OR u.full_name LIKE ? 
+                        OR u.student_id LIKE ?)`;
+            const searchPattern = `%${search}%`;
+            queryParams.push(searchPattern, searchPattern, searchPattern);
+        }
+
+        if (equipment) {
+            query += ` AND e.name = ?`;
+            queryParams.push(equipment);
+        }
+
+        if (status) {
+            if (status === 'กำลังยืม') {
+                query += ` AND eb.status IN ('pending', 'borrowed')`;
+            } else if (status === 'คืนแล้ว') {
+                query += ` AND eb.status = 'returned'`;
+            } else if (status === 'เกินกำหนด') {
+                query += ` AND eb.status = 'overdue'`;
+            }
+        }
+
+        if (date) {
+            query += ` AND eb.borrow_date = ?`;
+            queryParams.push(date);
+        }
+
+        query += ` ORDER BY eb.borrow_date DESC, eb.id DESC`;
+
+        const [borrows] = await db.execute(query, queryParams);
+
+        res.json({
+            success: true,
+            stats: {
+                total: total || 0,
+                borrowed: borrowed || 0,
+                returned: returned || 0,
+                overdue: overdue || 0
+            },
+            borrows
+        });
+
+    } catch (error) {
+        console.error('Get equipment borrows error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการโหลดรายงานการยืม' });
+    }
+});
+
+// ===============================================
+// POST /api/admin/equipment - เพิ่มอุปกรณ์ใหม่
+// ===============================================
+router.post('/equipment', authenticateAdmin, async (req, res) => {
+    try {
+        const { name, description, category, stock, image_url } = req.body;
+
+        if (!name || stock === undefined) {
+            return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
+        }
+
+        const parsedStock = parseInt(stock, 10);
+        const STATUS = parsedStock > 2 ? 'available' : (parsedStock > 0 ? 'low' : 'out');
+
+        const [result] = await db.execute(`
+            INSERT INTO equipment (name, description, category, stock, available, status, image_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [
+            name,
+            description || '',
+            category || 'อื่นๆ',
+            parsedStock,
+            parsedStock,
+            STATUS,
+            image_url || '/photo/default.jpg'
+        ]);
+
+        res.status(201).json({ success: true, message: 'เพิ่มอุปกรณ์สำเร็จ', id: result.insertId });
+
+    } catch (error) {
+        console.error('Add equipment error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการเพิ่มอุปกรณ์' });
+    }
+});
+
+// ===============================================
+// PUT /api/admin/equipment/:id - แก้ไขอุปกรณ์
+// ===============================================
+router.put('/equipment/:id', authenticateAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, description, category, stock, image_url } = req.body;
+
+        if (!name || stock === undefined) {
+            return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
+        }
+
+        // Fetch current to calculate new available
+        const [currentEq] = await db.execute('SELECT stock, available FROM equipment WHERE id = ?', [id]);
+        if (currentEq.length === 0) {
+            return res.status(404).json({ success: false, message: 'ไม่พบอุปกรณ์' });
+        }
+
+        const oldStock = currentEq[0].stock;
+        const oldAvailable = currentEq[0].available;
+        const parsedStock = parseInt(stock, 10);
+
+        // New available = Old Available + (New Stock - Old Stock)
+        let newAvailable = oldAvailable + (parsedStock - oldStock);
+        if (newAvailable < 0) newAvailable = 0; // Prevent negative if they decrease stock below borrowed amount
+
+        const STATUS = newAvailable > 2 ? 'available' : (newAvailable > 0 ? 'low' : 'out');
+
+        await db.execute(`
+            UPDATE equipment 
+            SET name = ?, description = ?, category = ?, stock = ?, available = ?, status = ?, image_url = ?
+            WHERE id = ?
+        `, [
+            name,
+            description || '',
+            category || 'อื่นๆ',
+            parsedStock,
+            newAvailable,
+            STATUS,
+            image_url || '/photo/default.jpg',
+            id
+        ]);
+
+        res.json({ success: true, message: 'อัปเดตอุปกรณ์สำเร็จ' });
+
+    } catch (error) {
+        console.error('Update equipment error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการแก้ไขอุปกรณ์' });
+    }
+});
+
+// ===============================================
+// DELETE /api/admin/equipment/:id - ลบอุปกรณ์
+// ===============================================
+router.delete('/equipment/:id', authenticateAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [result] = await db.execute('DELETE FROM equipment WHERE id = ?', [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'ไม่พบอุปกรณ์ที่ต้องการลบ' });
+        }
+
+        res.json({ success: true, message: 'ลบอุปกรณ์สำเร็จ' });
+
+    } catch (error) {
+        console.error('Delete equipment error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการลบอุปกรณ์' });
+    }
+});
+
+// ===============================================
+// POST /api/admin/users - เพิ่มผู้ใช้ใหม่
+// ===============================================
+router.post('/users', authenticateAdmin, async (req, res) => {
+    try {
+        const { email, password, full_name, student_id, phone, user_type, role } = req.body;
+
+        if (!email || !password || !full_name || !user_type || !role) {
+            return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน' });
+        }
+
+        // Check if email or student ID already exists
+        const [existing] = await db.execute('SELECT id FROM users WHERE email = ?', [email]);
+        if (existing.length > 0) {
+            return res.status(400).json({ success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว' });
+        }
+
+        if (student_id) {
+            const [existingStudentId] = await db.execute('SELECT id FROM users WHERE student_id = ?', [student_id]);
+            if (existingStudentId.length > 0) {
+                return res.status(400).json({ success: false, message: 'รหัสนักศึกษานี้ถูกใช้งานแล้ว' });
+            }
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const [result] = await db.execute(`
+            INSERT INTO users (email, password, full_name, student_id, phone, user_type, role)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [
+            email,
+            hashedPassword,
+            full_name,
+            student_id || null,
+            phone || null,
+            user_type,
+            role
+        ]);
+
+        res.status(201).json({ success: true, message: 'เพิ่มผู้ใช้สำเร็จ', id: result.insertId });
+
+    } catch (error) {
+        console.error('Add user error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการเพิ่มผู้ใช้' });
+    }
+});
+
+// ===============================================
+// PUT /api/admin/users/:id - แก้ไขผู้ใช้
+// ===============================================
+router.put('/users/:id', authenticateAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { email, password, full_name, student_id, phone, user_type, role } = req.body;
+
+        if (!email || !full_name || !user_type || !role) {
+            return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน' });
+        }
+
+        // Only checking if changing email conflicts with ANOTHER user
+        const [existing] = await db.execute('SELECT id FROM users WHERE email = ? AND id != ?', [email, id]);
+        if (existing.length > 0) {
+            return res.status(400).json({ success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว' });
+        }
+
+        let query = `
+            UPDATE users 
+            SET email = ?, full_name = ?, student_id = ?, phone = ?, user_type = ?, role = ?
+        `;
+        let params = [email, full_name, student_id || null, phone || null, user_type, role];
+
+        if (password && password.trim() !== '') {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            query += `, password = ?`;
+            params.push(hashedPassword);
+        }
+
+        query += ` WHERE id = ?`;
+        params.push(id);
+
+        const [result] = await db.execute(query, params);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'ไม่พบผู้ใช้ที่ต้องการแก้ไข' });
+        }
+
+        res.json({ success: true, message: 'อัปเดตผู้ใช้สำเร็จ' });
+
+    } catch (error) {
+        console.error('Update user error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการแก้ไขผู้ใช้' });
     }
 });
 

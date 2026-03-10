@@ -41,35 +41,35 @@
                 <h1><i class="bi bi-clipboard-data me-2"></i>รายงานการยืม</h1>
                 <p style="margin:0; color:#6c7293; font-size:0.9rem;">ติดตามการยืม-คืนอุปกรณ์</p>
             </div>
-            <button class="btn-gradient"><i class="bi bi-download me-2"></i>Export รายงาน</button>
+            <button id="exportBtn" class="btn-gradient"><i class="bi bi-download me-2"></i>Export รายงาน</button>
         </header>
 
         <div class="stats-row">
             <div class="stat-mini">
                 <div class="stat-mini-icon total"><i class="bi bi-arrow-left-right"></i></div>
                 <div>
-                    <h3>245</h3>
+                    <h3 id="statTotal">0</h3>
                     <p>การยืมทั้งหมด</p>
                 </div>
             </div>
             <div class="stat-mini">
                 <div class="stat-mini-icon pending"><i class="bi bi-hourglass-split"></i></div>
                 <div>
-                    <h3>28</h3>
+                    <h3 id="statBorrowed">0</h3>
                     <p>กำลังยืม</p>
                 </div>
             </div>
             <div class="stat-mini">
                 <div class="stat-mini-icon income"><i class="bi bi-check-circle"></i></div>
                 <div>
-                    <h3>210</h3>
+                    <h3 id="statReturned">0</h3>
                     <p>คืนแล้ว</p>
                 </div>
             </div>
             <div class="stat-mini">
                 <div class="stat-mini-icon expense"><i class="bi bi-exclamation-triangle"></i></div>
                 <div>
-                    <h3>7</h3>
+                    <h3 id="statOverdue">0</h3>
                     <p>เกินกำหนด</p>
                 </div>
             </div>
@@ -77,22 +77,24 @@
 
         <div class="content-card">
             <div class="filter-bar">
-                <input type="text" class="form-control" placeholder="ค้นหาผู้ยืม..." style="max-width:230px;">
-                <select class="form-select" style="max-width:160px;">
+                <input type="text" id="searchInput" class="form-control" placeholder="ค้นหารหัส, ผู้ยืม..."
+                    style="max-width:230px;">
+                <select id="equipmentFilter" class="form-select" style="max-width:160px;">
                     <option value="">อุปกรณ์ทั้งหมด</option>
-                    <option>ลูกฟุตบอล</option>
-                    <option>ลูกบาสเกตบอล</option>
-                    <option>ไม้เทนนิส</option>
-                    <option>ไม้แบดมินตัน</option>
+                    <option value="ลูกฟุตบอล">ลูกฟุตบอล</option>
+                    <option value="ลูกบาสเกตบอล">ลูกบาสเกตบอล</option>
+                    <option value="ไม้เทนนิส">ไม้เทนนิส</option>
+                    <option value="ไม้แบดมินตัน">ไม้แบดมินตัน</option>
+                    <option value="ลูกวอลเลย์บอล">ลูกวอลเลย์บอล</option>
                 </select>
-                <select class="form-select" style="max-width:140px;">
+                <select id="statusFilter" class="form-select" style="max-width:140px;">
                     <option value="">สถานะทั้งหมด</option>
-                    <option>กำลังยืม</option>
-                    <option>คืนแล้ว</option>
-                    <option>เกินกำหนด</option>
+                    <option value="กำลังยืม">กำลังยืม</option>
+                    <option value="คืนแล้ว">คืนแล้ว</option>
+                    <option value="เกินกำหนด">เกินกำหนด</option>
                 </select>
-                <input type="date" class="form-control" style="max-width:160px;">
-                <button class="btn-gradient"><i class="bi bi-search"></i></button>
+                <input type="date" id="dateInput" class="form-control" style="max-width:160px;">
+                <button id="searchBtn" class="btn-gradient"><i class="bi bi-search"></i> ค้นหา</button>
             </div>
 
             <table class="table-custom">
@@ -108,89 +110,9 @@
                         <th>การจัดการ</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="borrowsTableBody">
                     <tr>
-                        <td><strong>#BR001</strong></td>
-                        <td>
-                            <div class="user-cell"><img
-                                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100">
-                                <div class="user-cell-info">
-                                    <h6>สมชาย ใจดี</h6><span>6512345</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>ลูกฟุตบอล</td>
-                        <td>2</td>
-                        <td>3 ก.พ. 2026</td>
-                        <td>3 ก.พ. 2026</td>
-                        <td><span class="status-badge borrowed">กำลังยืม</span></td>
-                        <td>
-                            <div class="action-btns"><button class="action-btn view"><i
-                                        class="bi bi-eye"></i></button><button class="action-btn edit" title="รับคืน"><i
-                                        class="bi bi-check-lg"></i></button></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><strong>#BR002</strong></td>
-                        <td>
-                            <div class="user-cell"><img
-                                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100">
-                                <div class="user-cell-info">
-                                    <h6>สมหญิง รักเรียน</h6><span>6523456</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>ไม้แบดมินตัน</td>
-                        <td>2</td>
-                        <td>2 ก.พ. 2026</td>
-                        <td>2 ก.พ. 2026</td>
-                        <td><span class="status-badge returned">คืนแล้ว</span></td>
-                        <td>
-                            <div class="action-btns"><button class="action-btn view"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><strong>#BR003</strong></td>
-                        <td>
-                            <div class="user-cell"><img
-                                    src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100">
-                                <div class="user-cell-info">
-                                    <h6>ประเสริฐ มั่งมี</h6><span>6534567</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>ลูกบาสเกตบอล</td>
-                        <td>1</td>
-                        <td>28 ม.ค. 2026</td>
-                        <td>28 ม.ค. 2026</td>
-                        <td><span class="status-badge overdue">เกินกำหนด</span></td>
-                        <td>
-                            <div class="action-btns"><button class="action-btn view"><i
-                                        class="bi bi-eye"></i></button><button class="action-btn edit" title="รับคืน"><i
-                                        class="bi bi-check-lg"></i></button><button class="action-btn delete"
-                                    title="แจ้งเตือน"><i class="bi bi-bell"></i></button></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><strong>#BR004</strong></td>
-                        <td>
-                            <div class="user-cell"><img
-                                    src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100">
-                                <div class="user-cell-info">
-                                    <h6>วิภา สดใส</h6><span>6545678</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>ไม้เทนนิส</td>
-                        <td>2</td>
-                        <td>1 ก.พ. 2026</td>
-                        <td>1 ก.พ. 2026</td>
-                        <td><span class="status-badge returned">คืนแล้ว</span></td>
-                        <td>
-                            <div class="action-btns"><button class="action-btn view"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
+                        <td colspan="8" class="text-center py-4">กำลังโหลดข้อมูล...</td>
                     </tr>
                 </tbody>
             </table>
@@ -202,6 +124,181 @@
         </div>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const token = localStorage.getItem('adminToken');
+        if (!token) window.location.href = '/login.html';
+
+        let currentBorrows = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchBorrows();
+
+            document.getElementById('searchBtn').addEventListener('click', fetchBorrows);
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') fetchBorrows();
+            });
+            document.getElementById('equipmentFilter').addEventListener('change', fetchBorrows);
+            document.getElementById('statusFilter').addEventListener('change', fetchBorrows);
+            document.getElementById('dateInput').addEventListener('change', fetchBorrows);
+            document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+        });
+
+        async function fetchBorrows() {
+            try {
+                const search = document.getElementById('searchInput').value.trim();
+                const equipment = document.getElementById('equipmentFilter').value;
+                const status = document.getElementById('statusFilter').value;
+                const date = document.getElementById('dateInput').value;
+
+                let url = '/api/admin/equipment-borrows?';
+                if (search) url += `search=${encodeURIComponent(search)}&`;
+                if (equipment) url += `equipment=${encodeURIComponent(equipment)}&`;
+                if (status) url += `status=${encodeURIComponent(status)}&`;
+                if (date) url += `date=${encodeURIComponent(date)}`;
+
+                const tbody = document.getElementById('borrowsTableBody');
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>';
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    alert('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+                    localStorage.removeItem('adminToken');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update Stats
+                    document.getElementById('statTotal').textContent = data.stats.total;
+                    document.getElementById('statBorrowed').textContent = data.stats.borrowed;
+                    document.getElementById('statReturned').textContent = data.stats.returned;
+                    document.getElementById('statOverdue').textContent = data.stats.overdue;
+
+                    currentBorrows = data.borrows;
+                    renderTable(currentBorrows);
+                } else {
+                    currentBorrows = [];
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-danger">ไม่สามารถโหลดข้อมูลได้</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error fetching borrow reports:', error);
+                document.getElementById('borrowsTableBody').innerHTML = '<tr><td colspan="8" class="text-center py-4 text-danger">เกิดข้อผิดพลาดในการเชื่อมต่อ</td></tr>';
+            }
+        }
+
+        function exportToCSV() {
+            if (!currentBorrows || currentBorrows.length === 0) {
+                alert('ไม่มีข้อมูลให้ Export');
+                return;
+            }
+
+            // Define headers
+            const headers = ['รหัสการยืม', 'ชื่อผู้ยืม', 'รหัสนักศึกษา/พนักงาน', 'อุปกรณ์', 'จำนวน', 'วันที่ยืม', 'กำหนดคืน', 'สถานะ'];
+
+            // Map data to rows
+            const rows = currentBorrows.map(b => {
+                const borrowDate = new Date(b.borrow_date).toLocaleDateString('th-TH');
+                const returnDate = b.return_date ? new Date(b.return_date).toLocaleDateString('th-TH') : '-';
+                const statusInfo = getStatusInfo(b.status);
+
+                return [
+                    `#${b.borrow_ref}`,
+                    `"${b.user_name}"`,
+                    b.student_id ? `"${b.student_id}"` : '-',
+                    `"${b.equipment_name}"`,
+                    b.quantity,
+                    borrowDate,
+                    returnDate,
+                    statusInfo.label
+                ].join(',');
+            });
+
+            // Combine headers and rows
+            const csvContent = headers.join(',') + '\n' + rows.join('\n');
+
+            // Create a Blob with BOM for Thai Excel support
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            // Create a temp link to download
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `borrow_reports_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function getStatusInfo(dbStatus) {
+            switch (dbStatus) {
+                case 'pending': return { label: 'กำลังคิว/รอยืนยัน', class: 'pending' };
+                case 'borrowed': return { label: 'กำลังยืม', class: 'borrowed' };
+                case 'returned': return { label: 'คืนแล้ว', class: 'returned' };
+                case 'overdue': return { label: 'เกินกำหนด', class: 'overdue' };
+                default: return { label: dbStatus, class: '' };
+            }
+        }
+
+        function renderTable(borrows) {
+            const tbody = document.getElementById('borrowsTableBody');
+
+            if (borrows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">ไม่พบข้อมูลการยืมอุปกรณ์</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = borrows.map(b => {
+                const borrowDate = new Date(b.borrow_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+                const returnDate = b.return_date ? new Date(b.return_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+                const statusInfo = getStatusInfo(b.status);
+
+                let actions = `<button class="action-btn view" title="ดูรายละเอียด"><i class="bi bi-eye"></i></button>`;
+
+                // Show return button if currently borrowed or pending
+                if (b.status === 'borrowed' || b.status === 'pending' || b.status === 'overdue') {
+                    actions += `<button class="action-btn edit" title="รับคืน"><i class="bi bi-check-lg"></i></button>`;
+                }
+
+                if (b.status === 'overdue') {
+                    actions += `<button class="action-btn delete" title="แจ้งเตือน"><i class="bi bi-bell"></i></button>`;
+                }
+
+                // Generative Avatar based on Student ID or Name to look realistic
+                const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(b.user_name)}&background=random`;
+
+                return `
+                    <tr>
+                        <td><strong>#${b.borrow_ref}</strong></td>
+                        <td>
+                            <div class="user-cell">
+                                <img src="${avatarUrl}" alt="${b.user_name}">
+                                <div class="user-cell-info">
+                                    <h6>${b.user_name}</h6>
+                                    <span>${b.student_id || '-'}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${b.equipment_name}</td>
+                        <td>${b.quantity}</td>
+                        <td>${borrowDate}</td>
+                        <td>${returnDate}</td>
+                        <td><span class="status-badge ${statusInfo.class}">${statusInfo.label}</span></td>
+                        <td>
+                            <div class="action-btns">
+                                ${actions}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    </script>
 </body>
 
 </html>

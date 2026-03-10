@@ -21,15 +21,62 @@ const authenticateToken = (req, res, next) => {
 };
 
 // ===============================================
-// GET /api/equipment - ดึงรายการอุปกรณ์ทั้งหมด
+// GET /api/equipment - ดึงรายการอุปกรณ์ทั้งหมด (พร้อมค้นหา/กรอง)
 // ===============================================
 router.get('/', async (req, res) => {
     try {
-        const [equipment] = await db.execute(`
-            SELECT * FROM equipment ORDER BY category, name
-        `);
+        const { search, category, status } = req.query;
 
-        res.json({ success: true, equipment });
+        // 1. Calculate Stats (Calculate total independently of filters)
+        const [[{ totalEquip }]] = await db.execute('SELECT COALESCE(SUM(stock), 0) as totalEquip FROM equipment');
+        const [[{ totalAvailable }]] = await db.execute('SELECT COALESCE(SUM(available), 0) as totalAvailable FROM equipment');
+
+        // Assuming every item not available is "borrowed" (since we don't track maintenance specifically yet in stock)
+        const totalBorrowed = totalEquip - totalAvailable;
+
+        // Note: For the "Maintenance" stat, if we ever add a specific status for it, we'd query it here. 
+        // Currently setting to 0.
+        const totalMaintenance = 0;
+
+        // 2. Build Query for Data
+        let query = 'SELECT * FROM equipment WHERE 1=1';
+        const queryParams = [];
+
+        if (search) {
+            query += ` AND (name LIKE ? OR description LIKE ?)`;
+            const searchPattern = `%${search}%`;
+            queryParams.push(searchPattern, searchPattern);
+        }
+
+        if (category) {
+            query += ` AND category = ?`;
+            queryParams.push(category);
+        }
+
+        if (status) {
+            if (status === 'พร้อมใช้งาน') {
+                query += ` AND status = 'available'`;
+            } else if (status === 'เหลือน้อย') {
+                query += ` AND status = 'low'`;
+            } else if (status === 'หมด') {
+                query += ` AND status = 'out'`;
+            }
+        }
+
+        query += ' ORDER BY category, name';
+
+        const [equipment] = await db.execute(query, queryParams);
+
+        res.json({
+            success: true,
+            stats: {
+                total: totalEquip || 0,
+                available: totalAvailable || 0,
+                borrowed: totalBorrowed < 0 ? 0 : totalBorrowed,
+                maintenance: totalMaintenance
+            },
+            equipment
+        });
 
     } catch (error) {
         console.error('Get equipment error:', error);
