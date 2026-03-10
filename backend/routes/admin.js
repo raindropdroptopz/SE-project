@@ -52,6 +52,11 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
             "SELECT COUNT(*) as count FROM equipment_bookings WHERE status = 'borrowed'"
         );
 
+        // นับจำนวนการยืมอุปกรณ์ที่รออนุมัติ
+        const [pendingEquipmentBookings] = await db.execute(
+            "SELECT COUNT(*) as count FROM equipment_bookings WHERE status = 'pending'"
+        );
+
         // การจองล่าสุด 10 รายการ
         const [recentBookings] = await db.execute(`
             SELECT b.*, c.name as court_name, u.full_name as user_name
@@ -68,6 +73,7 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
                 totalUsers: users[0].count,
                 todayBookings: todayBookings[0].count,
                 pendingBookings: pendingBookings[0].count,
+                pendingEquipmentBookings: pendingEquipmentBookings[0].count,
                 totalBookings: totalBookings[0].count,
                 borrowedEquipment: borrowedEquipment[0].count
             },
@@ -483,9 +489,9 @@ router.get('/receipts', authenticateAdmin, async (req, res) => {
     try {
         const { search, date } = req.query;
 
-        let query = `
+        // Query 1: FROM BOOKINGS
+        let bookingQuery = `
             SELECT 
-                b.id as booking_id,
                 CONCAT('RC', YEAR(b.created_at), '-', LPAD(b.id, 4, '0')) as receipt_id,
                 u.full_name as user_name,
                 u.student_id,
@@ -494,37 +500,114 @@ router.get('/receipts', authenticateAdmin, async (req, res) => {
                 b.created_at as receipt_date,
                 (HOUR(b.end_time) - HOUR(b.start_time)) as hours_booked
             FROM bookings b
-            JOIN courts c ON b.court_id = c.id
             JOIN users u ON b.user_id = u.id
+            JOIN courts c ON b.court_id = c.id
             WHERE (b.status = 'confirmed' OR b.status = 'completed')
         `;
-        const queryParams = [];
+
+        // Query 2: FROM MANUAL RECEIPTS
+        // Creating table inside the query execution (or beforehand) using raw SQL check
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS manual_receipts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_name VARCHAR(255) NOT NULL,
+                student_id VARCHAR(20),
+                phone VARCHAR(20),
+                item_name VARCHAR(255) NOT NULL,
+                amount INT NOT NULL,
+                receipt_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        let manualQuery = `
+            SELECT 
+                CONCAT('MN', YEAR(m.receipt_date), '-', LPAD(m.id, 4, '0')) COLLATE utf8mb4_unicode_ci as receipt_id,
+                m.user_name COLLATE utf8mb4_unicode_ci as user_name,
+                m.student_id COLLATE utf8mb4_unicode_ci as student_id,
+                m.item_name COLLATE utf8mb4_unicode_ci as item_name,
+                m.amount,
+                m.receipt_date,
+                0 as hours_booked
+            FROM manual_receipts m
+            WHERE 1=1
+        `;
+
+        let bookingParams = [];
+        let manualParams = [];
 
         if (search) {
-            query += ` AND (CONCAT('RC', YEAR(b.created_at), '-', LPAD(b.id, 4, '0')) LIKE ? 
-                        OR u.full_name LIKE ? 
-                        OR c.name LIKE ?)`;
-            const searchPattern = `%${search}%`;
-            queryParams.push(searchPattern, searchPattern, searchPattern);
+            const searchParam = `%${search}%`;
+            bookingQuery += ` AND (u.full_name COLLATE utf8mb4_unicode_ci LIKE ? OR u.student_id COLLATE utf8mb4_unicode_ci LIKE ? OR CONCAT('RC', YEAR(b.created_at), '-', LPAD(b.id, 4, '0')) COLLATE utf8mb4_unicode_ci LIKE ?)`;
+            manualQuery += ` AND (m.user_name COLLATE utf8mb4_unicode_ci LIKE ? OR m.student_id COLLATE utf8mb4_unicode_ci LIKE ? OR CONCAT('MN', YEAR(m.receipt_date), '-', LPAD(m.id, 4, '0')) COLLATE utf8mb4_unicode_ci LIKE ?)`;
+            bookingParams.push(searchParam, searchParam, searchParam);
+            manualParams.push(searchParam, searchParam, searchParam);
         }
 
         if (date) {
-            query += ` AND DATE(b.created_at) = ?`;
-            queryParams.push(date);
+            bookingQuery += ` AND DATE(b.created_at) = ?`;
+            manualQuery += ` AND DATE(m.receipt_date) = ?`;
+            bookingParams.push(date);
+            manualParams.push(date);
         }
 
-        query += ` ORDER BY b.created_at DESC`;
+        const finalQuery = `
+            SELECT * FROM (${bookingQuery}) AS bqs 
+            UNION ALL 
+            SELECT * FROM (${manualQuery}) AS mqs
+            ORDER BY receipt_date DESC
+            LIMIT 100
+        `;
 
-        const [receipts] = await db.execute(query, queryParams);
+        const queryParams = [...bookingParams, ...manualParams];
 
-        res.json({
-            success: true,
-            receipts
-        });
+        const [receipts] = await db.execute(finalQuery, queryParams);
+
+        res.json({ success: true, receipts });
 
     } catch (error) {
         console.error('Get receipts error:', error);
-        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการโหลดใบเสร็จ' });
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    }
+});
+
+// ===============================================
+// POST /api/admin/receipts/manual - สร้างใบเสร็จด้วยตนเอง
+// ===============================================
+router.post('/receipts/manual', authenticateAdmin, async (req, res) => {
+    try {
+        const { user_name, student_id, phone, item_name, amount } = req.body;
+
+        if (!user_name || !item_name || amount === undefined) {
+            return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลที่จำเป็น (ชื่อ, รายการ, จำนวนเงิน)' });
+        }
+
+        // Ensure table exists
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS manual_receipts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_name VARCHAR(255) NOT NULL,
+                student_id VARCHAR(20),
+                phone VARCHAR(20),
+                item_name VARCHAR(255) NOT NULL,
+                amount INT NOT NULL,
+                receipt_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        const [result] = await db.execute(`
+            INSERT INTO manual_receipts (user_name, student_id, phone, item_name, amount)
+            VALUES (?, ?, ?, ?, ?)
+        `, [user_name, student_id || null, phone || null, item_name, amount]);
+
+        res.status(201).json({
+            success: true,
+            message: 'สร้างใบเสร็จสำเร็จ',
+            receiptId: result.insertId
+        });
+
+    } catch (error) {
+        console.error('Manual receipt error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการสร้างใบเสร็จ' });
     }
 });
 
