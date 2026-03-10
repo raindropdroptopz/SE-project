@@ -2,6 +2,26 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const db = require('../config/database');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// ตั้งค่าที่เก็บไฟล์อัปโหลดสลิปเงินโอน
+const uploadDir = path.join(__dirname, '../../frontend/uploads/receipts');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, 'receipt-' + Date.now() + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
 
 // Middleware ตรวจสอบ Token
 const authenticateToken = (req, res, next) => {
@@ -19,6 +39,50 @@ const authenticateToken = (req, res, next) => {
         return res.status(401).json({ success: false, message: 'Token ไม่ถูกต้อง' });
     }
 };
+
+// ===============================================
+// GET /api/bookings/slots - ดึงช่วงเวลาที่ถูกจองแล้วของสนามในวันที่กำหนด
+// ===============================================
+router.get('/slots', async (req, res) => {
+    try {
+        const { courtType, date } = req.query;
+
+        if (!courtType || !date) {
+            return res.status(400).json({ success: false, message: 'กรุณาระบุสนามและวันที่' });
+        }
+
+        // ค้นหา court_id จากชื่อ
+        const [courts] = await db.execute('SELECT id FROM courts WHERE name LIKE ?', [`%${courtType}%`]);
+        if (courts.length === 0) {
+            return res.status(404).json({ success: false, message: 'ไม่พบสนามกีฬา' });
+        }
+
+        const courtId = courts[0].id;
+
+        // ดึงการจองทั้งหมดของสนามนี้ในวันนี้ที่ไม่ได้ยกเลิก
+        const [bookings] = await db.execute(`
+            SELECT start_time, end_time 
+            FROM bookings 
+            WHERE court_id = ? 
+            AND booking_date = ? 
+            AND status != 'cancelled'
+        `, [courtId, date]);
+
+        // แปลงเวลาให้เป็น format "HH:mm-HH:mm" (เฉพาะชั่วโมงชั่วโมงชนชั่วโมง)
+        // เพราะ frontend ส่งมา format นี้: ['08:00-09:00', '09:00-10:00', ...]
+        const bookedSlots = bookings.map(b => {
+            const start = b.start_time.substring(0, 5); // เอาแค่ HH:mm
+            const end = b.end_time.substring(0, 5);
+            return `${start}-${end}`;
+        });
+
+        res.json({ success: true, bookedSlots });
+
+    } catch (error) {
+        console.error('Get booked slots error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    }
+});
 
 // ===============================================
 // GET /api/bookings - ดึงรายการจองทั้งหมด (สำหรับ Calendar)
@@ -89,37 +153,6 @@ router.get('/my', authenticateToken, async (req, res) => {
             ORDER BY b.booking_date DESC, b.start_time ASC
         `, [req.user.userId]);
 
-        const bookingIds = bookings.map(b => b.id);
-        let equipmentMap = {};
-
-        if (bookingIds.length > 0) {
-            const [equipmentRows] = await db.query(`
-                SELECT 
-                    eb.booking_id,
-                    e.id,
-                    e.name,
-                    eb.quantity
-                FROM equipment_bookings eb
-                JOIN equipment e ON eb.equipment_id = e.id
-                WHERE eb.booking_id IN (?)
-            `, [bookingIds]);
-
-            equipmentRows.forEach(row => {
-                if (!equipmentMap[row.booking_id]) {
-                    equipmentMap[row.booking_id] = [];
-                }
-                equipmentMap[row.booking_id].push({
-                    id: row.id,
-                    name: row.name,
-                    quantity: row.quantity
-                });
-            });
-        }
-
-        bookings.forEach(b => {
-            b.equipments = equipmentMap[b.id] || [];
-        });
-
         res.json({ success: true, bookings });
 
     } catch (error) {
@@ -132,24 +165,30 @@ router.get('/my', authenticateToken, async (req, res) => {
 // PUT /api/bookings/:id - แก้ไขการจอง (เวลาและอุปกรณ์)
 // ===============================================
 router.put('/:id', authenticateToken, async (req, res) => {
+    let connection;
     try {
         const bookingId = req.params.id;
         const { start_time, end_time, note, equipments } = req.body;
 
-        const [bookings] = await db.execute(
-            'SELECT * FROM bookings WHERE id = ? AND user_id = ? AND status != "cancelled"',
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Lock the booking row
+        const [bookings] = await connection.execute(
+            'SELECT * FROM bookings WHERE id = ? AND user_id = ? AND status != "cancelled" FOR UPDATE',
             [bookingId, req.user.userId]
         );
 
         if (bookings.length === 0) {
+            await connection.rollback();
             return res.status(404).json({ success: false, message: 'ไม่พบการจอง หรือการจองถูกยกเลิกแล้ว' });
         }
 
         const booking = bookings[0];
 
-        // 1. ตรวจสอบเวลาว่าง (ถ้ามีการเปลี่ยนเวลา)
+        // 1. ตรวจสอบเวลาว่าง (ถ้ามีการเปลี่ยนเวลา) ล็อคช่วงเวลาเพื่อป้องกันการจองซ้อนทับ
         if (start_time !== booking.start_time || end_time !== booking.end_time) {
-            const [existingBookings] = await db.execute(`
+            const [existingBookings] = await connection.execute(`
                 SELECT id FROM bookings 
                 WHERE court_id = ? 
                 AND booking_date = ? 
@@ -160,9 +199,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
                     (start_time < ? AND end_time >= ?) OR
                     (start_time >= ? AND end_time <= ?)
                 )
+                FOR UPDATE
             `, [booking.court_id, booking.booking_date, bookingId, start_time, start_time, end_time, end_time, start_time, end_time]);
 
             if (existingBookings.length > 0) {
+                await connection.rollback();
                 return res.status(400).json({
                     success: false,
                     message: 'ช่วงเวลานี้ถูกจองแล้ว กรุณาเลือกเวลาอื่น'
@@ -170,64 +211,58 @@ router.put('/:id', authenticateToken, async (req, res) => {
             }
         }
 
-        // 2. คืนสต็อกอุปกรณ์เดิม
-        const [oldEqs] = await db.execute('SELECT equipment_id, quantity FROM equipment_bookings WHERE booking_id = ?', [bookingId]);
-
-        for (const old of oldEqs) {
-            const [eqRows] = await db.execute('SELECT available FROM equipment WHERE id = ?', [old.equipment_id]);
-            if (eqRows.length > 0) {
-                let newAvailable = eqRows[0].available + old.quantity;
-                let newStatus = 'available';
-                if (newAvailable <= 2 && newAvailable > 0) newStatus = 'low';
-                else if (newAvailable === 0) newStatus = 'out';
-                await db.execute('UPDATE equipment SET available = ?, status = ? WHERE id = ?', [newAvailable, newStatus, old.equipment_id]);
-            }
-        }
-        await db.execute('DELETE FROM equipment_bookings WHERE booking_id = ?', [bookingId]);
+        // 2. (ลบส่วนคืนสต็อกด้วย booking_id ออก เพราะไม่มีฟิลด์นี้ในฐานข้อมูลจริง)
 
         // 3. ตรวจสอบสต็อกอุปกรณ์ใหม่ & จัดการ note
         let finalNote = note || '';
         if (equipments && Array.isArray(equipments) && equipments.length > 0) {
             for (const item of equipments) {
-                const [eqRows] = await db.execute('SELECT available FROM equipment WHERE id = ?', [item.id]);
-                if (eqRows.length > 0 && eqRows[0].available < item.quantity) {
+                // Check stock with FOR UPDATE lock
+                const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ? FOR UPDATE', [item.id]);
+                if (eqRows.length === 0 || eqRows[0].available < item.quantity) {
+                    await connection.rollback();
                     return res.status(400).json({ success: false, message: `อุปกรณ์ ${item.name} มีจำนวนไม่เพียงพอ` });
                 }
             }
-            const eqText = 'อุปกรณ์ที่ยืม: ' + equipments.map(e => `${e.name} (${e.quantity})`).join(', ');
+            const eqText = 'อุปกรณ์ที่ยืมเพิ่มเติม: ' + equipments.map(e => `${e.name} (${e.quantity})`).join(', ');
             finalNote = finalNote ? `${finalNote} | ${eqText}` : eqText;
         }
 
         // 4. บันทึกข้อมูลการเปลี่ยนแปลงอุปกรณ์ใหม่ลง DB
         if (equipments && Array.isArray(equipments) && equipments.length > 0) {
             for (const item of equipments) {
-                await db.execute(`
-                    INSERT INTO equipment_bookings (user_id, equipment_id, booking_id, quantity, borrow_date, return_date, status)
-                    VALUES (?, ?, ?, ?, ?, ?, 'pending')
-                `, [req.user.userId, item.id, bookingId, item.quantity, booking.booking_date, booking.booking_date]);
+                await connection.execute(`
+                    INSERT INTO equipment_bookings (user_id, equipment_id, quantity, borrow_date, return_date, status)
+                    VALUES (?, ?, ?, ?, ?, 'pending')
+                `, [req.user.userId, item.id, item.quantity, booking.booking_date, booking.booking_date]);
 
-                const [eqRows] = await db.execute('SELECT available FROM equipment WHERE id = ?', [item.id]);
+                const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ?', [item.id]);
                 if (eqRows.length > 0) {
                     let newAvailable = eqRows[0].available - item.quantity;
                     let newStatus = 'available';
                     if (newAvailable === 0) newStatus = 'out';
                     else if (newAvailable <= 2) newStatus = 'low';
-                    await db.execute('UPDATE equipment SET available = ?, status = ? WHERE id = ?', [newAvailable, newStatus, item.id]);
+                    await connection.execute('UPDATE equipment SET available = ?, status = ? WHERE id = ?', [newAvailable, newStatus, item.id]);
                 }
             }
         }
 
-        // 5. อัปเดตข้อมูลตารางการจอง (ตาราง bookings)
-        await db.execute(
-            'UPDATE bookings SET start_time = ?, end_time = ?, note = ? WHERE id = ?',
-            [start_time, end_time, finalNote || null, bookingId]
+        // 5. อัปเดตข้อมูลตารางการจอง (เปลี่ยนสถานะกลับเป็น pending ให้ admin รับทราบ)
+        await connection.execute(
+            'UPDATE bookings SET start_time = ?, end_time = ?, note = ?, status = ? WHERE id = ?',
+            [start_time, end_time, finalNote || null, 'pending', bookingId]
         );
 
-        res.json({ success: true, message: 'แก้ไขการจองสำเร็จ' });
+        await connection.commit();
+
+        res.json({ success: true, message: 'แก้ไขการจองสำเร็จ กรุณารอผู้ดูแลระบบยืนยันอีกครั้ง' });
 
     } catch (error) {
+        if (connection) await connection.rollback();
         console.error('Update booking error:', error);
         res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
@@ -235,6 +270,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 // POST /api/bookings - สร้างการจองใหม่
 // ===============================================
 router.post('/', async (req, res) => {
+    let connection;
     try {
         const { user_email, court_type, booking_date, start_time, end_time, players, note, equipments } = req.body;
 
@@ -247,17 +283,22 @@ router.post('/', async (req, res) => {
 
         const userId = users[0].id;
 
+        // Get a dedicated connection for the transaction
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
         // ค้นหา court จากชื่อ
-        const [courts] = await db.execute('SELECT id FROM courts WHERE name LIKE ?', [`%${court_type}%`]);
+        const [courts] = await connection.execute('SELECT id FROM courts WHERE name LIKE ?', [`%${court_type}%`]);
 
         if (courts.length === 0) {
+            await connection.rollback();
             return res.status(404).json({ success: false, message: 'ไม่พบสนามกีฬา' });
         }
 
         const courtId = courts[0].id;
 
-        // ตรวจสอบว่าช่วงเวลานี้ว่างหรือไม่
-        const [existingBookings] = await db.execute(`
+        // ตรวจสอบว่าช่วงเวลานี้ว่างหรือไม่ (ใช้ FOR UPDATE เพื่อป้องกันการจองชนกันในเสี้ยววินาที)
+        const [existingBookings] = await connection.execute(`
             SELECT id FROM bookings 
             WHERE court_id = ? 
             AND booking_date = ? 
@@ -267,9 +308,11 @@ router.post('/', async (req, res) => {
                 (start_time < ? AND end_time >= ?) OR
                 (start_time >= ? AND end_time <= ?)
             )
+            FOR UPDATE
         `, [courtId, booking_date, start_time, start_time, end_time, end_time, start_time, end_time]);
 
         if (existingBookings.length > 0) {
+            await connection.rollback();
             return res.status(400).json({
                 success: false,
                 message: 'ช่วงเวลานี้ถูกจองแล้ว กรุณาเลือกเวลาอื่น'
@@ -280,8 +323,10 @@ router.post('/', async (req, res) => {
         let finalNote = note || '';
         if (equipments && Array.isArray(equipments) && equipments.length > 0) {
             for (const item of equipments) {
-                const [eqRows] = await db.execute('SELECT available FROM equipment WHERE id = ?', [item.id]);
-                if (eqRows.length > 0 && eqRows[0].available < item.quantity) {
+                // Check stock with FOR UPDATE lock
+                const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ? FOR UPDATE', [item.id]);
+                if (eqRows.length === 0 || eqRows[0].available < item.quantity) {
+                    await connection.rollback();
                     return res.status(400).json({ success: false, message: `อุปกรณ์ ${item.name} มีจำนวนไม่เพียงพอ` });
                 }
             }
@@ -290,7 +335,7 @@ router.post('/', async (req, res) => {
         }
 
         // สร้างการจอง (สถานะ pending รอ admin อนุมัติ)
-        const [result] = await db.execute(`
+        const [result] = await connection.execute(`
             INSERT INTO bookings (user_id, court_id, booking_date, start_time, end_time, players, note, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
         `, [userId, courtId, booking_date, start_time, end_time, players || 1, finalNote || null]);
@@ -299,26 +344,28 @@ router.post('/', async (req, res) => {
         if (equipments && Array.isArray(equipments) && equipments.length > 0) {
             for (const item of equipments) {
                 // insert
-                await db.execute(`
-                    INSERT INTO equipment_bookings (user_id, equipment_id, booking_id, quantity, borrow_date, return_date, status)
-                    VALUES (?, ?, ?, ?, ?, ?, 'pending')
-                `, [userId, item.id, result.insertId, item.quantity, booking_date, booking_date]);
+                await connection.execute(`
+                    INSERT INTO equipment_bookings (user_id, equipment_id, quantity, borrow_date, return_date, status)
+                    VALUES (?, ?, ?, ?, ?, 'pending')
+                `, [userId, item.id, item.quantity, booking_date, booking_date]);
 
-                // update equipment table stock
-                const [eqRows] = await db.execute('SELECT available FROM equipment WHERE id = ?', [item.id]);
+                // update equipment table stock (we already ensured it has enough and locked the row above)
+                const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ?', [item.id]);
                 if (eqRows.length > 0) {
                     let newAvailable = eqRows[0].available - item.quantity;
                     let newStatus = 'available';
                     if (newAvailable === 0) newStatus = 'out';
                     else if (newAvailable <= 2) newStatus = 'low';
 
-                    await db.execute(
+                    await connection.execute(
                         'UPDATE equipment SET available = ?, status = ? WHERE id = ?',
                         [newAvailable, newStatus, item.id]
                     );
                 }
             }
         }
+
+        await connection.commit();
 
         res.status(201).json({
             success: true,
@@ -327,8 +374,122 @@ router.post('/', async (req, res) => {
         });
 
     } catch (error) {
+        if (connection) {
+            await connection.rollback();
+        }
         console.error('Create booking error:', error);
         res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+});
+
+// ===============================================
+// POST /api/bookings/with-payment - สร้างการจองใหม่พร้อมหลักฐานการโอนเงิน (Optional)
+// ===============================================
+router.post('/with-payment', authenticateToken, upload.single('slip'), async (req, res) => {
+    let connection;
+    try {
+        const bookingDataStr = req.body.bookingData;
+        if (!bookingDataStr) {
+            return res.status(400).json({ success: false, message: 'ข้อมูลการจองไม่ถูกต้อง' });
+        }
+
+        const data = JSON.parse(bookingDataStr);
+        const { court_type, booking_date, start_time, end_time, players, note, equipments } = data;
+        const userId = req.user.userId;
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        const [courts] = await connection.execute('SELECT id FROM courts WHERE name LIKE ?', [`%${court_type}%`]);
+
+        if (courts.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'ไม่พบสนามกีฬา' });
+        }
+
+        const courtId = courts[0].id;
+
+        const [existingBookings] = await connection.execute(`
+            SELECT id FROM bookings 
+            WHERE court_id = ? 
+            AND booking_date = ? 
+            AND status != 'cancelled'
+            AND (
+                (start_time <= ? AND end_time > ?) OR
+                (start_time < ? AND end_time >= ?) OR
+                (start_time >= ? AND end_time <= ?)
+            )
+            FOR UPDATE
+        `, [courtId, booking_date, start_time, start_time, end_time, end_time, start_time, end_time]);
+
+        if (existingBookings.length > 0) {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'ช่วงเวลานี้ถูกจองแล้ว กรุณาเลือกเวลาอื่น' });
+        }
+
+        let finalNote = note || '';
+        if (equipments && Array.isArray(equipments) && equipments.length > 0) {
+            for (const item of equipments) {
+                const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ? FOR UPDATE', [item.id]);
+                if (eqRows.length === 0 || eqRows[0].available < item.quantity) {
+                    await connection.rollback();
+                    return res.status(400).json({ success: false, message: `อุปกรณ์ ${item.name} มีจำนวนไม่เพียงพอ` });
+                }
+            }
+            const eqText = 'อุปกรณ์ที่ยืม: ' + equipments.map(e => `${e.name} (${e.quantity})`).join(', ');
+            finalNote = finalNote ? `${finalNote} | ${eqText}` : eqText;
+        }
+
+        const [result] = await connection.execute(`
+            INSERT INTO bookings (user_id, court_id, booking_date, start_time, end_time, players, note, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+        `, [userId, courtId, booking_date, start_time, end_time, players || 1, finalNote || null]);
+
+        const bookingId = result.insertId;
+
+        if (equipments && Array.isArray(equipments) && equipments.length > 0) {
+            for (const item of equipments) {
+                await connection.execute(`
+                    INSERT INTO equipment_bookings (user_id, equipment_id, quantity, borrow_date, return_date, status)
+                    VALUES (?, ?, ?, ?, ?, 'pending')
+                `, [userId, item.id, item.quantity, booking_date, booking_date]);
+
+                const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ?', [item.id]);
+                if (eqRows.length > 0) {
+                    let newAvailable = eqRows[0].available - item.quantity;
+                    let newStatus = 'available';
+                    if (newAvailable === 0) newStatus = 'out';
+                    else if (newAvailable <= 2) newStatus = 'low';
+
+                    await connection.execute(
+                        'UPDATE equipment SET available = ?, status = ? WHERE id = ?',
+                        [newAvailable, newStatus, item.id]
+                    );
+                }
+            }
+        }
+
+        if (req.file) {
+            const slipPath = `/uploads/receipts/${req.file.filename}`;
+            await connection.execute(`
+                UPDATE bookings SET note = concat(ifnull(note, ''), '\n[สลิปโอนเงิน: ', ?, ']') WHERE id = ?
+            `, [slipPath, bookingId]);
+        }
+
+        await connection.commit();
+
+        res.status(201).json({ success: true, message: 'จองสนามและส่งข้อมูลสำเร็จ', bookingId: bookingId });
+
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error('Create booking w/ payment error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
@@ -349,19 +510,7 @@ router.put('/:id/cancel', authenticateToken, async (req, res) => {
             return res.status(404).json({ success: false, message: 'ไม่พบการจอง' });
         }
 
-        // 1. คืนสต็อกอุปกรณ์
-        const [oldEqs] = await db.execute('SELECT equipment_id, quantity FROM equipment_bookings WHERE booking_id = ?', [bookingId]);
-
-        for (const old of oldEqs) {
-            const [eqRows] = await db.execute('SELECT available FROM equipment WHERE id = ?', [old.equipment_id]);
-            if (eqRows.length > 0) {
-                let newAvailable = eqRows[0].available + old.quantity;
-                let newStatus = 'available';
-                if (newAvailable <= 2 && newAvailable > 0) newStatus = 'low';
-                else if (newAvailable === 0) newStatus = 'out';
-                await db.execute('UPDATE equipment SET available = ?, status = ? WHERE id = ?', [newAvailable, newStatus, old.equipment_id]);
-            }
-        }
+        // 1. (ยกเลิกการคืนสต็อกอุปกรณ์ด้วย booking_id เพราะไม่มีฟิลด์นี้ในฐานข้อมูลจริง)
 
         // 2. ลบออกไปจาก database เลยตาม request ของ user (อุปกรณ์จะถูกลบตามเพราะ CASCADE DELETE)
         await db.execute(
