@@ -449,21 +449,22 @@
 
         <div class="content-card">
             <div class="filter-bar">
-                <input type="text" class="form-control" placeholder="ค้นหาชื่อ, รหัส, อีเมล..."
+                <input type="text" id="searchInput" class="form-control" placeholder="ค้นหาชื่อ, รหัส, อีเมล..."
                     style="max-width:280px;">
-                <select class="form-select" style="max-width:160px;">
+                <select id="typeFilter" class="form-select" style="max-width:160px;">
                     <option value="">ประเภททั้งหมด</option>
-                    <option>นักศึกษา</option>
-                    <option>บุคลากร</option>
-                    <option>บุคคลภายนอก</option>
-                    <option>ผู้ดูแลระบบ</option>
+                    <option value="student">นักศึกษา</option>
+                    <option value="staff">บุคลากร</option>
+                    <option value="external">บุคคลภายนอก</option>
+                    <option value="admin">ผู้ดูแลระบบ</option>
                 </select>
-                <select class="form-select" style="max-width:140px;">
+                <select id="statusFilter" class="form-select" style="max-width:140px;" disabled
+                    title="ระบบยังไม่รองรับการจัดการสถานะในขณะนี้">
                     <option value="">สถานะทั้งหมด</option>
-                    <option>ใช้งานอยู่</option>
-                    <option>ไม่ใช้งาน</option>
+                    <option value="active">ใช้งานอยู่</option>
+                    <option value="inactive">ไม่ใช้งาน</option>
                 </select>
-                <button class="btn-gradient"><i class="bi bi-search"></i></button>
+                <button id="searchBtn" class="btn-gradient"><i class="bi bi-search"></i> ค้นหา</button>
             </div>
 
             <table class="table-custom">
@@ -478,110 +479,9 @@
                         <th>การจัดการ</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="usersTableBody">
                     <tr>
-                        <td>
-                            <div class="user-cell"><img
-                                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" alt="User">
-                                <div class="user-cell-info">
-                                    <h6>สมชาย ใจดี</h6><span>สมัครเมื่อ 15 ม.ค. 2026</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>6512345</td>
-                        <td>somchai@payap.ac.th</td>
-                        <td><span class="role-badge student">นักศึกษา</span></td>
-                        <td>24 ครั้ง</td>
-                        <td><span class="status-dot active"></span>ใช้งานอยู่</td>
-                        <td>
-                            <div class="action-btns"><button class="action-btn view"><i
-                                        class="bi bi-eye"></i></button><button class="action-btn edit"><i
-                                        class="bi bi-pencil"></i></button><button class="action-btn delete"><i
-                                        class="bi bi-trash"></i></button></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="user-cell"><img
-                                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" alt="User">
-                                <div class="user-cell-info">
-                                    <h6>สมหญิง รักเรียน</h6><span>สมัครเมื่อ 20 ม.ค. 2026</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>6523456</td>
-                        <td>somying@payap.ac.th</td>
-                        <td><span class="role-badge student">นักศึกษา</span></td>
-                        <td>18 ครั้ง</td>
-                        <td><span class="status-dot active"></span>ใช้งานอยู่</td>
-                        <td>
-                            <div class="action-btns"><button class="action-btn view"><i
-                                        class="bi bi-eye"></i></button><button class="action-btn edit"><i
-                                        class="bi bi-pencil"></i></button><button class="action-btn delete"><i
-                                        class="bi bi-trash"></i></button></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="user-cell"><img
-                                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100" alt="User">
-                                <div class="user-cell-info">
-                                    <h6>ดร.วิชัย ปัญญา</h6><span>สมัครเมื่อ 5 ธ.ค. 2025</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>ST001</td>
-                        <td>wichai@payap.ac.th</td>
-                        <td><span class="role-badge staff">บุคลากร</span></td>
-                        <td>35 ครั้ง</td>
-                        <td><span class="status-dot active"></span>ใช้งานอยู่</td>
-                        <td>
-                            <div class="action-btns"><button class="action-btn view"><i
-                                        class="bi bi-eye"></i></button><button class="action-btn edit"><i
-                                        class="bi bi-pencil"></i></button><button class="action-btn delete"><i
-                                        class="bi bi-trash"></i></button></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="user-cell"><img
-                                    src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100" alt="User">
-                                <div class="user-cell-info">
-                                    <h6>นางสาวพิมพ์ ใจงาม</h6><span>สมัครเมื่อ 10 ม.ค. 2026</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>EXT0035</td>
-                        <td>pim@email.com</td>
-                        <td><span class="role-badge external">บุคคลภายนอก</span></td>
-                        <td>5 ครั้ง</td>
-                        <td><span class="status-dot active"></span>ใช้งานอยู่</td>
-                        <td>
-                            <div class="action-btns"><button class="action-btn view"><i
-                                        class="bi bi-eye"></i></button><button class="action-btn edit"><i
-                                        class="bi bi-pencil"></i></button><button class="action-btn delete"><i
-                                        class="bi bi-trash"></i></button></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="user-cell"><img
-                                    src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" alt="User">
-                                <div class="user-cell-info">
-                                    <h6>Admin User</h6><span>สมัครเมื่อ 1 ม.ค. 2025</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>ADMIN001</td>
-                        <td>admin@payap.ac.th</td>
-                        <td><span class="role-badge admin">ผู้ดูแลระบบ</span></td>
-                        <td>-</td>
-                        <td><span class="status-dot active"></span>ใช้งานอยู่</td>
-                        <td>
-                            <div class="action-btns"><button class="action-btn view"><i
-                                        class="bi bi-eye"></i></button><button class="action-btn edit"><i
-                                        class="bi bi-pencil"></i></button></div>
-                        </td>
+                        <td colspan="7" class="text-center py-4">กำลังโหลดข้อมูล...</td>
                     </tr>
                 </tbody>
             </table>
@@ -596,6 +496,128 @@
         </div>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const tbody = document.getElementById('usersTableBody');
+            const searchInput = document.getElementById('searchInput');
+            const typeFilter = document.getElementById('typeFilter');
+            const searchBtn = document.getElementById('searchBtn');
+
+            const getRoleBadge = (type) => {
+                switch (type) {
+                    case 'student': return '<span class="role-badge student">นักศึกษา</span>';
+                    case 'staff': return '<span class="role-badge staff">บุคลากร</span>';
+                    case 'external': return '<span class="role-badge external">บุคคลภายนอก</span>';
+                    case 'admin': return '<span class="role-badge admin">ผู้ดูแลระบบ</span>';
+                    default: return `<span class="role-badge">${type}</span>`;
+                }
+            };
+
+            const formatDate = (dateStr) => {
+                if (!dateStr) return '-';
+                return new Date(dateStr).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+            };
+
+            const fetchUsers = async () => {
+                try {
+                    const search = searchInput.value.trim();
+                    const type = typeFilter.value;
+
+                    let url = '/api/admin/users?';
+                    if (search) url += `search=${encodeURIComponent(search)}&`;
+                    if (type) url += `type=${encodeURIComponent(type)}`;
+
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>';
+
+                    const response = await fetch(url, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (response.status === 401 || response.status === 403) {
+                        alert('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+                        localStorage.removeItem('adminToken');
+                        window.location.href = '/login.html';
+                        return;
+                    }
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        tbody.innerHTML = '';
+                        if (result.users.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">ไม่พบข้อมูลผู้ใช้</td></tr>';
+                            return;
+                        }
+
+                        result.users.forEach(user => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-cell-info">
+                                            <h6>${user.full_name}</h6><span>สมัครเมื่อ ${formatDate(user.created_at)}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>${user.student_id || '-'}</td>
+                                <td>${user.email}</td>
+                                <td>${getRoleBadge(user.user_type)}</td>
+                                <td>${user.role === 'admin' ? '-' : (user.total_bookings + ' ครั้ง')}</td>
+                                <td><span class="status-dot active"></span>ใช้งานอยู่</td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="action-btn delete" onclick="deleteUser(${user.id}, '${user.full_name}')" title="ลบผู้ใช้"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">${result.message}</td></tr>`;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+                }
+            };
+
+            // Event Listeners
+            searchBtn.addEventListener('click', fetchUsers);
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') fetchUsers();
+            });
+            typeFilter.addEventListener('change', fetchUsers);
+
+            window.deleteUser = async (id, name) => {
+                if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้ "${name}"? ข้อมูลที่เกี่ยวข้องจะถูกลบทั้งหมด`)) {
+                    try {
+                        const response = await fetch(`/api/admin/users/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            alert('ลบผู้ใช้สำเร็จ');
+                            fetchUsers();
+                        } else {
+                            alert(result.message || 'ลบผู้ใช้ไม่สำเร็จ');
+                        }
+                    } catch (error) {
+                        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                    }
+                }
+            };
+
+            // Initial load
+            fetchUsers();
+        });
+    </script>
 </body>
 
 </html>

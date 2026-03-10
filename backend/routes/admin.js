@@ -81,16 +81,35 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
 });
 
 // ===============================================
-// GET /api/admin/users - รายการผู้ใช้ทั้งหมด
+// GET /api/admin/users - รายการผู้ใช้ทั้งหมด พร้อมกรองข้อมูล
 // ===============================================
 router.get('/users', authenticateAdmin, async (req, res) => {
     try {
-        const [users] = await db.execute(`
-            SELECT id, email, full_name, student_id, phone, user_type, role, created_at
-            FROM users
-            ORDER BY created_at DESC
-        `);
+        const { search, type, status } = req.query;
+        let query = `
+            SELECT 
+                u.id, u.email, u.full_name, u.student_id, u.phone, u.user_type, u.role, u.created_at,
+                COUNT(b.id) as total_bookings
+            FROM users u
+            LEFT JOIN bookings b ON u.id = b.user_id
+            WHERE 1=1
+        `;
+        const queryParams = [];
 
+        if (search) {
+            query += ` AND (u.full_name LIKE ? OR u.email LIKE ? OR u.student_id LIKE ?)`;
+            const searchPattern = `%${search}%`;
+            queryParams.push(searchPattern, searchPattern, searchPattern);
+        }
+
+        if (type) {
+            query += ` AND u.user_type = ?`;
+            queryParams.push(type);
+        }
+
+        query += ` GROUP BY u.id ORDER BY u.created_at DESC`;
+
+        const [users] = await db.execute(query, queryParams);
         res.json({ success: true, users });
 
     } catch (error) {
