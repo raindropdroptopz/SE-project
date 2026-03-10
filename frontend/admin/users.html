@@ -421,28 +421,28 @@
             <div class="stat-mini">
                 <div class="stat-mini-icon total"><i class="bi bi-people"></i></div>
                 <div>
-                    <h3>2,453</h3>
+                    <h3 id="statTotalUsers">0</h3>
                     <p>ผู้ใช้ทั้งหมด</p>
                 </div>
             </div>
             <div class="stat-mini">
                 <div class="stat-mini-icon student"><i class="bi bi-mortarboard"></i></div>
                 <div>
-                    <h3>1,847</h3>
+                    <h3 id="statTotalStudents">0</h3>
                     <p>นักศึกษา</p>
                 </div>
             </div>
             <div class="stat-mini">
                 <div class="stat-mini-icon staff"><i class="bi bi-person-badge"></i></div>
                 <div>
-                    <h3>456</h3>
+                    <h3 id="statTotalStaff">0</h3>
                     <p>อาจารย์</p>
                 </div>
             </div>
             <div class="stat-mini">
                 <div class="stat-mini-icon external"><i class="bi bi-person"></i></div>
                 <div>
-                    <h3>150</h3>
+                    <h3 id="statTotalExternal">0</h3>
                     <p>บุคคลภายนอก</p>
                 </div>
             </div>
@@ -459,8 +459,7 @@
                     <option value="external">บุคคลภายนอก</option>
                     <option value="admin">ผู้ดูแลระบบ</option>
                 </select>
-                <select id="statusFilter" class="form-select" style="max-width:140px;" disabled
-                    title="ระบบยังไม่รองรับการจัดการสถานะในขณะนี้">
+                <select id="statusFilter" class="form-select" style="max-width:140px;">
                     <option value="">สถานะทั้งหมด</option>
                     <option value="active">ใช้งานอยู่</option>
                     <option value="suspended">ระงับการใช้งาน</option>
@@ -664,10 +663,12 @@
                 try {
                     const search = searchInput.value.trim();
                     const type = typeFilter.value;
+                    const status = document.getElementById('statusFilter').value;
 
                     let url = '/api/admin/users?';
                     if (search) url += `search=${encodeURIComponent(search)}&`;
                     if (type) url += `type=${encodeURIComponent(type)}&`;
+                    if (status) url += `status=${encodeURIComponent(status)}&`;
 
                     // Remove trailing & if no more params
                     if (url.endsWith('&')) {
@@ -711,7 +712,10 @@
                                 <td>${user.email}</td>
                                 <td>${getRoleBadge(user.user_type)}</td>
                                 <td>${user.role === 'admin' ? '-' : (user.total_bookings + ' ครั้ง')}</td>
-                                <td><span class="status-dot active"></span><span class="text-success">ใช้งานอยู่</span></td>
+                                <td>
+                                    <span class="status-dot ${user.status === 'active' ? 'active' : 'inactive'}"></span>
+                                    <span class="${user.status === 'active' ? 'text-success' : 'text-danger'}">${user.status === 'active' ? 'ใช้งานอยู่' : 'ระงับการใช้งาน'}</span>
+                                </td>
                                 <td>
                                     <div class="action-btns">
                                         <button class="action-btn view" title="ดูข้อมูล" onclick="openViewUserModal(this.dataset.user)" data-user='${userJson}'><i class="bi bi-eye"></i></button>
@@ -737,8 +741,25 @@
                 if (e.key === 'Enter') fetchUsers();
             });
             typeFilter.addEventListener('change', fetchUsers);
+            document.getElementById('statusFilter').addEventListener('change', fetchUsers);
 
-            // document.getElementById('statusFilter').addEventListener('change', fetchUsers); // Removed
+            const fetchUserStats = async () => {
+                try {
+                    const response = await fetch('/api/admin/users/stats', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        document.getElementById('statTotalUsers').innerText = result.stats.total.toLocaleString();
+                        document.getElementById('statTotalStudents').innerText = result.stats.student.toLocaleString();
+                        document.getElementById('statTotalStaff').innerText = result.stats.staff.toLocaleString();
+                        document.getElementById('statTotalExternal').innerText = result.stats.external.toLocaleString();
+                    }
+                } catch (error) {
+                    console.error('Error fetching stats:', error);
+                }
+            };
 
             userModalWrapper = new bootstrap.Modal(document.getElementById('userModal'));
             viewUserModalWrapper = new bootstrap.Modal(document.getElementById('viewUserModal'));
@@ -758,8 +779,8 @@
                 document.getElementById('userRole').value = user ? user.role : 'user';
                 document.getElementById('userStudentId').value = user ? (user.student_id || '') : '';
                 document.getElementById('userPhone').value = user ? (user.phone || '') : '';
-                // const userStatusSelect = document.getElementById('userStatus'); // Removed
-                // const statusContainer = document.getElementById('statusContainer'); // Removed
+                const userStatusSelect = document.getElementById('userStatus');
+                const statusContainer = document.getElementById('statusContainer');
 
                 const pwdInput = document.getElementById('userPassword');
                 const pwdReq = document.getElementById('passwordReq');
@@ -769,15 +790,15 @@
                     pwdInput.placeholder = 'รหัสผ่าน (เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน)';
                     pwdInput.required = false;
                     pwdReq.style.display = 'none';
-                    // statusContainer.style.display = 'block'; // Removed
-                    // userStatusSelect.value = user.status || 'active'; // Removed
+                    statusContainer.style.display = 'block';
+                    userStatusSelect.value = user.status || 'active';
                 } else {
                     document.getElementById('userModalTitle').innerText = 'เพิ่มผู้ใช้ใหม่';
                     pwdInput.placeholder = 'รหัสผ่านใหม่';
                     pwdInput.required = true;
                     pwdReq.style.display = 'inline';
-                    // statusContainer.style.display = 'none'; // Removed
-                    // userStatusSelect.value = 'active'; // Removed
+                    statusContainer.style.display = 'none';
+                    userStatusSelect.value = 'active';
                 }
 
                 pwdInput.value = ''; // Always clear password on open
@@ -803,7 +824,9 @@
                     document.getElementById('viewUserCreated').innerText = formatDate(user.created_at);
                     document.getElementById('viewUserBookings').innerText = user.role === 'admin' ? '-' : (user.total_bookings + ' ครั้ง');
 
-                    const statusText = '<span class="text-success">ใช้งานอยู่</span>';
+                    const statusText = user.status === 'active'
+                        ? '<span class="status-dot active"></span><span class="text-success">ใช้งานอยู่</span>'
+                        : '<span class="status-dot inactive"></span><span class="text-danger">ระงับการใช้งาน</span>';
                     document.getElementById('viewUserStatus').innerHTML = statusText;
 
                     viewUserModalWrapper.show();
@@ -821,6 +844,7 @@
                 const role = document.getElementById('userRole').value;
                 const student_id = document.getElementById('userStudentId').value.trim();
                 const phone = document.getElementById('userPhone').value.trim();
+                const status = document.getElementById('userStatus').value;
 
                 if (!full_name || !email || !user_type || !role) {
                     alert('กรุณากรอกข้อมูลที่จำเป็น (*) ให้ครบถ้วน');
@@ -842,7 +866,7 @@
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         },
-                        body: JSON.stringify({ full_name, email, password, user_type, role, student_id, phone })
+                        body: JSON.stringify({ full_name, email, password, user_type, role, student_id, phone, status })
                     });
 
                     const data = await response.json();
@@ -850,6 +874,7 @@
                     if (data.success) {
                         userModalWrapper.hide();
                         fetchUsers(); // Refresh the list
+                        fetchUserStats(); // Refresh the stats
                     } else {
                         alert('ข้อผิดพลาด: ' + data.message);
                     }
@@ -870,6 +895,7 @@
                         if (result.success) {
                             alert('ลบผู้ใช้สำเร็จ');
                             fetchUsers();
+                            fetchUserStats();
                         } else {
                             alert(result.message || 'ลบผู้ใช้ไม่สำเร็จ');
                         }
@@ -881,6 +907,7 @@
 
             // Initial load
             fetchUsers();
+            fetchUserStats();
         });
     </script>
 </body>

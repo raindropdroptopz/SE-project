@@ -81,14 +81,39 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
 });
 
 // ===============================================
+// GET /api/admin/users/stats - สถิติผู้ใช้งาน
+// ===============================================
+router.get('/users/stats', authenticateAdmin, async (req, res) => {
+    try {
+        const [[{ total }]] = await db.execute('SELECT COUNT(*) as total FROM users');
+        const [[{ student }]] = await db.execute("SELECT COUNT(*) as student FROM users WHERE user_type = 'student'");
+        const [[{ staff }]] = await db.execute("SELECT COUNT(*) as staff FROM users WHERE user_type = 'staff'");
+        const [[{ external }]] = await db.execute("SELECT COUNT(*) as external FROM users WHERE user_type = 'external'");
+
+        res.json({
+            success: true,
+            stats: {
+                total: total || 0,
+                student: student || 0,
+                staff: staff || 0,
+                external: external || 0
+            }
+        });
+    } catch (error) {
+        console.error('Get user stats error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    }
+});
+
+// ===============================================
 // GET /api/admin/users - รายการผู้ใช้ทั้งหมด พร้อมกรองข้อมูล
 // ===============================================
 router.get('/users', authenticateAdmin, async (req, res) => {
     try {
-        const { search, type } = req.query;
+        const { search, type, status } = req.query;
         let query = `
             SELECT 
-                u.id, u.email, u.full_name, u.student_id, u.phone, u.user_type, u.role, u.created_at,
+                u.id, u.email, u.full_name, u.student_id, u.phone, u.user_type, u.role, u.status, u.created_at,
                 COUNT(b.id) as total_bookings
             FROM users u
             LEFT JOIN bookings b ON u.id = b.user_id
@@ -105,6 +130,11 @@ router.get('/users', authenticateAdmin, async (req, res) => {
         if (type) {
             query += ` AND u.user_type = ?`;
             queryParams.push(type);
+        }
+
+        if (status) {
+            query += ` AND u.status = ?`;
+            queryParams.push(status);
         }
 
         query += ` GROUP BY u.id ORDER BY u.created_at DESC`;
@@ -690,7 +720,7 @@ router.delete('/equipment/:id', authenticateAdmin, async (req, res) => {
 // ===============================================
 router.post('/users', authenticateAdmin, async (req, res) => {
     try {
-        const { email, password, full_name, student_id, phone, user_type, role } = req.body;
+        const { email, password, full_name, student_id, phone, user_type, role, status } = req.body;
 
         if (!email || !password || !full_name || !user_type || !role) {
             return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน' });
@@ -712,8 +742,8 @@ router.post('/users', authenticateAdmin, async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const [result] = await db.execute(`
-            INSERT INTO users (email, password, full_name, student_id, phone, user_type, role)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO users (email, password, full_name, student_id, phone, user_type, role, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             email,
             hashedPassword,
@@ -721,7 +751,8 @@ router.post('/users', authenticateAdmin, async (req, res) => {
             student_id || null,
             phone || null,
             user_type,
-            role
+            role,
+            status || 'active'
         ]);
 
         res.status(201).json({ success: true, message: 'เพิ่มผู้ใช้สำเร็จ', id: result.insertId });
@@ -738,7 +769,7 @@ router.post('/users', authenticateAdmin, async (req, res) => {
 router.put('/users/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { email, password, full_name, student_id, phone, user_type, role } = req.body;
+        const { email, password, full_name, student_id, phone, user_type, role, status } = req.body;
 
         if (!email || !full_name || !user_type || !role) {
             return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน' });
@@ -752,9 +783,9 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
 
         let query = `
             UPDATE users 
-            SET email = ?, full_name = ?, student_id = ?, phone = ?, user_type = ?, role = ?
+            SET email = ?, full_name = ?, student_id = ?, phone = ?, user_type = ?, role = ?, status = ?
         `;
-        let params = [email, full_name, student_id || null, phone || null, user_type, role];
+        let params = [email, full_name, student_id || null, phone || null, user_type, role, status || 'active'];
 
         if (password && password.trim() !== '') {
             const hashedPassword = await bcrypt.hash(password, 10);
