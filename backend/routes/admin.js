@@ -445,4 +445,56 @@ router.get('/finance', authenticateAdmin, async (req, res) => {
     }
 });
 
+// ===============================================
+// GET /api/admin/receipts - ดึงข้อมูลใบเสร็จรับเงิน
+// ===============================================
+router.get('/receipts', authenticateAdmin, async (req, res) => {
+    try {
+        const { search, date } = req.query;
+
+        let query = `
+            SELECT 
+                b.id as booking_id,
+                CONCAT('RC', YEAR(b.created_at), '-', LPAD(b.id, 4, '0')) as receipt_id,
+                u.full_name as user_name,
+                u.student_id,
+                CONCAT('ค่าจอง', c.name) as item_name,
+                ((HOUR(b.end_time) - HOUR(b.start_time)) * c.price) as amount,
+                b.created_at as receipt_date,
+                (HOUR(b.end_time) - HOUR(b.start_time)) as hours_booked
+            FROM bookings b
+            JOIN courts c ON b.court_id = c.id
+            JOIN users u ON b.user_id = u.id
+            WHERE (b.status = 'confirmed' OR b.status = 'completed')
+        `;
+        const queryParams = [];
+
+        if (search) {
+            query += ` AND (CONCAT('RC', YEAR(b.created_at), '-', LPAD(b.id, 4, '0')) LIKE ? 
+                        OR u.full_name LIKE ? 
+                        OR c.name LIKE ?)`;
+            const searchPattern = `%${search}%`;
+            queryParams.push(searchPattern, searchPattern, searchPattern);
+        }
+
+        if (date) {
+            query += ` AND DATE(b.created_at) = ?`;
+            queryParams.push(date);
+        }
+
+        query += ` ORDER BY b.created_at DESC`;
+
+        const [receipts] = await db.execute(query, queryParams);
+
+        res.json({
+            success: true,
+            receipts
+        });
+
+    } catch (error) {
+        console.error('Get receipts error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการโหลดใบเสร็จ' });
+    }
+});
+
 module.exports = router;
