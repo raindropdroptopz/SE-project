@@ -370,40 +370,64 @@ router.post('/users', authenticateAdmin, async (req, res) => {
 });
 
 // ===============================================
-// GET /api/admin/finance - ข้อมูลรายรับรายจ่าย
+// GET /api/admin/finance - ข้อมูลรายรับรายจ่าย พร้อมตัวกรอง
 // ===============================================
 router.get('/finance', authenticateAdmin, async (req, res) => {
     try {
-        // รายรับจากค่าจองสนามที่ confirmed แล้ว
-        const [incomeResult] = await db.execute(`
-            SELECT 
-                IFNULL(SUM((HOUR(b.end_time) - HOUR(b.start_time)) * c.price), 0) as total_income
-            FROM bookings b
-            JOIN courts c ON b.court_id = c.id
-            WHERE b.status = 'confirmed' OR b.status = 'completed'
-        `);
-        const totalIncome = parseInt(incomeResult[0].total_income);
+        const { type, startDate, endDate } = req.query;
 
-        // ตอนนี้ยังไม่มีระบบรายจ่าย ขอกำหนดเป็น 0 ก่อน หรือ mock ไว้ถ้าต้องการ
-        const totalExpense = 0;
+        // Base criteria for valid bookings
+        let bookingConditions = `(b.status = 'confirmed' OR b.status = 'completed')`;
+        const queryParams = [];
+
+        if (startDate && endDate) {
+            bookingConditions += ` AND b.booking_date >= ? AND b.booking_date <= ?`;
+            queryParams.push(startDate, endDate);
+        } else if (startDate) {
+            bookingConditions += ` AND b.booking_date >= ?`;
+            queryParams.push(startDate);
+        } else if (endDate) {
+            bookingConditions += ` AND b.booking_date <= ?`;
+            queryParams.push(endDate);
+        }
+
+        // 1. Calculate Summary (Only if 'type' is not strictly 'รายจ่าย', since we only have income from courts)
+        let totalIncome = 0;
+        let totalExpense = 0;
+
+        if (!type || type === 'รายรับ') {
+            const [incomeResult] = await db.execute(`
+                SELECT IFNULL(SUM((HOUR(b.end_time) - HOUR(b.start_time)) * c.price), 0) as total_income
+                FROM bookings b
+                JOIN courts c ON b.court_id = c.id
+                WHERE ${bookingConditions}
+            `, queryParams);
+            totalIncome = parseInt(incomeResult[0].total_income);
+        }
+
         const balance = totalIncome - totalExpense;
 
-        // ดึงรายการธุรกรรม (จาก bookings)
-        const [transactions] = await db.execute(`
-            SELECT 
-                b.id,
-                b.booking_date as date,
-                CONCAT('ค่าจอง', c.name, ' #BK', LPAD(b.id, 4, '0')) as description,
-                'รายรับ' as type,
-                ((HOUR(b.end_time) - HOUR(b.start_time)) * c.price) as amount,
-                u.full_name as note,
-                b.created_at
-            FROM bookings b
-            JOIN courts c ON b.court_id = c.id
-            JOIN users u ON b.user_id = u.id
-            WHERE b.status = 'confirmed' OR b.status = 'completed'
-            ORDER BY b.created_at DESC
-        `);
+        // 2. Fetch Transactions
+        let transactions = [];
+        if (!type || type === 'รายรับ') {
+            const [bookingTransactions] = await db.execute(`
+                SELECT 
+                    b.id,
+                    b.booking_date as date,
+                    CONCAT('ค่าจอง', c.name, ' #BK', LPAD(b.id, 4, '0')) as description,
+                    'รายรับ' as type,
+                    ((HOUR(b.end_time) - HOUR(b.start_time)) * c.price) as amount,
+                    u.full_name as note,
+                    b.created_at
+                FROM bookings b
+                JOIN courts c ON b.court_id = c.id
+                JOIN users u ON b.user_id = u.id
+                WHERE ${bookingConditions}
+                ORDER BY b.booking_date DESC, b.created_at DESC
+            `, queryParams);
+
+            transactions = bookingTransactions;
+        }
 
         res.json({
             success: true,
@@ -414,6 +438,7 @@ router.get('/finance', authenticateAdmin, async (req, res) => {
             },
             transactions
         });
+
     } catch (error) {
         console.error('Get finance error:', error);
         res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });

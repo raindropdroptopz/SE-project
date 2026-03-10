@@ -139,20 +139,21 @@
             <div class="card-header-custom">
                 <h5><i class="bi bi-graph-up me-2"></i>กราฟรายรับ-รายจ่าย</h5>
             </div>
-            <div class="chart-placeholder"><i class="bi bi-bar-chart-fill me-2" style="font-size:2rem;"></i>
-                กราฟแสดงผลรายรับ-รายจ่าย (Chart.js)</div>
+            <div style="padding: 20px;">
+                <canvas id="financeChart" height="100"></canvas>
+            </div>
         </div>
 
         <div class="content-card">
             <div class="filter-bar">
-                <select class="form-select" style="max-width:150px;">
+                <select id="typeFilter" class="form-select" style="max-width:150px;">
                     <option value="">ทั้งหมด</option>
-                    <option>รายรับ</option>
-                    <option>รายจ่าย</option>
+                    <option value="รายรับ">รายรับ</option>
+                    <option value="รายจ่าย">รายจ่าย</option>
                 </select>
-                <input type="date" class="form-control" style="max-width:160px;">
-                <input type="date" class="form-control" style="max-width:160px;">
-                <button class="btn-gradient"><i class="bi bi-search"></i></button>
+                <input type="date" id="startDateFilter" class="form-control" style="max-width:160px;">
+                <input type="date" id="endDateFilter" class="form-control" style="max-width:160px;">
+                <button id="searchBtn" class="btn-gradient"><i class="bi bi-search"></i> ค้นหา</button>
             </div>
 
             <table class="table-custom">
@@ -179,19 +180,140 @@
         </div>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const token = localStorage.getItem('adminToken');
         if (!token) {
             window.location.href = '/login.html';
         }
 
-        document.addEventListener('DOMContentLoaded', fetchFinanceData);
+        let financeChartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchFinanceData();
+
+            // Setup event listeners for filtering
+            document.getElementById('searchBtn').addEventListener('click', fetchFinanceData);
+        });
+
+        function renderChart(transactions) {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+
+            // 1. Group transactions by Date
+            const groupedData = {};
+            transactions.forEach(t => {
+                const dateObj = new Date(t.date || t.created_at);
+                // Format YYYY-MM-DD for sorting/grouping easily
+                const dateKey = dateObj.toISOString().split('T')[0];
+
+                if (!groupedData[dateKey]) {
+                    groupedData[dateKey] = { income: 0, expense: 0 };
+                }
+
+                if (t.type === 'รายรับ') {
+                    groupedData[dateKey].income += parseFloat(t.amount);
+                } else {
+                    groupedData[dateKey].expense += parseFloat(t.amount);
+                }
+            });
+
+            // 2. Sort by date ascending to plot nicely from left to right
+            const sortedDates = Object.keys(groupedData).sort();
+
+            // 3. Prepare Chart.js datasets
+            const labels = sortedDates.map(d => {
+                const options = { day: 'numeric', month: 'short' };
+                return new Date(d).toLocaleDateString('th-TH', options);
+            });
+            const incomeData = sortedDates.map(d => groupedData[d].income);
+            const expenseData = sortedDates.map(d => groupedData[d].expense);
+
+            // Destroy previous chart if exists
+            if (financeChartInstance) {
+                financeChartInstance.destroy();
+            }
+
+            // Create new chart
+            financeChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'รายรับ (Income)',
+                            data: incomeData,
+                            backgroundColor: 'rgba(56, 239, 125, 0.6)',
+                            borderColor: '#11998e',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'รายจ่าย (Expense)',
+                            data: expenseData,
+                            backgroundColor: 'rgba(245, 87, 108, 0.6)',
+                            borderColor: '#f5576c',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return '฿' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += '฿' + context.parsed.y.toLocaleString();
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
         async function fetchFinanceData() {
             try {
-                const response = await fetch('/api/admin/finance', {
+                const typeFilter = document.getElementById('typeFilter').value;
+                const startDate = document.getElementById('startDateFilter').value;
+                const endDate = document.getElementById('endDateFilter').value;
+
+                let urlFilter = '/api/admin/finance?';
+                if (typeFilter) urlFilter += `type=${encodeURIComponent(typeFilter)}&`;
+                if (startDate) urlFilter += `startDate=${encodeURIComponent(startDate)}&`;
+                if (endDate) urlFilter += `endDate=${encodeURIComponent(endDate)}`;
+
+                document.getElementById('transactionTableBody').innerHTML = '<tr><td colspan="5" class="text-center">กำลังโหลดข้อมูล...</td></tr>';
+
+                const response = await fetch(urlFilter, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+
+                if (response.status === 401 || response.status === 403) {
+                    alert('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+                    localStorage.removeItem('adminToken');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
                 const data = await response.json();
 
                 if (data.success) {
@@ -200,10 +322,13 @@
                     document.getElementById('totalExpense').textContent = '฿' + data.summary.totalExpense.toLocaleString();
                     document.getElementById('balanceAmount').textContent = '฿' + data.summary.balance.toLocaleString();
 
+                    // Render Chart
+                    renderChart(data.transactions);
+
                     // Update Transactions Table
                     const tbody = document.getElementById('transactionTableBody');
                     if (data.transactions.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center">ไม่พบข้อมูลการทำธุรกรรม</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">ไม่พบข้อมูลการทำธุรกรรมในช่วงเวลานี้</td></tr>';
                     } else {
                         tbody.innerHTML = data.transactions.map(t => {
                             const dateObj = new Date(t.date || t.created_at);
@@ -228,6 +353,7 @@
                     }
                 } else {
                     console.error('Failed to load finance data');
+                    document.getElementById('transactionTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger">ไม่สามารถโหลดข้อมูลได้</td></tr>';
                 }
             } catch (error) {
                 console.error('Error fetching finance data:', error);
