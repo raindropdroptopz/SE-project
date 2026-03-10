@@ -563,10 +563,10 @@
 
                         <div class="text-start">
                             <label for="slipUpload" class="form-label fw-bold"><i
-                                    class="bi bi-file-earmark-image me-2"></i>อัปโหลดสลิปโอนเงิน (ไม่จำเป็น)</label>
-                            <input class="form-control" type="file" id="slipUpload" accept="image/*">
-                            <small class="text-muted">คุณสามารถแนบสลิปเพื่อความรวดเร็วในการตรวจสอบ
-                                หรือข้ามไปก่อนได้</small>
+                                    class="bi bi-file-earmark-image me-2"></i>อัปโหลดสลิปโอนเงิน <span
+                                    class="text-danger">*จำเป็น</span></label>
+                            <input class="form-control" type="file" id="slipUpload" accept="image/*" required>
+                            <small class="text-muted">กรุณาแนบภาพสลิปการโอนเงินเพื่อยืนยันการจองของคุณ</small>
                         </div>
                     </div>
                     <div class="modal-footer d-flex justify-content-between">
@@ -859,17 +859,19 @@
         document.getElementById('confirmPaymentBtn').addEventListener('click', async function () {
             if (!pendingBookingData) return;
 
+            const slipFile = document.getElementById('slipUpload').files[0];
+            if (!slipFile) {
+                alert('กรุณาแนบสลิปโอนเงินก่อนส่งข้อมูลการจอง');
+                return;
+            }
+
             const confirmBtn = this;
             confirmBtn.disabled = true;
             confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>กำลังส่งข้อมูล...';
 
             const formData = new FormData();
             formData.append('bookingData', JSON.stringify(pendingBookingData));
-
-            const slipFile = document.getElementById('slipUpload').files[0];
-            if (slipFile) {
-                formData.append('slip', slipFile);
-            }
+            formData.append('slip', slipFile);
 
             try {
                 const token = localStorage.getItem('userToken');
