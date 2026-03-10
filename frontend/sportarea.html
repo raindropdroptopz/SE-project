@@ -210,9 +210,9 @@
             background: rgba(102, 126, 234, 0.05);
         }
 
-        .court-grid {
+        .courts-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 25px;
         }
 
@@ -257,12 +257,12 @@
         }
 
         .court-badge.popular {
-            background: var(--primary-gradient);
+            background: #6c5ce7;
             color: white;
         }
 
         .court-badge.available {
-            background: rgba(17, 153, 142, 0.9);
+            background: #6ab04c;
             color: white;
         }
 
@@ -324,7 +324,7 @@
         }
 
         .status-dot.available {
-            background: #38ef7d;
+            background: #6ab04c;
         }
 
         .status-dot.busy {
@@ -332,10 +332,13 @@
         }
 
         .btn-book {
-            padding: 12px 25px;
-            background: var(--primary-gradient);
+            padding: 10px 20px;
+            /* Reduced padding slightly to match image */
+            background: #6c5ce7;
+            /* Solid purple matches image */
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
+            /* Slightly less rounded */
             color: white;
             font-weight: 600;
             text-decoration: none;
@@ -343,10 +346,11 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            font-size: 0.95rem;
         }
 
         .btn-book:hover {
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            background: #5b4bc4;
             color: white;
             transform: translateY(-2px);
         }
@@ -457,7 +461,7 @@
                 </div>
             </div>
 
-            <div class="court-grid">
+            <div class="courts-grid">
                 <div class="court-card">
                     <div class="court-img-container">
                         <img class="court-img"
@@ -618,27 +622,46 @@
 
             container.innerHTML = '';
             courts.forEach(court => {
-                const statusClass = court.status === 'available' ? 'available' : 'unavailable';
-                const statusText = court.status === 'available' ? 'พร้อมใช้งาน' : 'ไม่พร้อมใช้งาน';
+                const isAvailable = court.status === 'available';
+                const statusDot = isAvailable ? 'available' : 'unavailable';
+                const statusText = isAvailable ? 'พร้อมใช้งาน' : 'ไม่พร้อมใช้งาน';
+
+                let badgeHtml = '';
+                if (court.name.includes('ฟุตบอล') || court.name.includes('บาส')) {
+                    badgeHtml = `<span class="court-badge popular"><i class="bi bi-star-fill me-1"></i> ยอดนิยม</span>`;
+                } else if (isAvailable) {
+                    badgeHtml = `<span class="court-badge available"><i class="bi bi-check-circle me-1"></i> ว่าง</span>`;
+                }
+
+                let extraFeature = '';
+                if (court.name.includes('ฟุตบอล')) extraFeature = `<div class="feature"><i class="bi bi-lightbulb"></i> มีไฟส่องสนาม</div>`;
+                else if (court.name.includes('บาส')) extraFeature = `<div class="feature"><i class="bi bi-snow"></i> ปรับอากาศ</div>`;
+                else if (court.name.includes('เทนนิส')) extraFeature = `<div class="feature"><i class="bi bi-box"></i> มีอุปกรณ์ให้ยืม</div>`;
+
+                const btnHtml = isAvailable
+                    ? `<a href="/court-booking.html?courtId=${court.id}" class="btn-book"><i class="bi bi-plus-square"></i> จองสนาม</a>`
+                    : `<button class="btn-book" disabled style="opacity: 0.5; background: #ccc; color: #666; cursor: not-allowed;"><i class="bi bi-plus-square"></i> ไม่พร้อม</button>`;
 
                 const card = `
                     <div class="court-card">
-                        <img class="court-img" src="${court.image_url || '/photo/default.jpg'}" alt="${court.name}">
+                        <div class="court-img-container">
+                            <img class="court-img" src="${court.image_url || '/photo/default.jpg'}" alt="${court.name}">
+                            ${badgeHtml}
+                        </div>
                         <div class="court-body">
                             <h3 class="court-name">${court.name}</h3>
                             <p class="court-desc">${court.description || ''}</p>
                             <div class="court-features">
-                                <span><i class="bi bi-people"></i> จุคน: ${court.capacity || 10}</span>
-                                <span><i class="bi bi-clock"></i> ${court.open_time ? court.open_time.substring(0, 5) : '08:00'} - ${court.close_time ? court.close_time.substring(0, 5) : '20:00'}</span>
+                                <div class="feature"><i class="bi bi-people"></i> ${court.capacity || 10} คน</div>
+                                <div class="feature"><i class="bi bi-clock"></i> ${court.open_time ? court.open_time.substring(0, 5) : '08:00'}-${court.close_time ? court.close_time.substring(0, 5) : '20:00'}</div>
+                                ${extraFeature}
                             </div>
                             <div class="court-footer">
-                                <span class="court-status ${statusClass}">
-                                    <i class="bi bi-circle-fill"></i> ${statusText}
-                                </span>
-                                ${court.status === 'available'
-                        ? `<a href="/court-booking.html?courtId=${court.id}&courtName=${encodeURIComponent(court.name)}" class="btn-book">จองสนาม</a>`
-                        : `<button class="btn-book" disabled style="opacity: 0.5; cursor: not-allowed;">ไม่พร้อม</button>`
-                    }
+                                <div class="court-status">
+                                    <span class="status-dot ${statusDot}"></span>
+                                    <span style="font-weight: 600; font-size: 0.9rem; color: #1a1c2e;">${statusText}</span>
+                                </div>
+                                ${btnHtml}
                             </div>
                         </div>
                     </div>

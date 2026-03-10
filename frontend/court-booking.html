@@ -623,29 +623,70 @@
         // CAll the function immediately
         updateHeaderButtons();
 
-        const courts = {
-            football: { name: 'สนามฟุตบอลและลู่วิ่ง', desc: 'สำหรับกิจกรรมฟุตบอลและการฝึกซ้อมวิ่งรอบสนาม', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT2dHK0IJCWFlgb-tGAJN8JR3_yV6BXJunZXA&s', price: 500 },
-            basketball: { name: 'สนามบาสเกตบอล', desc: 'สนามบาสเกตบอลในร่มสำหรับทั้งการฝึกซ้อมและแข่งขัน', img: '/photo/bask.png', price: 400 },
-            tennis: { name: 'สนามเทนนิส', desc: 'สนามเทนนิสมาตรฐานพร้อมอุปกรณ์ให้เช่า', img: 'https://image.made-in-china.com/202f0j00IACaTmtMszpE/Outdoor-Basketball-Tennis-Badminton-and-Volleyball-Court-Flooring-Material.webp', price: 350 },
-            badminton: { name: 'สนามแบดมินตัน', desc: 'สนามแบดมินตันในร่ม มีตาข่ายและเส้นขอบสนามมาตรฐาน', img: '/Users/medusa/Desktop/SE-project-main/Project/photo/badminton_court_hq_1770146551487.png', price: 300 },
-            volleyball: { name: 'สนามวอลเลย์บอล', desc: 'สนามวอลเลย์บอลในร่ม มีตาข่ายและเสาพร้อมใช้งาน', img: 'https://img.freepik.com/premium-photo/gym-volleyball-game_1142512-34988.jpg', price: 450 }
-        };
-
         const params = new URLSearchParams(window.location.search);
-        const court = params.get('court');
-        let currentCourt = courts.football;
-        if (court && courts[court]) {
-            currentCourt = courts[court];
+        const courtId = params.get('courtId');
+        const courtSlug = params.get('court'); // For legacy support
+        let currentCourt = null;
+
+        async function loadCourtDetails() {
+            try {
+                let url = '';
+                if (courtId) {
+                    url = `/api/bookings/courts/${courtId}`;
+                } else if (courtSlug) {
+                    // Fallback to searching by name for legacy links
+                    const courtNameMap = {
+                        'football': 'สนามฟุตบอลและลู่วิ่ง',
+                        'basketball': 'สนามบาสเกตบอล',
+                        'tennis': 'สนามเทนนิส',
+                        'badminton': 'สนามแบดมินตัน',
+                        'volleyball': 'สนามวอลเลย์บอล'
+                    };
+                    const searchName = courtNameMap[courtSlug] || courtSlug;
+                    const res = await fetch('/api/bookings/courts');
+                    const allCourts = await res.json();
+                    if (allCourts.success) {
+                        currentCourt = allCourts.courts.find(c => c.name.includes(searchName));
+                    }
+                }
+
+                if (url) {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    if (data.success) {
+                        currentCourt = data.court;
+                    }
+                }
+
+                if (currentCourt) {
+                    updateCourtUI(currentCourt);
+                } else {
+                    alert('ไม่พบข้อมูลสนามกีฬา');
+                }
+            } catch (error) {
+                console.error('Error loading court details:', error);
+            }
         }
-        document.getElementById('courtName').textContent = currentCourt.name;
-        document.getElementById('courtDesc').textContent = currentCourt.desc;
-        document.getElementById('courtImage').src = currentCourt.img;
-        document.getElementById('courtPrice').textContent = `฿${currentCourt.price} / ชม.`;
-        document.getElementById('summaryCourtName').textContent = currentCourt.name;
-        document.getElementById('summaryPrice').textContent = `฿${currentCourt.price}`;
-        document.getElementById('summaryTotal').textContent = `฿${currentCourt.price}`;
-        document.getElementById('courtType').value = currentCourt.name;
-        document.title = 'จอง' + currentCourt.name + ' - Payap Sports';
+
+        function updateCourtUI(court) {
+            document.getElementById('courtName').textContent = court.name;
+            document.getElementById('courtDesc').textContent = court.description || '';
+            document.getElementById('courtImage').src = court.image_url || '/photo/default.jpg';
+            document.getElementById('courtPrice').textContent = `฿${court.price} / ชม.`;
+            document.getElementById('summaryCourtName').textContent = court.name;
+            document.getElementById('summaryPrice').textContent = `฿${court.price}`;
+            document.getElementById('summaryTotal').textContent = `฿${court.price}`;
+            document.getElementById('courtType').value = court.name;
+            document.title = 'จอง' + court.name + ' - Payap Sports';
+
+            // Re-fetch booked slots for this court
+            const date = document.getElementById('bookingDate').value;
+            if (date) {
+                fetchBookedSlots(date);
+            }
+        }
+
+        loadCourtDetails();
 
         const allTimeSlots = ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00'];
         let bookedSlots = [];

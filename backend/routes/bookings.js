@@ -527,14 +527,30 @@ router.put('/:id/cancel', authenticateToken, async (req, res) => {
 });
 
 // ===============================================
-// GET /api/courts - ดึงรายการสนามทั้งหมด
+// GET /api/bookings/courts - ดึงรายการสนามทั้งหมด (เฉพาะที่ใช้งานได้)
 // ===============================================
 router.get('/courts', async (req, res) => {
     try {
-        const [courts] = await db.execute('SELECT * FROM courts WHERE status = "available"');
+        const [courts] = await db.execute('SELECT * FROM courts WHERE status != "maintenance"');
         res.json({ success: true, courts });
     } catch (error) {
         console.error('Get courts error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    }
+});
+
+// ===============================================
+// GET /api/bookings/courts/:id - ดึงข้อมูลสนามตาม ID
+// ===============================================
+router.get('/courts/:id', async (req, res) => {
+    try {
+        const [courts] = await db.execute('SELECT * FROM courts WHERE id = ?', [req.params.id]);
+        if (courts.length === 0) {
+            return res.status(404).json({ success: false, message: 'ไม่พบสนามกีฬา' });
+        }
+        res.json({ success: true, court: courts[0] });
+    } catch (error) {
+        console.error('Get court error:', error);
         res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
     }
 });
