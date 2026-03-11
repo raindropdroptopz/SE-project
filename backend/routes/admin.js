@@ -370,41 +370,6 @@ router.post('/courts', authenticateAdmin, async (req, res) => {
     }
 });
 
-// ===============================================
-// POST /api/admin/users - เพิ่มผู้ใช้ใหม่
-// ===============================================
-router.post('/users', authenticateAdmin, async (req, res) => {
-    try {
-        const { email, password, fullName, studentId, phone, userType, role } = req.body;
-
-        // ตรวจสอบว่ามี email นี้อยู่แล้วหรือไม่
-        const [existingUsers] = await db.execute(
-            'SELECT id FROM users WHERE email = ?',
-            [email]
-        );
-
-        if (existingUsers.length > 0) {
-            return res.status(400).json({ success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว' });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        const [result] = await db.execute(`
-            INSERT INTO users (email, password, full_name, student_id, phone, user_type, role) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [email, hashedPassword, fullName, studentId || null, phone || null, userType || 'student', role || 'user']);
-
-        res.status(201).json({
-            success: true,
-            message: 'เพิ่มผู้ใช้สำเร็จ',
-            userId: result.insertId
-        });
-
-    } catch (error) {
-        console.error('Add user error:', error);
-        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
-    }
-});
 
 // ===============================================
 // GET /api/admin/finance - ข้อมูลรายรับรายจ่าย พร้อมตัวกรอง

@@ -497,7 +497,7 @@
                         <div class="court-features">
                             <div class="feature"><i class="bi bi-people"></i> 10 คน</div>
                             <div class="feature"><i class="bi bi-clock"></i> 08:00-20:00</div>
-                            <div class="feature"><i class="bi bi-snow"></i> ปรับอากาศ</div>
+                            <div class="feature"><i class="bi bi-lightbulb"></i> มีไฟส่องสนาม</div>
                             <div class="feature fw-bold text-success"><i class="bi bi-tag-fill"></i> ฿400 / ชม.</div>
                         </div>
                         <div class="court-footer">
@@ -546,7 +546,7 @@
                         <div class="court-features">
                             <div class="feature"><i class="bi bi-people"></i> 4 คน</div>
                             <div class="feature"><i class="bi bi-clock"></i> 08:00-20:00</div>
-                            <div class="feature"><i class="bi bi-snow"></i> ปรับอากาศ</div>
+                            <div class="feature"><i class="bi bi-box-seam"></i> ปรับอากาศ</div>
                             <div class="feature fw-bold text-success"><i class="bi bi-tag-fill"></i> ฿300 / ชม.</div>
                         </div>
                         <div class="court-footer">
@@ -634,9 +634,15 @@
                 }
 
                 let extraFeature = '';
-                if (court.name.includes('ฟุตบอล')) extraFeature = `<div class="feature"><i class="bi bi-lightbulb"></i> มีไฟส่องสนาม</div>`;
-                else if (court.name.includes('บาส')) extraFeature = `<div class="feature"><i class="bi bi-snow"></i> ปรับอากาศ</div>`;
-                else if (court.name.includes('เทนนิส')) extraFeature = `<div class="feature"><i class="bi bi-box"></i> มีอุปกรณ์ให้ยืม</div>`;
+                if (court.name.includes('ฟุตบอล') || court.name.includes('บาส')) {
+                    extraFeature = `<div class="feature"><i class="bi bi-lightbulb"></i> มีไฟส่องสนาม</div>`;
+                } else if (court.name.includes('เทนนิส')) {
+                    extraFeature = `<div class="feature"><i class="bi bi-box-seam"></i> มีอุปกรณ์ให้ยืม</div>`;
+                } else if (court.name.includes('แบดมินตัน')) {
+                    extraFeature = `<div class="feature"><i class="bi bi-box-seam"></i> ปรับอากาศ</div>`;
+                } else if (court.name.includes('วอลเลย์บอล')) {
+                    extraFeature = `<div class="feature"><i class="bi bi-snow"></i> ปรับอากาศ</div>`;
+                }
 
                 const btnHtml = isAvailable
                     ? `<a href="/court-booking.html?courtId=${court.id}" class="btn-book"><i class="bi bi-plus-square"></i> จองสนาม</a>`
@@ -655,6 +661,7 @@
                                 <div class="feature"><i class="bi bi-people"></i> ${court.capacity || 10} คน</div>
                                 <div class="feature"><i class="bi bi-clock"></i> ${court.open_time ? court.open_time.substring(0, 5) : '08:00'}-${court.close_time ? court.close_time.substring(0, 5) : '20:00'}</div>
                                 ${extraFeature}
+                                <div class="feature fw-bold text-success"><i class="bi bi-tag-fill"></i> ฿${court.price || 0} / ชม.</div>
                             </div>
                             <div class="court-footer">
                                 <div class="court-status">
