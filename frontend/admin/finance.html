@@ -164,11 +164,12 @@
                         <th>ประเภท</th>
                         <th>จำนวนเงิน</th>
                         <th>หมายเหตุ</th>
+                        <th>สถานะสลิป</th>
                     </tr>
                 </thead>
                 <tbody id="transactionTableBody">
                     <tr>
-                        <td colspan="5" class="text-center">กำลังโหลดข้อมูล...</td>
+                        <td colspan="6" class="text-center">กำลังโหลดข้อมูล...</td>
                     </tr>
                 </tbody>
             </table>
@@ -179,6 +180,29 @@
             </div>
         </div>
     </main>
+
+    <!-- Slip Preview Modal -->
+    <div class="modal fade" id="slipModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header" style="background: var(--primary-gradient); color: white;">
+                    <h5 class="modal-title"><i class="bi bi-image me-2"></i>สลิปการชำระเงิน</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <img id="slipModalImg" src="" alt="สลิปโอนเงิน" class="img-fluid rounded shadow"
+                        style="max-height: 70vh; object-fit: contain;"
+                        onerror="this.src=''; this.parentElement.innerHTML='<p class=\'text-danger\'><i class=\'bi bi-image-alt me-2\'></i>ไม่สามารถโหลดรูปได้</p>'">
+                </div>
+                <div class="modal-footer">
+                    <a id="slipModalDownload" href="#" target="_blank" class="btn btn-outline-primary">
+                        <i class="bi bi-download me-1"></i>เปิดรูปเต็มขนาด
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -368,7 +392,7 @@
                     // Update Transactions Table
                     const tbody = document.getElementById('transactionTableBody');
                     if (data.transactions.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">ไม่พบข้อมูลการทำธุรกรรมในช่วงเวลานี้</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">ไม่พบข้อมูลการทำธุรกรรมในช่วงเวลานี้</td></tr>';
                     } else {
                         tbody.innerHTML = data.transactions.map(t => {
                             const dateObj = new Date(t.date || t.created_at);
@@ -380,27 +404,85 @@
                             const amountColor = isIncome ? '#11998e' : '#f5576c';
                             const sign = isIncome ? '+' : '-';
 
+                            // Payment status badge
+                            const statusMap = { pending: 'รอตรวจ', verified: 'ยืนยันแล้ว', rejected: 'ปฏิเสธ' };
+                            const statusColor = { pending: '#ffc107', verified: '#11998e', rejected: '#f5576c' };
+                            const ps = t.payment_status || 'pending';
+                            const slipHtml = t.payment_slip
+                                ? `<button data-slip="${t.payment_slip}" class="btn btn-sm btn-outline-primary ms-1 slip-btn" title="ดูสลิป"><i class="bi bi-image"></i> ดูสลิป</button>`
+                                : '<span class="text-muted" style="font-size:0.8em;">ไม่มีสลิป</span>';
+                            const verifyBtns = ps === 'pending' ? `
+                                <button data-payment-id="${t.id}" data-action="verified" class="btn btn-sm btn-success ms-1 verify-btn" title="ยืนยัน"><i class="bi bi-check"></i></button>
+                                <button data-payment-id="${t.id}" data-action="rejected" class="btn btn-sm btn-danger ms-1 verify-btn" title="ปฏิเสธ"><i class="bi bi-x"></i></button>
+                            ` : '';
+
                             return `
                                 <tr>
                                     <td>${formatDate}</td>
                                     <td>${t.description}</td>
                                     <td><span class="status-badge ${badgeClass}">${t.type}</span></td>
                                     <td style="color:${amountColor}; font-weight:600;">${sign}฿${t.amount.toLocaleString()}</td>
-                                    <td>${t.note || '-'}</td>
+                                    <td style="font-size:0.85em;">${t.note || '-'}</td>
+                                    <td>
+                                        <span style="color:${statusColor[ps]}; font-weight:600;">${statusMap[ps]}</span>
+                                        ${slipHtml}${verifyBtns}
+                                    </td>
                                 </tr>
                             `;
                         }).join('');
                     }
                 } else {
                     console.error('Failed to load finance data');
-                    document.getElementById('transactionTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger">ไม่สามารถโหลดข้อมูลได้</td></tr>';
+                    document.getElementById('transactionTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger">ไม่สามารถโหลดข้อมูลได้</td></tr>';
                 }
             } catch (error) {
                 console.error('Error fetching finance data:', error);
-                document.getElementById('transactionTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+                document.getElementById('transactionTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
             }
         }
+
+        async function updatePaymentStatus(paymentId, status) {
+            const label = status === 'verified' ? 'ยืนยัน' : 'ปฏิเสธ';
+            if (!confirm(`ต้องการ ${label} สลิปการชำระนี้ใช่ไหม?`)) return;
+            try {
+                const res = await fetch(`/api/admin/payments/${paymentId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ status })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    fetchFinanceData();
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + data.message);
+                }
+            } catch(e) {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+            }
+        }
+
+        function showSlip(slipPath) {
+            document.getElementById('slipModalImg').src = slipPath;
+            document.getElementById('slipModalDownload').href = slipPath;
+            const modal = new bootstrap.Modal(document.getElementById('slipModal'));
+            modal.show();
+        }
+
+        // Event delegation — handles dynamically-rendered slip and verify buttons
+        document.addEventListener('click', function(e) {
+            const slipBtn = e.target.closest('.slip-btn');
+            if (slipBtn) {
+                e.preventDefault();
+                showSlip(slipBtn.dataset.slip);
+                return;
+            }
+            const verifyBtn = e.target.closest('.verify-btn');
+            if (verifyBtn) {
+                e.preventDefault();
+                updatePaymentStatus(verifyBtn.dataset.paymentId, verifyBtn.dataset.action);
+            }
+        });
     </script>
 </body>
-
 </html>

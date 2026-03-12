@@ -269,10 +269,15 @@ router.put('/:id', authenticateToken, async (req, res) => {
 // ===============================================
 // POST /api/bookings - สร้างการจองใหม่
 // ===============================================
-router.post('/', async (req, res) => {
+router.post('/', upload.single('payment_slip'), async (req, res) => {
     let connection;
     try {
-        const { user_email, court_type, booking_date, start_time, end_time, players, note, equipments } = req.body;
+        const { user_email, court_type, booking_date, start_time, end_time, players, note } = req.body;
+        let equipments = [];
+        if (req.body.equipments) {
+            try { equipments = JSON.parse(req.body.equipments); } catch(e) {}
+        }
+        const payment_slip_url = req.file ? '/photo/slips/' + req.file.filename : null;
 
         // ค้นหา user จาก email
         const [users] = await db.execute('SELECT id FROM users WHERE email = ?', [user_email]);
@@ -288,7 +293,7 @@ router.post('/', async (req, res) => {
         await connection.beginTransaction();
 
         // ค้นหา court จากชื่อ
-        const [courts] = await connection.execute('SELECT id FROM courts WHERE name LIKE ?', [`%${court_type}%`]);
+        const [courts] = await connection.execute('SELECT id, price FROM courts WHERE name LIKE ?', [`%${court_type}%`]);
 
         if (courts.length === 0) {
             await connection.rollback();
@@ -296,6 +301,7 @@ router.post('/', async (req, res) => {
         }
 
         const courtId = courts[0].id;
+        const courtPriceRate = courts[0].price || 0;
 
         // ตรวจสอบว่าช่วงเวลานี้ว่างหรือไม่ (ใช้ FOR UPDATE เพื่อป้องกันการจองชนกันในเสี้ยววินาที)
         const [existingBookings] = await connection.execute(`
@@ -336,9 +342,9 @@ router.post('/', async (req, res) => {
 
         // สร้างการจอง (สถานะ pending รอ admin อนุมัติ)
         const [result] = await connection.execute(`
-            INSERT INTO bookings (user_id, court_id, booking_date, start_time, end_time, players, note, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
-        `, [userId, courtId, booking_date, start_time, end_time, players || 1, finalNote || null]);
+            INSERT INTO bookings (user_id, court_id, booking_date, start_time, end_time, players, note, status, payment_slip)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+        `, [userId, courtId, booking_date, start_time, end_time, players || 1, finalNote || null, payment_slip_url]);
 
         // Insert equipment bookings and update stock
         if (equipments && Array.isArray(equipments) && equipments.length > 0) {
@@ -365,13 +371,53 @@ router.post('/', async (req, res) => {
             }
         }
 
+        // ── สร้าง Payment Record ──────────────────────────────────────────
+        // คำนวณชั่วโมงจอง
+        const startParts = start_time.split(':').map(Number);
+        const endParts = end_time.split(':').map(Number);
+        const startMins = startParts[0] * 60 + (startParts[1] || 0);
+        const endMins = endParts[0] * 60 + (endParts[1] || 0);
+        const courtHours = parseFloat(((endMins - startMins) / 60).toFixed(1));
+        const courtSubtotal = Math.round(courtPriceRate * courtHours);
+
+        // คำนวณราคาอุปกรณ์
+        let equipmentSubtotal = 0;
+        const paymentItemRows = [];
+        if (equipments && equipments.length > 0) {
+            for (const item of equipments) {
+                const [eqPriceRows] = await connection.execute('SELECT price FROM equipment WHERE id = ?', [item.id]);
+                const unitPrice = eqPriceRows.length > 0 ? (eqPriceRows[0].price || 0) : 0;
+                const itemSubtotal = unitPrice * item.quantity;
+                equipmentSubtotal += itemSubtotal;
+                paymentItemRows.push({ id: item.id, name: item.name, unit_price: unitPrice, quantity: item.quantity, subtotal: itemSubtotal });
+            }
+        }
+        const totalAmount = courtSubtotal + equipmentSubtotal;
+
+        // Insert into payments
+        const [paymentResult] = await connection.execute(`
+            INSERT INTO payments (booking_id, user_id, court_price_rate, court_hours, court_subtotal, equipment_subtotal, total_amount, payment_slip, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+        `, [result.insertId, userId, courtPriceRate, courtHours, courtSubtotal, equipmentSubtotal, totalAmount, payment_slip_url]);
+
+        // Insert payment_items (one row per equipment)
+        for (const pi of paymentItemRows) {
+            await connection.execute(`
+                INSERT INTO payment_items (payment_id, equipment_id, equipment_name, unit_price, quantity, subtotal)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `, [paymentResult.insertId, pi.id, pi.name, pi.unit_price, pi.quantity, pi.subtotal]);
+        }
+
         await connection.commit();
 
         res.status(201).json({
             success: true,
             message: 'จองสนามสำเร็จ',
-            bookingId: result.insertId
+            bookingId: result.insertId,
+            paymentId: paymentResult.insertId,
+            totalAmount
         });
+
 
     } catch (error) {
         if (connection) {
@@ -387,7 +433,7 @@ router.post('/', async (req, res) => {
 });
 
 // ===============================================
-// POST /api/bookings/with-payment - สร้างการจองใหม่พร้อมหลักฐานการโอนเงิน (Optional)
+// POST /api/bookings/with-payment - สร้างการจองใหม่พร้อมหลักฐานการโอนเงิน
 // ===============================================
 router.post('/with-payment', authenticateToken, upload.single('slip'), async (req, res) => {
     let connection;
@@ -401,29 +447,30 @@ router.post('/with-payment', authenticateToken, upload.single('slip'), async (re
         const { court_type, booking_date, start_time, end_time, players, note, equipments } = data;
         const userId = req.user.userId;
 
+        // Path ของสลิปที่อัปโหลด
+        const payment_slip_url = req.file ? '/photo/slips/' + req.file.filename : null;
+
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        const [courts] = await connection.execute('SELECT id FROM courts WHERE name LIKE ?', [`%${court_type}%`]);
-
+        // ดึงข้อมูลสนาม พร้อม price
+        const [courts] = await connection.execute('SELECT id, price FROM courts WHERE name LIKE ?', [`%${court_type}%`]);
         if (courts.length === 0) {
             await connection.rollback();
             return res.status(404).json({ success: false, message: 'ไม่พบสนามกีฬา' });
         }
-
         const courtId = courts[0].id;
+        const courtPriceRate = courts[0].price || 0;
 
+        // ตรวจสอบช่วงเวลาว่าง
         const [existingBookings] = await connection.execute(`
             SELECT id FROM bookings 
-            WHERE court_id = ? 
-            AND booking_date = ? 
-            AND status != 'cancelled'
+            WHERE court_id = ? AND booking_date = ? AND status != 'cancelled'
             AND (
                 (start_time <= ? AND end_time > ?) OR
                 (start_time < ? AND end_time >= ?) OR
                 (start_time >= ? AND end_time <= ?)
-            )
-            FOR UPDATE
+            ) FOR UPDATE
         `, [courtId, booking_date, start_time, start_time, end_time, end_time, start_time, end_time]);
 
         if (existingBookings.length > 0) {
@@ -431,6 +478,7 @@ router.post('/with-payment', authenticateToken, upload.single('slip'), async (re
             return res.status(400).json({ success: false, message: 'ช่วงเวลานี้ถูกจองแล้ว กรุณาเลือกเวลาอื่น' });
         }
 
+        // ตรวจสอบ stock อุปกรณ์
         let finalNote = note || '';
         if (equipments && Array.isArray(equipments) && equipments.length > 0) {
             for (const item of equipments) {
@@ -444,13 +492,14 @@ router.post('/with-payment', authenticateToken, upload.single('slip'), async (re
             finalNote = finalNote ? `${finalNote} | ${eqText}` : eqText;
         }
 
+        // Insert booking
         const [result] = await connection.execute(`
-            INSERT INTO bookings (user_id, court_id, booking_date, start_time, end_time, players, note, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
-        `, [userId, courtId, booking_date, start_time, end_time, players || 1, finalNote || null]);
-
+            INSERT INTO bookings (user_id, court_id, booking_date, start_time, end_time, players, note, status, payment_slip)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+        `, [userId, courtId, booking_date, start_time, end_time, players || 1, finalNote || null, payment_slip_url]);
         const bookingId = result.insertId;
 
+        // Insert equipment_bookings + update stock
         if (equipments && Array.isArray(equipments) && equipments.length > 0) {
             for (const item of equipments) {
                 await connection.execute(`
@@ -460,29 +509,57 @@ router.post('/with-payment', authenticateToken, upload.single('slip'), async (re
 
                 const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ?', [item.id]);
                 if (eqRows.length > 0) {
-                    let newAvailable = eqRows[0].available - item.quantity;
-                    let newStatus = 'available';
-                    if (newAvailable === 0) newStatus = 'out';
-                    else if (newAvailable <= 2) newStatus = 'low';
-
-                    await connection.execute(
-                        'UPDATE equipment SET available = ?, status = ? WHERE id = ?',
-                        [newAvailable, newStatus, item.id]
-                    );
+                    let newAvail = eqRows[0].available - item.quantity;
+                    let newStatus = newAvail === 0 ? 'out' : newAvail <= 2 ? 'low' : 'available';
+                    await connection.execute('UPDATE equipment SET available = ?, status = ? WHERE id = ?', [newAvail, newStatus, item.id]);
                 }
             }
         }
 
-        if (req.file) {
-            const slipPath = `/uploads/receipts/${req.file.filename}`;
+        // ── คำนวณและบันทึก Payment Record ──────────────────────────────
+        const startParts = start_time.split(':').map(Number);
+        const endParts = end_time.split(':').map(Number);
+        const startMins = startParts[0] * 60 + (startParts[1] || 0);
+        const endMins = endParts[0] * 60 + (endParts[1] || 0);
+        const courtHours = parseFloat(((endMins - startMins) / 60).toFixed(1));
+        const courtSubtotal = Math.round(courtPriceRate * courtHours);
+
+        let equipmentSubtotal = 0;
+        const paymentItemRows = [];
+        if (equipments && equipments.length > 0) {
+            for (const item of equipments) {
+                const [eqPriceRows] = await connection.execute('SELECT price FROM equipment WHERE id = ?', [item.id]);
+                const unitPrice = eqPriceRows.length > 0 ? (eqPriceRows[0].price || 0) : 0;
+                const itemSubtotal = unitPrice * item.quantity;
+                equipmentSubtotal += itemSubtotal;
+                paymentItemRows.push({ id: item.id, name: item.name, unit_price: unitPrice, quantity: item.quantity, subtotal: itemSubtotal });
+            }
+        }
+        const totalAmount = courtSubtotal + equipmentSubtotal;
+
+        // Insert into payments
+        const [paymentResult] = await connection.execute(`
+            INSERT INTO payments (booking_id, user_id, court_price_rate, court_hours, court_subtotal, equipment_subtotal, total_amount, payment_slip, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+        `, [bookingId, userId, courtPriceRate, courtHours, courtSubtotal, equipmentSubtotal, totalAmount, payment_slip_url]);
+
+        // Insert payment_items (per equipment)
+        for (const pi of paymentItemRows) {
             await connection.execute(`
-                UPDATE bookings SET note = concat(ifnull(note, ''), '\n[สลิปโอนเงิน: ', ?, ']') WHERE id = ?
-            `, [slipPath, bookingId]);
+                INSERT INTO payment_items (payment_id, equipment_id, equipment_name, unit_price, quantity, subtotal)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `, [paymentResult.insertId, pi.id, pi.name, pi.unit_price, pi.quantity, pi.subtotal]);
         }
 
         await connection.commit();
 
-        res.status(201).json({ success: true, message: 'จองสนามและส่งข้อมูลสำเร็จ', bookingId: bookingId });
+        res.status(201).json({
+            success: true,
+            message: 'จองสนามและส่งสลิปสำเร็จ รอการยืนยันจากแอดมิน',
+            bookingId: bookingId,
+            paymentId: paymentResult.insertId,
+            totalAmount
+        });
 
     } catch (error) {
         if (connection) await connection.rollback();
@@ -492,6 +569,7 @@ router.post('/with-payment', authenticateToken, upload.single('slip'), async (re
         if (connection) connection.release();
     }
 });
+
 
 // ===============================================
 // PUT /api/bookings/:id/cancel - ยกเลิกการจอง
