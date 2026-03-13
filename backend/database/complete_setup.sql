@@ -98,6 +98,38 @@ CREATE TABLE IF NOT EXISTS equipment_bookings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ===============================================
+-- 7. ตาราง Payment
+-- ===============================================
+CREATE TABLE payments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  booking_id INT NOT NULL,
+  user_id INT NOT NULL,
+  court_price_rate INT NOT NULL,        -- ราคาสนาม/ชม. ณ เวลาที่จอง
+  court_hours DECIMAL(4,1) NOT NULL,    -- จำนวนชั่วโมงที่จอง
+  court_subtotal INT NOT NULL,          -- court_price_rate × court_hours
+  equipment_subtotal INT DEFAULT 0,     -- ราคาอุปกรณ์รวม
+  total_amount INT NOT NULL,            -- court_subtotal + equipment_subtotal
+  payment_slip VARCHAR(255),            -- path ภาพสลิป
+  status ENUM('pending','verified','rejected') DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+-- ===============================================
+-- 7. ตาราง Payment_items
+-- ===============================================
+CREATE TABLE payment_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  payment_id INT NOT NULL,
+  equipment_id INT NOT NULL,
+  equipment_name VARCHAR(255),
+  unit_price INT DEFAULT 0,
+  quantity INT DEFAULT 1,
+  subtotal INT DEFAULT 0,
+  FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
+);
+
+-- ===============================================
 -- 7. เพิ่มข้อมูลเริ่มต้น: สนามกีฬา
 -- ===============================================
 INSERT INTO courts (name, description, capacity, image_url) VALUES

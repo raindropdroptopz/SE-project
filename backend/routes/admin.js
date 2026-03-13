@@ -372,73 +372,66 @@ router.post('/courts', authenticateAdmin, async (req, res) => {
 
 
 // ===============================================
-// GET /api/admin/finance - ข้อมูลรายรับรายจ่าย พร้อมตัวกรอง
+// GET /api/admin/finance - ข้อมูลรายรับรายจ่าย จาก payments table
 // ===============================================
 router.get('/finance', authenticateAdmin, async (req, res) => {
     try {
         const { type, startDate, endDate } = req.query;
 
-        // Base criteria for valid bookings
-        let bookingConditions = `(b.status = 'confirmed' OR b.status = 'completed')`;
-        const queryParams = [];
-
+        // Build date filter
+        let dateCondition = '';
+        const params = [];
         if (startDate && endDate) {
-            bookingConditions += ` AND b.booking_date >= ? AND b.booking_date <= ?`;
-            queryParams.push(startDate, endDate);
+            dateCondition = 'AND DATE(p.created_at) >= ? AND DATE(p.created_at) <= ?';
+            params.push(startDate, endDate);
         } else if (startDate) {
-            bookingConditions += ` AND b.booking_date >= ?`;
-            queryParams.push(startDate);
+            dateCondition = 'AND DATE(p.created_at) >= ?';
+            params.push(startDate);
         } else if (endDate) {
-            bookingConditions += ` AND b.booking_date <= ?`;
-            queryParams.push(endDate);
+            dateCondition = 'AND DATE(p.created_at) <= ?';
+            params.push(endDate);
         }
 
-        // 1. Calculate Summary (Only if 'type' is not strictly 'รายจ่าย', since we only have income from courts)
-        let totalIncome = 0;
-        let totalExpense = 0;
-
-        if (!type || type === 'รายรับ') {
-            const [incomeResult] = await db.execute(`
-                SELECT IFNULL(SUM((HOUR(b.end_time) - HOUR(b.start_time)) * c.price), 0) as total_income
-                FROM bookings b
-                JOIN courts c ON b.court_id = c.id
-                WHERE ${bookingConditions}
-            `, queryParams);
-            totalIncome = parseInt(incomeResult[0].total_income);
-        }
-
+        // Calculate totals (only verified/pending = realised income)
+        const [incomeResult] = await db.execute(`
+            SELECT IFNULL(SUM(p.total_amount), 0) as total_income
+            FROM payments p
+            WHERE p.status IN ('pending','verified') ${dateCondition}
+        `, params);
+        const totalIncome = parseInt(incomeResult[0].total_income);
+        const totalExpense = 0; // ค่าใช้จ่ายเพิ่มเติมสามารถขยายต่อได้
         const balance = totalIncome - totalExpense;
 
-        // 2. Fetch Transactions
-        let transactions = [];
-        if (!type || type === 'รายรับ') {
-            const [bookingTransactions] = await db.execute(`
-                SELECT 
-                    b.id,
-                    b.booking_date as date,
-                    CONCAT('ค่าจอง', c.name, ' #BK', LPAD(b.id, 4, '0')) as description,
-                    'รายรับ' as type,
-                    ((HOUR(b.end_time) - HOUR(b.start_time)) * c.price) as amount,
-                    u.full_name as note,
-                    b.created_at
-                FROM bookings b
-                JOIN courts c ON b.court_id = c.id
-                JOIN users u ON b.user_id = u.id
-                WHERE ${bookingConditions}
-                ORDER BY b.booking_date DESC, b.created_at DESC
-            `, queryParams);
+        // Fetch transaction list
+        const [transactions] = await db.execute(`
+            SELECT
+                p.id,
+                p.created_at as date,
+                CONCAT('ค่าจอง', c.name, ' #BK', LPAD(b.id, 4, '0')) as description,
+                'รายรับ' as type,
+                p.total_amount as amount,
+                CONCAT(u.full_name, ' | สนาม ฿', p.court_subtotal, ' อุปกรณ์ ฿', p.equipment_subtotal) as note,
+                p.status as payment_status,
+                p.payment_slip,
+                p.court_price_rate,
+                p.court_hours,
+                p.court_subtotal,
+                p.equipment_subtotal
+            FROM payments p
+            JOIN bookings b ON p.booking_id = b.id
+            JOIN courts c ON b.court_id = c.id
+            JOIN users u ON p.user_id = u.id
+            WHERE 1=1 ${dateCondition}
+            ORDER BY p.created_at DESC
+        `, params);
 
-            transactions = bookingTransactions;
-        }
+        const filteredTransactions = type === 'รายจ่าย' ? [] :
+            (type === 'รายรับ' ? transactions : transactions);
 
         res.json({
             success: true,
-            summary: {
-                totalIncome,
-                totalExpense,
-                balance
-            },
-            transactions
+            summary: { totalIncome, totalExpense, balance },
+            transactions: filteredTransactions
         });
 
     } catch (error) {
@@ -446,6 +439,38 @@ router.get('/finance', authenticateAdmin, async (req, res) => {
         res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
     }
 });
+
+// ===============================================
+// PATCH /api/admin/payments/:id/status - ยืนยัน/ปฏิเสธสลิปชำระเงิน
+// ===============================================
+router.patch('/payments/:id/status', authenticateAdmin, async (req, res) => {
+    try {
+        const paymentId = req.params.id;
+        const { status } = req.body; // 'verified' or 'rejected'
+
+        if (!['verified', 'rejected'].includes(status)) {
+            return res.status(400).json({ success: false, message: 'สถานะไม่ถูกต้อง' });
+        }
+
+        // Update payment status
+        await db.execute('UPDATE payments SET status = ? WHERE id = ?', [status, paymentId]);
+
+        // If verified → confirm the booking too
+        if (status === 'verified') {
+            const [rows] = await db.execute('SELECT booking_id FROM payments WHERE id = ?', [paymentId]);
+            if (rows.length > 0) {
+                await db.execute("UPDATE bookings SET status = 'confirmed' WHERE id = ?", [rows[0].booking_id]);
+            }
+        }
+
+        res.json({ success: true, message: status === 'verified' ? 'ยืนยันสลิปสำเร็จ' : 'ปฏิเสธสลิปสำเร็จ' });
+
+    } catch (error) {
+        console.error('Update payment status error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    }
+});
+
 
 // ===============================================
 // GET /api/admin/receipts - ดึงข้อมูลใบเสร็จรับเงิน
