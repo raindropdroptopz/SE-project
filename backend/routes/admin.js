@@ -59,10 +59,12 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
 
         // การจองล่าสุด 10 รายการ
         const [recentBookings] = await db.execute(`
-            SELECT b.*, c.name as court_name, u.full_name as user_name
+            SELECT b.*, c.name as court_name, u.full_name as user_name,
+                   p.payment_slip, p.total_amount, p.status as payment_status
             FROM bookings b
             JOIN courts c ON b.court_id = c.id
             JOIN users u ON b.user_id = u.id
+            LEFT JOIN payments p ON b.id = p.booking_id
             ORDER BY b.created_at DESC
             LIMIT 10
         `);
