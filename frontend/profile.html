@@ -597,26 +597,29 @@
                     <!-- Profile Header Card -->
                     <div class="profile-header">
                         <div class="profile-avatar-container">
-                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300" alt="Profile"
-                                class="profile-avatar" id="profileImage">
-                            <div class="profile-avatar-edit">
-                                <i class="bi bi-camera"></i>
+                            <div class="position-relative">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300" alt="Profile"
+                                    class="profile-avatar" id="profileImage">
+                                <label for="imageUpload" class="profile-avatar-edit">
+                                    <i class="bi bi-camera"></i>
+                                </label>
+                                <input type="file" id="imageUpload" class="d-none" accept="image/*">
                             </div>
-                            <h2 class="profile-name" id="displayName">สมชาย ใจดี</h2>
-                            <span class="profile-role">นักศึกษา</span>
+                            <h2 class="profile-name" id="displayName">...</h2>
+                            <span class="profile-role" id="displayRole">...</span>
                         </div>
                         <div class="profile-stats">
                             <div class="stat-item">
-                                <h3>24</h3>
-                                <span>การจองทั้งหมด</span>
+                                <h3 id="statActive">0</h3>
+                                <span>กำลังใช้งาน</span>
                             </div>
                             <div class="stat-item">
-                                <h3>18</h3>
+                                <h3 id="statCompleted">0</h3>
                                 <span>สำเร็จแล้ว</span>
                             </div>
                             <div class="stat-item">
-                                <h3>3</h3>
-                                <span>กำลังจะมาถึง</span>
+                                <h3 id="statCancelled">0</h3>
+                                <span>ยกเลิกแล้ว</span>
                             </div>
                         </div>
                     </div>
@@ -890,17 +893,57 @@
                 const data = await response.json();
 
                 if (data.success && data.user) {
-                    document.getElementById('displayName').textContent = data.user.full_name;
-                    document.getElementById('fullName').value = data.user.full_name;
-                    document.getElementById('email').value = data.user.email;
-                    document.getElementById('studentId').value = data.user.student_id || '';
-                    document.getElementById('phone').value = data.user.phone || '';
-                    document.getElementById('faculty').value = data.user.faculty || '';
-                    document.getElementById('major').value = data.user.major || '';
+                    const user = data.user;
+                    const stats = data.stats;
+
+                    document.getElementById('displayName').textContent = user.full_name;
+                    document.getElementById('displayRole').textContent = user.user_type === 'student' ? 'นักศึกษา' : user.user_type === 'staff' ? 'บุคลากร' : 'บุคคลภายนอก';
+                    
+                    if (user.profile_image) {
+                        document.getElementById('profileImage').src = user.profile_image;
+                    }
+
+                    document.getElementById('fullName').value = user.full_name;
+                    document.getElementById('email').value = user.email;
+                    document.getElementById('studentId').value = user.student_id || '';
+                    document.getElementById('phone').value = user.phone || '';
+                    document.getElementById('faculty').value = user.faculty || '';
+                    document.getElementById('major').value = user.major || '';
+
+                    // อัปเดตสถิติ
+                    document.getElementById('statActive').textContent = stats.active_count || 0;
+                    document.getElementById('statCompleted').textContent = stats.completed_count || 0;
+                    document.getElementById('statCancelled').textContent = stats.cancelled_count || 0;
                 }
             } catch (error) {
                 console.error('Profile load error:', error);
             }
+
+            // จัดการอัปโหลดรูปภาพ
+            document.getElementById('imageUpload').addEventListener('change', async function(e) {
+                if (this.files && this.files[0]) {
+                    const formData = new FormData();
+                    formData.append('profileImage', this.files[0]);
+
+                    try {
+                        const response = await fetch('/api/auth/profile-image', {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` },
+                            body: formData
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            document.getElementById('profileImage').src = result.imageUrl + '?t=' + Date.now();
+                            alert('อัปเดตรูปโปรไฟล์สำเร็จ');
+                        } else {
+                            alert('อัปโหลดไม่สำเร็จ: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Upload error:', error);
+                        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                    }
+                }
+            });
 
             // โหลดประวัติการจองและอุปกรณ์
             await fetchMyBookings();

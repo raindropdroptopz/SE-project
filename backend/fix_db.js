@@ -34,6 +34,16 @@ async function fixDatabase() {
             console.log('ℹ️ คอลัมน์ price ในตาราง equipment มีอยู่แล้ว');
         }
 
+        // 4. เพิ่มคอลัมน์ profile_image ในตาราง users
+        console.log('4. ตรวจสอบคอลัมน์ profile_image ในตาราง users...');
+        const [userCols] = await db.execute("SHOW COLUMNS FROM users LIKE 'profile_image'");
+        if (userCols.length === 0) {
+            await db.execute("ALTER TABLE users ADD COLUMN profile_image VARCHAR(255) DEFAULT NULL");
+            console.log('✅ เพิ่มคอลัมน์ profile_image ในตาราง users สำเร็จ');
+        } else {
+            console.log('ℹ️ คอลัมน์ profile_image มีอยู่แล้ว');
+        }
+
         console.log('\n--- อัปเดตฐานข้อมูลเสร็จสมบูรณ์! ---');
         console.log('ตอนนี้คุณสามารถลองกดจองสนามอีกครั้งได้เลยครับ');
 
