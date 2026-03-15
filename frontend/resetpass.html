@@ -25,28 +25,6 @@
             padding: 20px;
         }
 
-        body::before {
-            content: '';
-            position: absolute;
-            top: -15%;
-            right: -10%;
-            width: 500px;
-            height: 500px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-        }
-
-        body::after {
-            content: '';
-            position: absolute;
-            bottom: -20%;
-            left: -10%;
-            width: 600px;
-            height: 600px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-        }
-
         .reset-card {
             background: white;
             border-radius: 25px;
@@ -75,18 +53,45 @@
             color: white;
         }
 
-        .reset-card h2 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #1a1c2e;
-            margin-bottom: 15px;
+        .form-group {
+            text-align: left;
+            margin-bottom: 20px;
         }
 
-        .reset-card p {
-            color: #6c7293;
-            font-size: 1rem;
-            line-height: 1.7;
-            margin-bottom: 30px;
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-control-custom {
+            width: 100%;
+            padding: 14px 20px;
+            border: 2px solid #e8e8e8;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .form-control-custom:focus {
+            outline: none;
+            border-color: #f5576c;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-submit:hover {
+            box-shadow: 0 10px 30px rgba(245, 87, 108, 0.4);
+            transform: translateY(-2px);
         }
 
         .contact-box {
@@ -94,16 +99,6 @@
             border-radius: 15px;
             padding: 25px;
             margin-bottom: 30px;
-        }
-
-        .contact-box h5 {
-            font-weight: 600;
-            color: #1a1c2e;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
         }
 
         .contact-item {
@@ -115,70 +110,15 @@
             background: white;
             border-radius: 10px;
             margin-bottom: 10px;
-            transition: all 0.3s;
             text-decoration: none;
             color: #1a1c2e;
         }
 
-        .contact-item:hover {
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .contact-item i {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .contact-item span {
-            font-weight: 500;
-        }
-
-        .btn-back {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 14px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
+        .alert-custom {
+            padding: 15px;
             border-radius: 12px;
-            color: white;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-
-        .btn-back:hover {
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-            transform: translateY(-2px);
-            color: white;
-        }
-
-        .tip-box {
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 12px;
-            padding: 15px 20px;
-            margin-top: 25px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-align: left;
-        }
-
-        .tip-box i {
-            color: #667eea;
-            font-size: 1.3rem;
-        }
-
-        .tip-box span {
-            font-size: 0.9rem;
-            color: #6c7293;
+            margin-bottom: 20px;
+            display: none;
         }
     </style>
 </head>
@@ -186,20 +126,102 @@
 <body>
     <div class="reset-card">
         <div class="icon-circle"><i class="bi bi-key"></i></div>
-        <h2>ลืมรหัสผ่าน?</h2>
-        <p>หากคุณลืมรหัสผ่าน กรุณาติดต่อเจ้าหน้าที่เพื่อดำเนินการรีเซ็ตรหัสผ่านของคุณ</p>
-        <div class="contact-box">
-            <h5><i class="bi bi-headset"></i> ติดต่อเจ้าหน้าที่</h5>
-            <a href="tel:0899999999" class="contact-item"><i class="bi bi-telephone"></i><span>08x-xxx-xxxx</span></a>
-            <a href="mailto:support@payap.ac.th" class="contact-item"><i
-                    class="bi bi-envelope"></i><span>support@payap.ac.th</span></a>
-            <a href="#" class="contact-item"><i class="bi bi-clock"></i><span>จันทร์ - ศุกร์ 08:00 - 17:00</span></a>
+        
+        <!-- กรณีมี Token (แสดงฟอร์มเปลี่ยนรหัส) -->
+        <div id="tokenMode" style="display: none;">
+            <h2>ตั้งรหัสผ่านใหม่</h2>
+            <p>กรุณากรอกรหัสผ่านใหม่ที่คุณต้องการใช้งาน</p>
+            <div id="alertBox" class="alert-custom"></div>
+            <form id="resetForm">
+                <div class="form-group">
+                    <label for="password">รหัสผ่านใหม่</label>
+                    <input type="password" id="password" class="form-control-custom" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">ยืนยันรหัสผ่านใหม่</label>
+                    <input type="password" id="confirmPassword" class="form-control-custom" required minlength="6">
+                </div>
+                <button type="submit" class="btn-submit" id="submitBtn">ยืนยันการเปลี่ยนรหัสผ่าน</button>
+            </form>
         </div>
-        <a href="/login.html" class="btn-back"><i class="bi bi-arrow-left"></i> กลับสู่หน้าเข้าสู่ระบบ</a>
-        <div class="tip-box"><i class="bi bi-lightbulb"></i><span>เตรียมรหัสนักศึกษา/อาจารย์
-                หรืออีเมลที่ลงทะเบียนไว้ให้พร้อมก่อนทำการรีเซ็ต</span></div>
+
+        <!-- กรณีไม่มี Token (แสดงหน้าติดต่อเจ้าหน้าที่ตามเดิม) -->
+        <div id="contactMode">
+            <h2>ลืมรหัสผ่าน?</h2>
+            <p>หากคุณลืมรหัสผ่าน กรุณาติดต่อเจ้าหน้าที่เพื่อดำเนินการรีเซ็ตรหัสผ่านของคุณ หรือ <a href="/forgot-password.html">ใช้ระบบรีเซ็ตผ่านอีเมล</a></p>
+            <div class="contact-box">
+                <h5><i class="bi bi-headset"></i> ติดต่อเจ้าหน้าที่</h5>
+                <a href="tel:0899999999" class="contact-item"><i class="bi bi-telephone"></i><span>08x-xxx-xxxx</span></a>
+                <a href="mailto:support@payap.ac.th" class="contact-item"><i class="bi bi-envelope"></i><span>support@payap.ac.th</span></a>
+            </div>
+            <a href="/login.html" class="btn btn-outline-secondary rounded-pill px-4">กลับสู่หน้าเข้าสู่ระบบ</a>
+        </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+
+            if (token) {
+                document.getElementById('contactMode').style.display = 'none';
+                document.getElementById('tokenMode').style.display = 'block';
+            }
+
+            document.getElementById('resetForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newPassword = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                const alertBox = document.getElementById('alertBox');
+                const submitBtn = document.getElementById('submitBtn');
+
+                if (newPassword !== confirmPassword) {
+                    alertBox.style.display = 'block';
+                    alertBox.style.backgroundColor = '#f8d7da';
+                    alertBox.style.color = '#842029';
+                    alertBox.textContent = 'รหัสผ่านไม่ตรงกัน';
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'กำลังดำเนินการ...';
+
+                try {
+                    const response = await fetch('/api/auth/reset-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token, newPassword })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alertBox.style.display = 'block';
+                        alertBox.style.backgroundColor = '#d1e7dd';
+                        alertBox.style.color = '#0f5132';
+                        alertBox.textContent = data.message;
+                        document.getElementById('resetForm').style.display = 'none';
+                        setTimeout(() => {
+                            window.location.href = '/login.html';
+                        }, 3000);
+                    } else {
+                        alertBox.style.display = 'block';
+                        alertBox.style.backgroundColor = '#f8d7da';
+                        alertBox.style.color = '#842029';
+                        alertBox.textContent = data.message;
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'ยืนยันการเปลี่ยนรหัสผ่าน';
+                    }
+                } catch (error) {
+                    alertBox.style.display = 'block';
+                    alertBox.style.backgroundColor = '#f8d7da';
+                    alertBox.style.color = '#842029';
+                    alertBox.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
+                    submitBtn.disabled = false;
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
