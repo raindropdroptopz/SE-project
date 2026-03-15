@@ -136,11 +136,16 @@
         </div>
 
         <div class="content-card">
-            <div class="card-header-custom">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
                 <h5><i class="bi bi-graph-up me-2"></i>กราฟรายรับ-รายจ่าย</h5>
+                <div class="btn-group btn-group-sm me-3" id="chartViewMode">
+                    <button type="button" class="btn btn-outline-primary active" data-mode="daily">รายวัน</button>
+                    <button type="button" class="btn btn-outline-primary" data-mode="monthly">รายเดือน</button>
+                    <button type="button" class="btn btn-outline-primary" data-mode="yearly">รายปี</button>
+                </div>
             </div>
-            <div style="padding: 20px;">
-                <canvas id="financeChart" height="100"></canvas>
+            <div style="padding: 20px; height: 400px; position: relative;">
+                <canvas id="financeChart"></canvas>
             </div>
         </div>
 
@@ -190,9 +195,15 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center p-4">
-                    <img id="slipModalImg" src="" alt="สลิปโอนเงิน" class="img-fluid rounded shadow"
-                        style="max-height: 70vh; object-fit: contain;"
-                        onerror="this.src=''; this.parentElement.innerHTML='<p class=\'text-danger\'><i class=\'bi bi-image-alt me-2\'></i>ไม่สามารถโหลดรูปได้</p>'">
+                    <div id="slipModalLoading" class="spinner-border text-primary d-none" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <img id="slipModalImg" src="" alt="สลิปโอนเงิน" class="img-fluid rounded shadow d-none"
+                        style="max-height: 70vh; object-fit: contain;">
+                    <div id="slipModalError" class="text-danger d-none">
+                        <i class="bi bi-image-alt me-2" style="font-size: 2rem;"></i>
+                        <p>ไม่สามารถโหลดรูปได้</p>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <a id="slipModalDownload" href="#" target="_blank" class="btn btn-outline-primary">
@@ -212,6 +223,7 @@
         }
         let financeChartInstance = null;
         let currentTransactions = [];
+        let currentViewMode = 'daily';
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchFinanceData();
@@ -219,6 +231,16 @@
             // Setup event listeners
             document.getElementById('searchBtn').addEventListener('click', fetchFinanceData);
             document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+
+            // Chart View Mode Listeners
+            document.querySelectorAll('#chartViewMode button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('#chartViewMode button').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentViewMode = e.target.dataset.mode;
+                    renderChart(currentTransactions);
+                });
+            });
         });
 
         function exportToCSV() {
@@ -259,17 +281,36 @@
         }
 
         function renderChart(transactions) {
+            if (!transactions || transactions.length === 0) return;
             const ctx = document.getElementById('financeChart').getContext('2d');
 
-            // 1. Group transactions by Date
+            // 1. Group transactions by selected timeframe (Daily, Monthly, Yearly)
             const groupedData = {};
             transactions.forEach(t => {
-                const dateObj = new Date(t.date || t.created_at);
-                // Format YYYY-MM-DD for sorting/grouping easily
-                const dateKey = dateObj.toISOString().split('T')[0];
+                let dateKey;
+                
+                // Use direct date string if available from backend (YYYY-MM-DD)
+                // Otherwise fallback to parsing what we have
+                if (t.date && typeof t.date === 'string' && t.date.includes('-') && !t.date.includes('T')) {
+                    dateKey = t.date; // It's already YYYY-MM-DD
+                } else {
+                    const dateObj = new Date(t.date || t.created_at);
+                    // For legacy objects or created_at, use local date components to avoid shifting
+                    const y = dateObj.getFullYear();
+                    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const d = String(dateObj.getDate()).padStart(2, '0');
+                    dateKey = `${y}-${m}-${d}`;
+                }
 
-                if (!groupedData[dateKey]) {
-                    groupedData[dateKey] = { income: 0, expense: 0 };
+                let groupKey = dateKey;
+                if (currentViewMode === 'yearly') {
+                    groupKey = dateKey.split('-')[0];
+                } else if (currentViewMode === 'monthly') {
+                    groupKey = dateKey.substring(0, 7); // YYYY-MM
+                }
+
+                if (!groupedData[groupKey]) {
+                    groupedData[groupKey] = { income: 0, expense: 0 };
                 }
 
                 if (t.type === 'รายรับ') {
@@ -279,16 +320,23 @@
                 }
             });
 
-            // 2. Sort by date ascending to plot nicely from left to right
-            const sortedDates = Object.keys(groupedData).sort();
+            // 2. Sort by date ascending
+            const sortedKeys = Object.keys(groupedData).sort();
 
             // 3. Prepare Chart.js datasets
-            const labels = sortedDates.map(d => {
-                const options = { day: 'numeric', month: 'short' };
-                return new Date(d).toLocaleDateString('th-TH', options);
+            const labels = sortedKeys.map(k => {
+                if (currentViewMode === 'yearly') return k;
+                if (currentViewMode === 'monthly') {
+                    const [y, m] = k.split('-');
+                    const date = new Date(y, m - 1, 1);
+                    return date.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' });
+                }
+                const [y, m, d] = k.split('-');
+                const date = new Date(y, m - 1, d);
+                return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
             });
-            const incomeData = sortedDates.map(d => groupedData[d].income);
-            const expenseData = sortedDates.map(d => groupedData[d].expense);
+            const incomeData = sortedKeys.map(k => groupedData[k].income);
+            const expenseData = sortedKeys.map(k => groupedData[k].expense);
 
             // Destroy previous chart if exists
             if (financeChartInstance) {
@@ -304,47 +352,67 @@
                         {
                             label: 'รายรับ (Income)',
                             data: incomeData,
-                            backgroundColor: 'rgba(56, 239, 125, 0.6)',
+                            backgroundColor: 'rgba(56, 239, 125, 0.8)',
                             borderColor: '#11998e',
-                            borderWidth: 1,
-                            borderRadius: 4
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                            barThickness: 30
                         },
                         {
                             label: 'รายจ่าย (Expense)',
                             data: expenseData,
-                            backgroundColor: 'rgba(245, 87, 108, 0.6)',
+                            backgroundColor: 'rgba(245, 87, 108, 0.8)',
                             borderColor: '#f5576c',
-                            borderWidth: 1,
-                            borderRadius: 4
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                            barThickness: 30
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function (value) {
-                                    return '฿' + value.toLocaleString();
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 25,
+                                font: { size: 14, weight: '600' }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#1a1c2e',
+                            bodyColor: '#1a1c2e',
+                            borderColor: '#e0e0e0',
+                            borderWidth: 1,
+                            padding: 12,
+                            boxPadding: 8,
+                            usePointStyle: true,
+                            callbacks: {
+                                label: function (context) {
+                                    return ` ${context.dataset.label}: ฿${context.parsed.y.toLocaleString()}`;
                                 }
                             }
                         }
                     },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed.y !== null) {
-                                        label += '฿' + context.parsed.y.toLocaleString();
-                                    }
-                                    return label;
-                                }
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { weight: '600' }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { 
+                                color: 'rgba(0,0,0,0.05)',
+                                drawTicks: false
+                            },
+                            ticks: {
+                                padding: 10,
+                                callback: value => '฿' + value.toLocaleString()
                             }
                         }
                     }
@@ -408,8 +476,15 @@
                             const statusMap = { pending: 'รอตรวจ', verified: 'ยืนยันแล้ว', rejected: 'ปฏิเสธ' };
                             const statusColor = { pending: '#ffc107', verified: '#11998e', rejected: '#f5576c' };
                             const ps = t.payment_status || 'pending';
-                            const slipHtml = t.payment_slip
-                                ? `<button data-slip="${t.payment_slip}" class="btn btn-sm btn-outline-primary ms-1 slip-btn" title="ดูสลิป"><i class="bi bi-image"></i> ดูสลิป</button>`
+                            
+                            // Normalize slip path
+                            let slipUrl = t.payment_slip || '';
+                            if (slipUrl && !slipUrl.startsWith('http') && !slipUrl.startsWith('/')) {
+                                slipUrl = '/photo/slips/' + slipUrl;
+                            }
+
+                            const slipHtml = slipUrl
+                                ? `<button data-slip="${slipUrl}" class="btn btn-sm btn-outline-primary ms-1 slip-btn" title="ดูสลิป"><i class="bi bi-image"></i> ดูสลิป</button>`
                                 : '<span class="text-muted" style="font-size:0.8em;">ไม่มีสลิป</span>';
                             const verifyBtns = ps === 'pending' ? `
                                 <button data-payment-id="${t.id}" data-action="verified" class="btn btn-sm btn-success ms-1 verify-btn" title="ยืนยัน"><i class="bi bi-check"></i></button>
@@ -463,8 +538,40 @@
         }
 
         function showSlip(slipPath) {
-            document.getElementById('slipModalImg').src = slipPath;
-            document.getElementById('slipModalDownload').href = slipPath;
+            console.log('Opening slip modal for path:', slipPath);
+            const img = document.getElementById('slipModalImg');
+            const loader = document.getElementById('slipModalLoading');
+            const error = document.getElementById('slipModalError');
+            const downloadBtn = document.getElementById('slipModalDownload');
+
+            // Reset state
+            img.classList.add('d-none');
+            error.classList.add('d-none');
+            loader.classList.remove('d-none');
+            img.src = '';
+            
+            // Handle path normalization
+            let fullPath = slipPath;
+            if (fullPath && !fullPath.startsWith('/') && !fullPath.startsWith('http')) {
+                fullPath = '/photo/slips/' + fullPath;
+            }
+            downloadBtn.href = fullPath;
+
+            img.onload = () => {
+                console.log('Image loaded successfully');
+                loader.classList.add('d-none');
+                img.classList.remove('d-none');
+            };
+
+            img.onerror = () => {
+                loader.classList.add('d-none');
+                error.classList.remove('d-none');
+                console.error('Failed to load image from:', fullPath);
+            };
+
+            // Start loading
+            img.src = fullPath;
+            
             const modal = new bootstrap.Modal(document.getElementById('slipModal'));
             modal.show();
         }

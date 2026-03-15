@@ -378,52 +378,95 @@ router.get('/finance', authenticateAdmin, async (req, res) => {
     try {
         const { type, startDate, endDate } = req.query;
 
-        // Build date filter
-        let dateCondition = '';
-        const params = [];
+        // Build date filter for court bookings (booking_date)
+        let courtDateCondition = '';
+        const courtParams = [];
         if (startDate && endDate) {
-            dateCondition = 'AND DATE(p.created_at) >= ? AND DATE(p.created_at) <= ?';
-            params.push(startDate, endDate);
+            courtDateCondition = 'AND b.booking_date >= ? AND b.booking_date <= ?';
+            courtParams.push(startDate, endDate);
         } else if (startDate) {
-            dateCondition = 'AND DATE(p.created_at) >= ?';
-            params.push(startDate);
+            courtDateCondition = 'AND b.booking_date >= ?';
+            courtParams.push(startDate);
         } else if (endDate) {
-            dateCondition = 'AND DATE(p.created_at) <= ?';
-            params.push(endDate);
+            courtDateCondition = 'AND b.booking_date <= ?';
+            courtParams.push(endDate);
         }
 
-        // Calculate totals (only verified/pending = realised income)
-        const [incomeResult] = await db.execute(`
+        // Build date filter for equipment bookings (borrow_date)
+        let equipDateCondition = '';
+        const equipParams = [];
+        if (startDate && endDate) {
+            equipDateCondition = 'AND eb.borrow_date >= ? AND eb.borrow_date <= ?';
+            equipParams.push(startDate, endDate);
+        } else if (startDate) {
+            equipDateCondition = 'AND eb.borrow_date >= ?';
+            equipParams.push(startDate);
+        } else if (endDate) {
+            equipDateCondition = 'AND eb.borrow_date <= ?';
+            equipParams.push(endDate);
+        }
+
+        // Calculate totals from both sources
+        // 1. Court Bookings (from payments table)
+        const [courtIncomeResult] = await db.execute(`
             SELECT IFNULL(SUM(p.total_amount), 0) as total_income
             FROM payments p
-            WHERE p.status IN ('pending','verified') ${dateCondition}
-        `, params);
-        const totalIncome = parseInt(incomeResult[0].total_income);
-        const totalExpense = 0; // ค่าใช้จ่ายเพิ่มเติมสามารถขยายต่อได้
+            JOIN bookings b ON p.booking_id = b.id
+            WHERE p.status IN ('pending','verified') ${courtDateCondition}
+        `, courtParams);
+
+        // 2. Standalone Equipment Bookings (those without booking_id in any payment)
+        // Note: Currently equipment rentals don't have a direct payment record, 
+        // they are stored in equipment_bookings. If they have a price, we count it.
+        const [equipIncomeResult] = await db.execute(`
+            SELECT IFNULL(SUM(eb.quantity * e.price), 0) as total_income
+            FROM equipment_bookings eb
+            JOIN equipment e ON eb.equipment_id = e.id
+            WHERE eb.status != 'cancelled' ${equipDateCondition}
+        `, equipParams);
+
+        const totalIncome = parseInt(courtIncomeResult[0].total_income) + parseInt(equipIncomeResult[0].total_income);
+        const totalExpense = 0;
         const balance = totalIncome - totalExpense;
 
-        // Fetch transaction list
+        // Fetch transaction list (Combined)
         const [transactions] = await db.execute(`
-            SELECT
-                p.id,
-                p.created_at as date,
-                CONCAT('ค่าจอง', c.name, ' #BK', LPAD(b.id, 4, '0')) as description,
-                'รายรับ' as type,
-                p.total_amount as amount,
-                CONCAT(u.full_name, ' | สนาม ฿', p.court_subtotal, ' อุปกรณ์ ฿', p.equipment_subtotal) as note,
-                p.status as payment_status,
-                p.payment_slip,
-                p.court_price_rate,
-                p.court_hours,
-                p.court_subtotal,
-                p.equipment_subtotal
-            FROM payments p
-            JOIN bookings b ON p.booking_id = b.id
-            JOIN courts c ON b.court_id = c.id
-            JOIN users u ON p.user_id = u.id
-            WHERE 1=1 ${dateCondition}
-            ORDER BY p.created_at DESC
-        `, params);
+            SELECT * FROM (
+                -- Court + Integrated Equipment Payments
+                SELECT
+                    CONCAT('P', p.id) as id,
+                    DATE_FORMAT(b.booking_date, '%Y-%m-%d') as date,
+                    CONCAT('ค่าจอง', c.name, ' #BK', LPAD(b.id, 4, '0')) as description,
+                    'รายรับ' as type,
+                    p.total_amount as amount,
+                    CONCAT(u.full_name, ' | สนาม ฿', p.court_subtotal, ' อุปกรณ์ ฿', p.equipment_subtotal) as note,
+                    p.status as payment_status,
+                    p.payment_slip
+                FROM payments p
+                JOIN bookings b ON p.booking_id = b.id
+                JOIN courts c ON b.court_id = c.id
+                JOIN users u ON p.user_id = u.id
+                WHERE 1=1 ${courtDateCondition.replace('b.', 'b.')}
+
+                UNION ALL
+
+                -- Standalone Equipment Bookings
+                SELECT
+                    CONCAT('EB', eb.id) as id,
+                    DATE_FORMAT(eb.borrow_date, '%Y-%m-%d') as date,
+                    CONCAT('ยืมอุปกรณ์: ', e.name, ' (x', eb.quantity, ')') as description,
+                    'รายรับ' as type,
+                    (eb.quantity * e.price) as amount,
+                    CONCAT(u.full_name, ' | ยืมอุปกรณ์ standalone') as note,
+                    eb.status as payment_status,
+                    NULL as payment_slip
+                FROM equipment_bookings eb
+                JOIN equipment e ON eb.equipment_id = e.id
+                JOIN users u ON eb.user_id = u.id
+                WHERE eb.status != 'cancelled' ${equipDateCondition.replace('eb.', 'eb.')}
+            ) as combined
+            ORDER BY date DESC, id DESC
+        `, [...courtParams, ...equipParams]);
 
         const filteredTransactions = type === 'รายจ่าย' ? [] :
             (type === 'รายรับ' ? transactions : transactions);

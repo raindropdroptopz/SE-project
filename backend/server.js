@@ -12,6 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../frontend')));
+app.use('/photo/slips', express.static(path.join(__dirname, '../frontend/uploads/receipts')));
 
 // Import routes
 const authRoutes = require('./routes/auth');
