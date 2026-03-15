@@ -617,7 +617,10 @@
                         <div class="legend-dot" style="background-color: #e83e8c;"></div> สนามเทนนิส
                     </div>
                     <div class="legend-item">
-                        <div class="legend-dot" style="background-color: #17a2b8;"></div> สนามแบดมินตัน/วอลเลย์บอล
+                        <div class="legend-dot" style="background-color: #17a2b8;"></div> สนามแบดมินตัน
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: #6f42c1;"></div> สนามวอลเลย์บอล
                     </div>
                     <div class="legend-item">
                         <div class="legend-dot" style="background-color: #6c757d;"></div> ยืมอุปกรณ์
@@ -716,6 +719,7 @@
                 slotMinTime: '08:00:00',
                 slotMaxTime: '20:00:00',
                 height: 'auto',
+                eventDisplay: 'block',
                 events: function (info, successCallback, failureCallback) {
                     fetch('/api/bookings')
                         .then(response => response.json())

@@ -175,12 +175,24 @@ router.delete('/users/:id', authenticateAdmin, async (req, res) => {
 router.get('/bookings', authenticateAdmin, async (req, res) => {
     try {
         const [bookings] = await db.execute(`
-            SELECT b.*, c.name as court_name, u.full_name as user_name, u.email as user_email,
-                   ((HOUR(b.end_time) - HOUR(b.start_time)) * c.price) as price
+            SELECT b.id, b.booking_date, b.start_time, b.end_time, b.status, 
+                   c.name as court_name, u.full_name as user_name, u.email as user_email, u.student_id,
+                   p.total_amount as price, p.payment_slip, 'court' as type
             FROM bookings b
             JOIN courts c ON b.court_id = c.id
             JOIN users u ON b.user_id = u.id
-            ORDER BY b.booking_date DESC, b.start_time ASC
+            LEFT JOIN payments p ON b.id = p.booking_id
+            
+            UNION ALL
+            
+            SELECT eb.id, eb.borrow_date as booking_date, '08:00:00' as start_time, '20:00:00' as end_time, eb.status,
+                   CONCAT('ยืม: ', e.name, ' (x', eb.quantity, ')') as court_name, u.full_name as user_name, u.email as user_email, u.student_id,
+                   (eb.quantity * e.price) as price, NULL as payment_slip, 'equipment' as type
+            FROM equipment_bookings eb
+            JOIN equipment e ON eb.equipment_id = e.id
+            JOIN users u ON eb.user_id = u.id
+            
+            ORDER BY booking_date DESC, start_time ASC
         `);
 
         res.json({ success: true, bookings });
@@ -192,14 +204,15 @@ router.get('/bookings', authenticateAdmin, async (req, res) => {
 });
 
 // ===============================================
-// PUT /api/admin/bookings/:id/status - อัปเดตสถานะการจอง
+// PUT /api/admin/bookings/:id/status - อัปเดตสถานะการจอง (สนามหรืออุปกรณ์)
 // ===============================================
 router.put('/bookings/:id/status', authenticateAdmin, async (req, res) => {
     try {
-        const { status } = req.body;
+        const { status, type } = req.body;
+        const targetTable = type === 'equipment' ? 'equipment_bookings' : 'bookings';
 
         await db.execute(
-            'UPDATE bookings SET status = ? WHERE id = ?',
+            `UPDATE ${targetTable} SET status = ? WHERE id = ?`,
             [status, req.params.id]
         );
 
