@@ -21,6 +21,18 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ success: false, message: 'กรุณากรอก Email, รหัสผ่าน และชื่อ-นามสกุล' });
         }
 
+        // 1. ตรวจสอบชื่อ-นามสกุล (ไทย-อังกฤษ และเว้นวรรค เท่านั้น)
+        const nameRegex = /^[a-zA-Z\u0E00-\u0E7F\s]+$/;
+        if (!nameRegex.test(fullName)) {
+            return res.status(400).json({ success: false, message: 'ชื่อและนามสกุลต้องเป็นตัวอักษรไทยหรืออังกฤษเท่านั้น' });
+        }
+
+        // 2. ตรวจสอบรหัสผ่าน (8-16 ตัว, พิมพ์ใหญ่, พิมพ์เล็ก, ตัวเลข)
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,16}$/;
+        if (!passwordRegex.test(password)) {
+            return res.status(400).json({ success: false, message: 'รหัสผ่านต้องมี 8-16 ตัว ประกอบด้วยตัวพิมพ์เล็ก, ตัวพิมพ์ใหญ่ และตัวเลขอย่างน้อยหนึ่งตัว' });
+        }
+
         // ตรวจสอบว่า email ซ้ำหรือไม่
         const [existing] = await db.execute('SELECT id FROM users WHERE email = ?', [email]);
         if (existing.length > 0) {

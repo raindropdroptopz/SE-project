@@ -292,6 +292,20 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .invalid-feedback-custom {
+            display: none;
+            color: #f5576c;
+            font-size: 0.75rem;
+            margin-top: 4px;
+            opacity: 0.8;
+            padding-left: 2px;
+        }
+
+        .form-control-custom.is-invalid {
+            border-color: #f5576c;
+            background-color: rgba(245, 87, 108, 0.02);
+        }
     </style>
 </head>
 
@@ -324,11 +338,13 @@
                 <div class="form-row">
                     <div class="form-group"><label>ชื่อ</label>
                         <div class="input-group-custom"><i class="bi bi-person"></i><input type="text"
-                                class="form-control-custom" name="firstName" placeholder="กรอกชื่อ" required></div>
+                                class="form-control-custom" id="firstName" name="firstName" placeholder="กรอกชื่อ" required></div>
+                        <div id="firstNameError" class="invalid-feedback-custom">ชื่อต้องเป็นตัวอักษรไทยหรืออังกฤษเท่านั้น</div>
                     </div>
                     <div class="form-group"><label>นามสกุล</label>
                         <div class="input-group-custom"><i class="bi bi-person"></i><input type="text"
-                                class="form-control-custom" name="lastName" placeholder="กรอกนามสกุล" required></div>
+                                class="form-control-custom" id="lastName" name="lastName" placeholder="กรอกนามสกุล" required></div>
+                        <div id="lastNameError" class="invalid-feedback-custom">นามสกุลต้องเป็นตัวอักษรไทยหรืออังกฤษเท่านั้น</div>
                     </div>
                 </div>
                 <div class="form-group"><label>รหัสนักศึกษา / รหัสอาจารย์</label>
@@ -349,11 +365,13 @@
                         <div class="input-group-custom"><i class="bi bi-lock"></i><input type="password"
                                 class="form-control-custom" id="password" name="password" placeholder="รหัสผ่าน"
                                 required></div>
+                        <div id="passwordError" class="invalid-feedback-custom">ต้องมี 8-16 ตัว (พิมพ์ใหญ่, เล็ก, ตัวเลข)</div>
                     </div>
                     <div class="form-group"><label>ยืนยันรหัสผ่าน</label>
                         <div class="input-group-custom"><i class="bi bi-lock-fill"></i><input type="password"
                                 class="form-control-custom" id="confirmPassword" name="confirmPassword"
                                 placeholder="ยืนยันรหัสผ่าน" required></div>
+                        <div id="confirmPasswordError" class="invalid-feedback-custom">รหัสผ่านไม่ตรงกัน</div>
                     </div>
                 </div>
                 <button type="submit" class="btn-register"><i class="bi bi-check-circle"></i> สมัครสมาชิก</button>
@@ -375,19 +393,47 @@
             const confirm = document.getElementById('confirmPassword').value;
             const errorDiv = document.getElementById('errorMessage');
             const errorText = document.getElementById('errorText');
-
-            if (pass !== confirm) {
-                errorDiv.style.display = 'flex';
-                errorText.textContent = 'รหัสผ่านไม่ตรงกัน';
-                return;
-            }
-
             const formData = new FormData(e.target);
-            const userType = document.querySelector('.user-type-btn.active')?.dataset.type || 'student';
 
-            // รวมชื่อและนามสกุล
+            // รีเซ็ตการแสดงผลแจ้งเตือนเดิม
+            document.querySelectorAll('.invalid-feedback-custom').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.form-control-custom').forEach(el => el.classList.remove('is-invalid'));
+            errorDiv.style.display = 'none';
+
             const firstName = formData.get('firstName') || '';
             const lastName = formData.get('lastName') || '';
+            let hasError = false;
+
+            // 1. ตรวจสอบชื่อ-นามสกุล (ไทย-อังกฤษ เท่านั้น)
+            const nameRegex = /^[a-zA-Z\u0E00-\u0E7F]+$/;
+            if (!nameRegex.test(firstName)) {
+                document.getElementById('firstName').classList.add('is-invalid');
+                document.getElementById('firstNameError').style.display = 'block';
+                hasError = true;
+            }
+            if (!nameRegex.test(lastName)) {
+                document.getElementById('lastName').classList.add('is-invalid');
+                document.getElementById('lastNameError').style.display = 'block';
+                hasError = true;
+            }
+
+            // 2. ตรวจสอบรหัสผ่าน (8-16 ตัว, พิมพ์ใหญ่, พิมพ์เล็ก, ตัวเลข)
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,16}$/;
+            if (!passwordRegex.test(pass)) {
+                document.getElementById('password').classList.add('is-invalid');
+                document.getElementById('passwordError').style.display = 'block';
+                hasError = true;
+            }
+
+            if (pass !== confirm) {
+                document.getElementById('confirmPassword').classList.add('is-invalid');
+                document.getElementById('confirmPasswordError').style.display = 'block';
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            const userType = document.querySelector('.user-type-btn.active')?.querySelector('input').value || 'student';
             const fullName = `${firstName} ${lastName}`.trim();
 
             const data = {
