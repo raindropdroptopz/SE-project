@@ -564,7 +564,7 @@ router.post('/with-payment', authenticateToken, upload.single('slip'), async (re
     } catch (error) {
         if (connection) await connection.rollback();
         console.error('Create booking w/ payment error:', error);
-        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ: ' + error.message });
     } finally {
         if (connection) connection.release();
     }

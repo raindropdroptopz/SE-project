@@ -690,6 +690,7 @@
 
         const allTimeSlots = ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00'];
         let bookedSlots = [];
+        let selectedSlots = []; // เปลี่ยนเป็นเก็บหลายช่อง
         let equipmentData = [];
         let selectedEquipments = [];
 
@@ -763,7 +764,12 @@
         }
 
         function updateTotal() {
-            let total = currentCourt.price;
+            if (!currentCourt) return;
+            
+            // คำนวณราคาตามจำนวน Slot (ชั่วโมง)
+            const hours = selectedSlots.length;
+            let courtTotalPrice = currentCourt.price * (hours || 1);
+            let total = courtTotalPrice;
 
             const summaryEqContainer = document.getElementById('summaryEquipments');
             summaryEqContainer.innerHTML = '';
@@ -773,7 +779,7 @@
             }
 
             selectedEquipments.forEach(eq => {
-                let eqPrice = 0;
+                let eqPrice = 0; // ในระบบเดิมอุปกรณ์อาจจะฟรี หรือคำนวณเพิ่มถ้ามีฟิลด์ price
                 summaryEqContainer.innerHTML += `
                     <div class="summary-row" style="padding-left: 10px;">
                         <span>- ${eq.name} x${eq.quantity}:</span>
@@ -795,9 +801,13 @@
                 const slot = document.createElement('div');
                 slot.className = 'time-slot';
                 slot.textContent = time;
+                
                 if (bookedSlots.includes(time)) {
                     slot.classList.add('disabled');
                 } else {
+                    if (selectedSlots.includes(time)) {
+                        slot.classList.add('selected');
+                    }
                     slot.onclick = () => selectTime(slot, time);
                 }
                 container.appendChild(slot);
@@ -806,10 +816,57 @@
 
         function selectTime(el, time) {
             if (el.classList.contains('disabled')) return;
-            document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
-            el.classList.add('selected');
-            document.getElementById('selectedTime').value = time;
-            document.getElementById('summaryTime').textContent = time;
+
+            const index = selectedSlots.indexOf(time);
+            if (index > -1) {
+                // ถ้าคลิกตัวที่เลือกอยู่แล้ว ให้ยกเลิก (แต่ต้องเช็คความต่อเนื่อง)
+                // เพื่อความง่าย: ให้ยกเลิกได้ทุกลำดับ แต่ถ้าทำให้ขาดตอน ระบบจะเตือนตอน Submit หรือเราจัดการอัตโนมัติ
+                selectedSlots.splice(index, 1);
+            } else {
+                // ตรวจสอบความต่อเนื่อง (ต้องต่อจากตัวแรกหรือตัวสุดท้ายที่มีอยู่)
+                if (selectedSlots.length > 0) {
+                    // เรียงลำดับเวลาที่มีอยู่ก่อน
+                    const sortedSlots = [...selectedSlots].sort((a, b) => {
+                        return allTimeSlots.indexOf(a) - allTimeSlots.indexOf(b);
+                    });
+                    
+                    const firstIdx = allTimeSlots.indexOf(sortedSlots[0]);
+                    const lastIdx = allTimeSlots.indexOf(sortedSlots[sortedSlots.length - 1]);
+                    const currentIdx = allTimeSlots.indexOf(time);
+
+                    if (currentIdx === firstIdx - 1 || currentIdx === lastIdx + 1) {
+                        selectedSlots.push(time);
+                    } else {
+                        // ถ้าไม่ต่อเนื่อง ให้เริ่มเลือกใหม่ที่ตัวนี้ตัวเดียว
+                        selectedSlots = [time];
+                    }
+                } else {
+                    selectedSlots.push(time);
+                }
+            }
+
+            // จัดเรียง Slots ที่เลือกใหม่ให้สวยงาม
+            selectedSlots.sort((a, b) => allTimeSlots.indexOf(a) - allTimeSlots.indexOf(b));
+
+            // อัปเดต UI
+            renderTimeSlots();
+            
+            // อัปเดตข้อมูลสรุป
+            const selectedTimeInput = document.getElementById('selectedTime');
+            const summaryTime = document.getElementById('summaryTime');
+            
+            if (selectedSlots.length > 0) {
+                const startTime = selectedSlots[0].split('-')[0];
+                const endTime = selectedSlots[selectedSlots.length - 1].split('-')[1];
+                const timeRange = `${startTime}-${endTime}`;
+                selectedTimeInput.value = timeRange;
+                summaryTime.textContent = `${timeRange} (${selectedSlots.length} ชม.)`;
+            } else {
+                selectedTimeInput.value = '';
+                summaryTime.textContent = '-';
+            }
+            
+            updateTotal();
         }
 
         async function fetchBookedSlots(date) {
@@ -823,11 +880,13 @@
                     bookedSlots = [];
                 }
 
-                // Clear the previously selected time properly
+                // ล้างค่าที่เคยเลือกไว้เมื่อเปลี่ยนวันที่
+                selectedSlots = [];
                 document.getElementById('selectedTime').value = '';
                 document.getElementById('summaryTime').textContent = '-';
 
                 renderTimeSlots();
+                updateTotal();
             } catch (error) {
                 console.error('Error fetching booked slots:', error);
                 bookedSlots = [];
