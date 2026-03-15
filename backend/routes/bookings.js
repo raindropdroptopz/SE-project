@@ -85,29 +85,39 @@ router.get('/slots', async (req, res) => {
 });
 
 // ===============================================
-// GET /api/bookings - ดึงรายการจองทั้งหมด (สำหรับ Calendar)
+// GET /api/bookings - ดึงรายการจองทั้งหมด (สำหรับ Calendar - รวมสนามและอุปกรณ์)
 // ===============================================
 router.get('/', async (req, res) => {
     try {
-        const [bookings] = await db.execute(`
+        // 1. ดึงการจองสนาม
+        const [courtBookings] = await db.execute(`
             SELECT 
-                b.id,
-                b.booking_date,
-                b.start_time,
-                b.end_time,
-                b.status,
-                b.players,
-                c.name as court_name,
-                u.full_name as user_name
+                b.id, b.booking_date, b.start_time, b.end_time, b.status, b.players,
+                c.name as court_name, u.full_name as user_name
             FROM bookings b
             JOIN courts c ON b.court_id = c.id
             JOIN users u ON b.user_id = u.id
             WHERE b.status != 'cancelled'
-            ORDER BY b.booking_date DESC, b.start_time ASC
+        `);
+
+        // 2. ดึงการยืมอุปกรณ์ (แยกต่างหาก)
+        const [equipmentBookings] = await db.execute(`
+            SELECT 
+                eb.id, eb.borrow_date as booking_date, 
+                '08:00:00' as start_time, '20:00:00' as end_time, 
+                eb.status, eb.quantity,
+                e.name as equipment_name, u.full_name as user_name
+            FROM equipment_bookings eb
+            JOIN equipment e ON eb.equipment_id = e.id
+            JOIN users u ON eb.user_id = u.id
+            WHERE eb.status != 'returned' AND eb.status != 'overdue'
         `);
 
         // แปลงเป็น FullCalendar format
-        const events = bookings.map(booking => {
+        const events = [];
+
+        // เพิ่มการจองสนามเข้า events
+        courtBookings.forEach(booking => {
             const d = new Date(booking.booking_date);
             const dateStr = [
                 d.getFullYear(),
@@ -115,18 +125,50 @@ router.get('/', async (req, res) => {
                 String(d.getDate()).padStart(2, '0')
             ].join('-');
 
-            return {
-                id: booking.id,
-                title: `${booking.court_name} - ${booking.user_name}`,
+            let eventColor = '#667eea';
+            const courtName = booking.court_name;
+            if (courtName.includes('ฟุตบอล')) eventColor = '#28a745';
+            else if (courtName.includes('บาสเกตบอล')) eventColor = '#fd7e14';
+            else if (courtName.includes('เทนนิส')) eventColor = '#e83e8c';
+            else if (courtName.includes('แบดมินตัน')) eventColor = '#17a2b8'; // สีฟ้า
+            else if (courtName.includes('วอลเลย์บอล')) eventColor = '#6f42c1'; // สีม่วงเข้ม (แยกจากแบด)
+
+            events.push({
+                id: `court-${booking.id}`,
+                title: `[สนาม] ${booking.court_name} - ${booking.user_name}`,
                 start: `${dateStr}T${booking.start_time}`,
                 end: `${dateStr}T${booking.end_time}`,
-                color: booking.status === 'confirmed' ? '#667eea' : '#ffc107',
+                color: eventColor,
                 extendedProps: {
+                    type: 'court',
                     status: booking.status,
-                    players: booking.players,
                     courtName: booking.court_name
                 }
-            };
+            });
+        });
+
+        // เพิ่มการยืมอุปกรณ์เข้า events
+        equipmentBookings.forEach(eb => {
+            const d = new Date(eb.booking_date);
+            const dateStr = [
+                d.getFullYear(),
+                String(d.getMonth() + 1).padStart(2, '0'),
+                String(d.getDate()).padStart(2, '0')
+            ].join('-');
+
+            events.push({
+                id: `equip-${eb.id}`,
+                title: `[ยืม] ${eb.equipment_name} (x${eb.quantity}) - ${eb.user_name}`,
+                start: `${dateStr}T08:00:00`,
+                end: `${dateStr}T20:00:00`,
+                color: '#6c757d', // สีเทาสำหรับอุปกรณ์
+                allDay: true,
+                extendedProps: {
+                    type: 'equipment',
+                    status: eb.status,
+                    equipmentName: eb.equipment_name
+                }
+            });
         });
 
         res.json(events);

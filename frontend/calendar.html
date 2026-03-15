@@ -585,13 +585,20 @@
             <!-- Calendar Card -->
             <div class="calendar-card">
                 <div class="calendar-header">
-                    <h5><i class="bi bi-calendar3"></i> ปฏิทินการจอง</h5>
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <h5><i class="bi bi-calendar3"></i> ปฏิทินการจอง</h5>
+                        <select id="courtFilter" class="form-select form-select-sm" style="width: auto; border-radius: 20px; border: 2px solid #667eea;" onchange="handleCourtFilterChange()">
+                            <option value="all">-- แสดงทุกสนาม --</option>
+                            <option value="สนามฟุตบอล">สนามฟุตบอล</option>
+                            <option value="สนามบาสเกตบอล">สนามบาสเกตบอล</option>
+                            <option value="สนามเทนนิส">สนามเทนนิส</option>
+                            <option value="สนามแบดมินตัน">สนามแบดมินตัน/วอลเลย์บอล</option>
+                        </select>
+                    </div>
                     <div class="filter-btns">
-                        <button class="filter-btn active" onclick="filterAll()"><i class="bi bi-grid"></i>
-                            ทั้งหมด</button>
-                        <button class="filter-btn" onclick="filterCourts()"><i class="bi bi-dribbble"></i> สนาม</button>
-                        <button class="filter-btn" onclick="filterEquipment()"><i class="bi bi-box-seam"></i>
-                            อุปกรณ์</button>
+                        <button class="filter-btn active" id="btnFilterAll" onclick="filterAll()"><i class="bi bi-grid"></i> ทั้งหมด</button>
+                        <button class="filter-btn" id="btnFilterCourts" onclick="filterCourts()"><i class="bi bi-dribbble"></i> สนามเท่านั้น</button>
+                        <button class="filter-btn" id="btnFilterEquip" onclick="filterEquipment()"><i class="bi bi-box-seam"></i> ยืมอุปกรณ์</button>
                     </div>
                 </div>
 
@@ -599,15 +606,24 @@
                     <div id="calendar"></div>
                 </div>
 
-                <div class="legend-section">
+                <div class="legend-section d-flex flex-wrap gap-3">
                     <div class="legend-item">
-                        <div class="legend-dot court"></div> จองสนาม
+                        <div class="legend-dot" style="background-color: #28a745;"></div> สนามฟุตบอล
                     </div>
                     <div class="legend-item">
-                        <div class="legend-dot equipment"></div> ยืมอุปกรณ์
+                        <div class="legend-dot" style="background-color: #fd7e14;"></div> สนามบาสเกตบอล
                     </div>
                     <div class="legend-item">
-                        <div class="legend-dot pending"></div> รอชำระเงิน
+                        <div class="legend-dot" style="background-color: #e83e8c;"></div> สนามเทนนิส
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: #17a2b8;"></div> สนามแบดมินตัน/วอลเลย์บอล
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: #6c757d;"></div> ยืมอุปกรณ์
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: #667eea;"></div> อื่นๆ
                     </div>
                 </div>
             </div>
@@ -663,7 +679,31 @@
             }
         }
 
+        let currentCourtFilter = 'all';
+        let currentTypeFilter = 'all'; // all, court, equipment
+
+        async function fetchCourts() {
+            try {
+                const response = await fetch('/api/bookings/courts');
+                const data = await response.json();
+                if (data.success) {
+                    const select = document.getElementById('courtFilter');
+                    // เก็บค่า "ทั้งหมด" ไว้
+                    select.innerHTML = '<option value="all">-- แสดงทุกสนาม --</option>';
+                    data.courts.forEach(court => {
+                        const option = document.createElement('option');
+                        option.value = court.name;
+                        option.textContent = court.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching courts:', error);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
+            fetchCourts(); // โหลดรายชื่อสนามมาใส่ใน Dropdown
             var calendarEl = document.getElementById('calendar');
             calendar = new FullCalendar.Calendar(calendarEl, {
                 locale: 'th',
@@ -681,7 +721,25 @@
                         .then(response => response.json())
                         .then(data => {
                             if (Array.isArray(data)) {
-                                successCallback(data);
+                                // กรองข้อมูลตามเงื่อนไขที่เลือก
+                                let filteredData = data;
+                                
+                                // กรองตามประเภท (สนาม/อุปกรณ์)
+                                if (currentTypeFilter === 'court') {
+                                    filteredData = filteredData.filter(ev => ev.extendedProps.type === 'court');
+                                } else if (currentTypeFilter === 'equipment') {
+                                    filteredData = filteredData.filter(ev => ev.extendedProps.type === 'equipment');
+                                }
+
+                                // กรองตามชื่อสนามเฉพาะเจาะจง (ใช้กับประเภทสนามหรือทั้งหมด)
+                                if (currentCourtFilter !== 'all' && (currentTypeFilter === 'all' || currentTypeFilter === 'court')) {
+                                    filteredData = filteredData.filter(ev => 
+                                        ev.extendedProps.type === 'court' && 
+                                        ev.extendedProps.courtName === currentCourtFilter
+                                    );
+                                }
+
+                                successCallback(filteredData);
                                 updateDashboardStats(data);
                             } else {
                                 successCallback([]);
@@ -693,13 +751,11 @@
                         });
                 },
                 eventDidMount: function (info) {
-                    info.el.title = info.event.title + " (" + (info.event.extendedProps.status === 'confirmed' ? 'ยืนยันแล้ว' : 'รออนุมัติ') + ")";
-                },
-                eventClassNames: function (arg) {
-                    if (arg.event.extendedProps.type === 'equipment') {
-                        return ['fc-event-equipment'];
+                    let tooltip = info.event.title;
+                    if (info.event.extendedProps.type === 'court') {
+                        tooltip += " (สถานะ: " + (info.event.extendedProps.status === 'confirmed' ? 'ยืนยันแล้ว' : 'รออนุมัติ') + ")";
                     }
-                    return ['fc-event-court'];
+                    info.el.title = tooltip;
                 }
             });
             calendar.render();
@@ -707,55 +763,46 @@
             // Real-time Update Polling
             setInterval(() => {
                 calendar.refetchEvents();
-            }, 5000);
+            }, 10000);
         });
 
-        function updateDashboardStats(events) {
-            let todayCount = 0;
-            let confirmedCount = 0;
-            let pendingCount = 0;
-
-            const todayObj = new Date();
-            const todayStr = [
-                todayObj.getFullYear(),
-                String(todayObj.getMonth() + 1).padStart(2, '0'),
-                String(todayObj.getDate()).padStart(2, '0')
-            ].join('-');
-
-            events.forEach(ev => {
-                if (ev.start && ev.start.startsWith(todayStr)) {
-                    todayCount++;
-                }
-                if (ev.extendedProps && ev.extendedProps.status === 'confirmed') {
-                    confirmedCount++;
-                } else {
-                    pendingCount++;
-                }
-            });
-
-            document.getElementById('statToday').textContent = todayCount;
-            document.getElementById('statConfirmed').textContent = confirmedCount;
-            document.getElementById('statPending').textContent = pendingCount;
+        function handleCourtFilterChange() {
+            currentCourtFilter = document.getElementById('courtFilter').value;
+            // ถ้าเลือกสนามเจาะจง ให้เปลี่ยนโหมดเป็นกรองสนามอัตโนมัติเพื่อให้ผลลัพธ์ชัดเจน
+            if (currentCourtFilter !== 'all') {
+                currentTypeFilter = 'court';
+                updateFilterButtons(1);
+            }
+            calendar.refetchEvents();
         }
 
         function filterAll() {
+            currentTypeFilter = 'all';
+            currentCourtFilter = 'all';
+            document.getElementById('courtFilter').value = 'all';
             updateFilterButtons(0);
             calendar.refetchEvents();
         }
 
         function filterCourts() {
+            currentTypeFilter = 'court';
             updateFilterButtons(1);
-            // Filter logic here
+            calendar.refetchEvents();
         }
 
         function filterEquipment() {
+            currentTypeFilter = 'equipment';
+            currentCourtFilter = 'all'; // เมื่อดูอุปกรณ์ ให้เคลียร์สนามที่เลือก
+            document.getElementById('courtFilter').value = 'all';
             updateFilterButtons(2);
-            // Filter logic here
+            calendar.refetchEvents();
         }
 
         function updateFilterButtons(activeIndex) {
-            document.querySelectorAll('.filter-btn').forEach((btn, i) => {
-                btn.classList.toggle('active', i === activeIndex);
+            const btns = ['btnFilterAll', 'btnFilterCourts', 'btnFilterEquip'];
+            btns.forEach((id, i) => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('active', i === activeIndex);
             });
         }
 
