@@ -162,13 +162,13 @@ router.get('/my', authenticateToken, async (req, res) => {
 });
 
 // ===============================================
-// PUT /api/bookings/:id - แก้ไขการจอง (เวลาและอุปกรณ์)
+// PUT /api/bookings/:id - แก้ไขการจอง (วันที่ เวลา และอุปกรณ์)
 // ===============================================
 router.put('/:id', authenticateToken, async (req, res) => {
     let connection;
     try {
         const bookingId = req.params.id;
-        const { start_time, end_time, note, equipments } = req.body;
+        const { booking_date, start_time, end_time, note, equipments } = req.body;
 
         connection = await db.getConnection();
         await connection.beginTransaction();
@@ -185,9 +185,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
         }
 
         const booking = bookings[0];
+        const newBookingDate = booking_date || booking.booking_date;
 
-        // 1. ตรวจสอบเวลาว่าง (ถ้ามีการเปลี่ยนเวลา) ล็อคช่วงเวลาเพื่อป้องกันการจองซ้อนทับ
-        if (start_time !== booking.start_time || end_time !== booking.end_time) {
+        // 1. ตรวจสอบเวลาว่าง (ถ้ามีการเปลี่ยนเวลาหรือวันที่)
+        if (newBookingDate !== booking.booking_date || start_time !== booking.start_time || end_time !== booking.end_time) {
             const [existingBookings] = await connection.execute(`
                 SELECT id FROM bookings 
                 WHERE court_id = ? 
@@ -200,7 +201,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
                     (start_time >= ? AND end_time <= ?)
                 )
                 FOR UPDATE
-            `, [booking.court_id, booking.booking_date, bookingId, start_time, start_time, end_time, end_time, start_time, end_time]);
+            `, [booking.court_id, newBookingDate, bookingId, start_time, start_time, end_time, end_time, start_time, end_time]);
 
             if (existingBookings.length > 0) {
                 await connection.rollback();
@@ -234,7 +235,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
                 await connection.execute(`
                     INSERT INTO equipment_bookings (user_id, equipment_id, quantity, borrow_date, return_date, status)
                     VALUES (?, ?, ?, ?, ?, 'pending')
-                `, [req.user.userId, item.id, item.quantity, booking.booking_date, booking.booking_date]);
+                `, [req.user.userId, item.id, item.quantity, newBookingDate, newBookingDate]);
 
                 const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ?', [item.id]);
                 if (eqRows.length > 0) {
@@ -249,8 +250,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
         // 5. อัปเดตข้อมูลตารางการจอง (เปลี่ยนสถานะกลับเป็น pending ให้ admin รับทราบ)
         await connection.execute(
-            'UPDATE bookings SET start_time = ?, end_time = ?, note = ?, status = ? WHERE id = ?',
-            [start_time, end_time, finalNote || null, 'pending', bookingId]
+            'UPDATE bookings SET booking_date = ?, start_time = ?, end_time = ?, note = ?, status = ? WHERE id = ?',
+            [newBookingDate, start_time, end_time, finalNote || null, 'pending', bookingId]
         );
 
         await connection.commit();

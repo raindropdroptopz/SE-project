@@ -29,7 +29,7 @@ app.use('/api/admin', adminRoutes);
 const pages = [
     'index', 'login', 'register', 'resetpass', 'profile',
     'calendar', 'items', 'item-detail', 'sportarea',
-    'court-booking', 'admin-dashboard'
+    'court-booking', 'admin-dashboard', 'bookings'
 ];
 
 pages.forEach(page => {

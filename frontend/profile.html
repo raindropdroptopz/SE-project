@@ -560,7 +560,9 @@
             <li><a href="/sportarea.html"><i class="bi bi-dribbble"></i> สนามกีฬา</a></li>
             <li><a href="/items.html"><i class="bi bi-box-seam"></i> ยืมอุปกรณ์</a></li>
             <li><a href="/calendar.html"><i class="bi bi-calendar3"></i> ปฏิทิน</a></li>
-            <li><a href="/profile.html" class="active"><i class="bi bi-person-circle"></i> โปรไฟล์</a></li>
+            <!-- Logged in items -->
+            <li class="logged-in-menu" style="display: none;"><a href="/profile.html" class="active"><i class="bi bi-person-circle"></i> โปรไฟล์</a></li>
+            <li class="logged-in-menu" style="display: none;"><a href="/bookings.html"><i class="bi bi-clock-history"></i> ประวัติการจอง</a></li>
         </ul>
     </aside>
 
@@ -809,8 +811,15 @@
                         <div class="mb-4">
                             <h6 class="fw-bold mb-3"><i class="bi bi-info-circle text-primary me-2"></i>ข้อมูลสนาม</h6>
                             <div class="p-3 bg-light rounded border">
-                                <p class="mb-1"><strong>สนาม: </strong><span id="editCourtName"></span></p>
-                                <p class="mb-0"><strong>วันที่จอง: </strong><span id="editBookingDate"></span></p>
+                                <p class="mb-2"><strong>สนาม: </strong><span id="editCourtName"></span></p>
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <strong>วันที่จอง:</strong>
+                                    </div>
+                                    <div class="col">
+                                        <input type="date" id="editBookingDateInput" class="form-control form-control-sm" required>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -863,6 +872,9 @@
                 window.location.href = '/login.html';
                 return;
             }
+
+            // Show logged-in menu items in sidebar
+            document.querySelectorAll('.logged-in-menu').forEach(el => el.style.display = 'block');
 
             const token = localStorage.getItem('userToken');
             if (!token) {
@@ -1022,7 +1034,12 @@
 
             document.getElementById('editBookingId').value = booking.id;
             document.getElementById('editCourtName').textContent = booking.court_name;
-            document.getElementById('editBookingDate').textContent = new Date(booking.booking_date).toLocaleDateString('th-TH');
+            
+            // ตั้งค่าวันที่เดิมใน Input
+            const bookingDate = new Date(booking.booking_date);
+            const formattedDate = bookingDate.toISOString().split('T')[0];
+            document.getElementById('editBookingDateInput').value = formattedDate;
+            document.getElementById('editBookingDateInput').min = new Date().toISOString().split('T')[0];
 
             // Populate Time Slots
             const allTimeSlots = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
@@ -1087,10 +1104,15 @@
         async function saveEditBooking() {
             const bookingId = document.getElementById('editBookingId').value;
             const token = localStorage.getItem('userToken');
-
+            const bookingDate = document.getElementById('editBookingDateInput').value;
             const startTime = document.getElementById('editStartTime').value;
             const endTime = document.getElementById('editEndTime').value;
             const note = document.getElementById('editNote').value;
+
+            if (!bookingDate) {
+                alert('กรุณาเลือกวันที่จอง');
+                return;
+            }
 
             if (startTime >= endTime) {
                 alert('เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น');
@@ -1110,6 +1132,7 @@
             });
 
             const payload = {
+                booking_date: bookingDate,
                 start_time: startTime,
                 end_time: endTime,
                 note: note,
@@ -1140,7 +1163,7 @@
                 }
             } catch (error) {
                 console.error(error);
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ 서버');
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
             } finally {
                 btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>บันทึกการแก้ไข';
                 btn.disabled = false;
@@ -1165,7 +1188,7 @@
                 }
             } catch (error) {
                 console.error(error);
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ 서버');
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
             }
         }
     </script>

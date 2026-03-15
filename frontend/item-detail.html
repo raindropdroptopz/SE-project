@@ -454,6 +454,9 @@
             <li><a href="/sportarea.html"><i class="bi bi-dribbble"></i> สนามกีฬา</a></li>
             <li><a href="/items.html"><i class="bi bi-box-seam"></i> ยืมอุปกรณ์</a></li>
             <li><a href="/calendar.html"><i class="bi bi-calendar3"></i> ปฏิทิน</a></li>
+            <!-- Logged in items -->
+            <li class="logged-in-menu" style="display: none;"><a href="/profile.html"><i class="bi bi-person-circle"></i> โปรไฟล์</a></li>
+            <li class="logged-in-menu" style="display: none;"><a href="/bookings.html"><i class="bi bi-clock-history"></i> ประวัติการจอง</a></li>
         </ul>
     </aside>
 
@@ -564,6 +567,9 @@
             const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
             if (isLoggedIn && headerButtons) {
+                // Show logged-in menu items in sidebar
+                document.querySelectorAll('.logged-in-menu').forEach(el => el.style.display = 'block');
+
                 let profileLink = '/profile.html';
                 if (isAdmin) {
                     profileLink = '/admin-dashboard.html';
