@@ -449,6 +449,13 @@
                                 <th>วันที่ทำรายการ</th>
                                 <td id="viewBookingCreatedAt"></td>
                             </tr>
+                            <tr>
+                                <th>หลักฐานการชำระเงิน</th>
+                                <td id="viewBookingSlipContainer">
+                                    <div id="noSlipText" class="text-muted small">ไม่มีหลักฐานการชำระเงิน</div>
+                                    <img id="viewBookingSlip" src="" alt="Payment Slip" class="img-fluid rounded shadow-sm d-none" style="max-height: 400px; cursor: pointer;" onclick="window.open(this.src)">
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -623,6 +630,20 @@
 
             const createdDate = new Date(b.created_at).toLocaleString('th-TH');
             document.getElementById('viewBookingCreatedAt').innerText = createdDate;
+
+            // Display payment slip
+            const slipImg = document.getElementById('viewBookingSlip');
+            const noSlipText = document.getElementById('noSlipText');
+            
+            if (b.payment_slip) {
+                slipImg.src = b.payment_slip;
+                slipImg.classList.remove('d-none');
+                noSlipText.classList.add('d-none');
+            } else {
+                slipImg.src = '';
+                slipImg.classList.add('d-none');
+                noSlipText.classList.remove('d-none');
+            }
 
             viewBookingModalWrapper.show();
         }
