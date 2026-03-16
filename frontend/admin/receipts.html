@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ใบเสร็จรับเงิน - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/admin-style.css">
+    <style>
+        .receipt-preview {
+            background: white;
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px dashed #e0e0e0;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .receipt-header img {
+            width: 60px;
+            margin-bottom: 10px;
+        }
+
+        .receipt-header h4 {
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .receipt-header p {
+            margin: 5px 0 0;
+            color: #6c7293;
+            font-size: 0.85rem;
+        }
+
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 0.9rem;
+        }
+
+        .receipt-row.total {
+            border-top: 2px dashed #e0e0e0;
+            margin-top: 15px;
+            padding-top: 15px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .receipt-footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px dashed #e0e0e0;
+            color: #6c7293;
+            font-size: 0.8rem;
+        }
+
+        .receipt-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        /* Print Styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            .receipt-preview,
+            .receipt-preview * {
+                visibility: visible;
+            }
+
+            .receipt-preview {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+
+            .receipt-actions {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png" alt="Logo">
+            <div>
+                <h4>Payap Sports</h4><span>Admin Dashboard</span>
+            </div>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/admin-dashboard.html"><i class="bi bi-grid-1x2-fill"></i> แดชบอร์ด</a></li>
+            <li><a href="/admin/bookings.html"><i class="bi bi-calendar-check"></i> การจองทั้งหมด</a></li>
+            <li><a href="/admin/users.html"><i class="bi bi-people"></i> จัดการผู้ใช้</a></li>
+            <li><a href="/admin/courts.html"><i class="bi bi-dribbble"></i> จัดการสนาม</a></li>
+            <li><a href="/admin/calendar.html"><i class="bi bi-calendar3"></i> ปฏิทินการจอง</a></li>
+            <p class="nav-section-title">อุปกรณ์</p>
+            <li><a href="/admin/equipment.html"><i class="bi bi-box-seam"></i> รายการอุปกรณ์</a></li>
+            <li><a href="/admin/borrow-reports.html"><i class="bi bi-clipboard-data"></i> รายงานการยืม</a></li>
+            <p class="nav-section-title">การเงิน</p>
+            <li><a href="/admin/finance.html"><i class="bi bi-cash-stack"></i> รายรับ-รายจ่าย</a></li>
+            <li><a href="/admin/receipts.html" class="active"><i class="bi bi-receipt"></i> ใบเสร็จรับเงิน</a></li>
+            <p class="nav-section-title">ระบบ</p>
+            <li><a href="/index.html"><i class="bi bi-box-arrow-left"></i> กลับสู่หน้าหลัก</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div>
+                <h1><i class="bi bi-receipt me-2"></i>ใบเสร็จรับเงิน</h1>
+                <p style="margin:0; color:#6c7293; font-size:0.9rem;">จัดการใบเสร็จรับเงินทั้งหมด</p>
+            </div>
+            <button class="btn-gradient" data-bs-toggle="modal" data-bs-target="#createReceiptModal"><i
+                    class="bi bi-plus-lg me-2"></i>สร้างใบเสร็จ</button>
+        </header>
+
+        <div class="row">
+            <div class="col-lg-7">
+                <div class="content-card">
+                    <div class="filter-bar">
+                        <input type="text" id="searchInput" class="form-control" placeholder="ค้นหาเลขใบเสร็จ, ชื่อ..."
+                            style="max-width:200px;">
+                        <input type="date" id="dateInput" class="form-control" style="max-width:150px;">
+                        <button id="searchBtn" class="btn-gradient"><i class="bi bi-search"></i></button>
+                    </div>
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>เลขที่</th>
+                                <th>ผู้ชำระ</th>
+                                <th>รายการ</th>
+                                <th>จำนวน</th>
+                                <th>วันที่</th>
+                                <th>การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="receiptsTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center py-4">กำลังโหลดข้อมูล...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="content-card" style="padding:20px;">
+                    <h5 style="margin-bottom:20px; font-weight:600;"><i class="bi bi-eye me-2"></i>ตัวอย่างใบเสร็จ</h5>
+                    <div class="receipt-preview">
+                        <div class="receipt-header">
+                            <img src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png"
+                                alt="Logo">
+                            <h4>Payap Sports</h4>
+                            <p>ใบเสร็จรับเงิน</p>
+                            <p style="font-weight:600;" id="previewReceiptId">-</p>
+                        </div>
+                        <div class="receipt-row"><span>วันที่:</span><span id="previewDate">-</span></div>
+                        <div class="receipt-row"><span>ผู้ชำระ:</span><span id="previewName">-</span></div>
+                        <div class="receipt-row"><span>รหัสนักศึกษา:</span><span id="previewStudentId">-</span></div>
+                        <div
+                            style="margin:15px 0; padding:15px 0; border-top:1px solid #f0f0f0; border-bottom:1px solid #f0f0f0;">
+                            <div class="receipt-row"><span id="previewItem">-</span><span id="previewItemPrice">-</span>
+                            </div>
+                        </div>
+                        <div class="receipt-row total"><span>รวมทั้งสิ้น:</span><span id="previewTotal">-</span></div>
+                        <div class="receipt-footer">
+                            <p>ขอบคุณที่ใช้บริการ</p>
+                            <p>Payap Sports Reservation System</p>
+                        </div>
+                        <div class="receipt-actions">
+                            <button class="btn-gradient" onclick="window.print()"><i class="bi bi-printer me-1"></i>
+                                พิมพ์ / PDF</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Create Receipt Modal -->
+    <div class="modal fade" id="createReceiptModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content text-dark">
+                <div class="modal-header">
+                    <h5 class="modal-title">สร้างใบเสร็จรับเงิน (กำหนดเอง)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="manualReceiptForm" onsubmit="submitManualReceipt(event)">
+                        <div class="mb-3">
+                            <label class="form-label">ชื่อผู้ชำระ <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="user_name" required
+                                placeholder="นายรักเรียน เรียนดี">
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label">รหัสนักศึกษา (ถ้ามี)</label>
+                                <input type="text" class="form-control" name="student_id" placeholder="12345678">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label">เบอร์โทรศัพท์ (ถ้ามี)</label>
+                                <input type="text" class="form-control" name="phone" placeholder="0812345678">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">รายการที่ชำระ <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="item_name" required
+                                placeholder="เช่น ค่าเช่าสนามพลาสติก, ค่าประกัน">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">จำนวนเงิน (บาท) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" name="amount" required min="0">
+                        </div>
+                        <div class="text-end mt-4">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                            <button type="submit" class="btn btn-primary">สร้างใบเสร็จ</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const token = localStorage.getItem('adminToken');
+        if (!token) window.location.href = '/login.html';
+
+        let currentReceipts = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchReceipts();
+
+            document.getElementById('searchBtn').addEventListener('click', fetchReceipts);
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') fetchReceipts();
+            });
+            document.getElementById('dateInput').addEventListener('change', fetchReceipts);
+        });
+
+        async function fetchReceipts() {
+            try {
+                const search = document.getElementById('searchInput').value.trim();
+                const date = document.getElementById('dateInput').value;
+
+                let url = '/api/admin/receipts?';
+                if (search) url += `search=${encodeURIComponent(search)}&`;
+                if (date) url += `date=${encodeURIComponent(date)}`;
+
+                const tbody = document.getElementById('receiptsTableBody');
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>';
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    alert('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+                    localStorage.removeItem('adminToken');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentReceipts = data.receipts;
+                    renderTable(currentReceipts);
+                    // Show the first receipt in preview by default if exists
+                    if (currentReceipts.length > 0) {
+                        viewReceipt(0);
+                    } else {
+                        clearPreview();
+                    }
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">ไม่สามารถโหลดข้อมูลได้</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error fetching receipts:', error);
+                document.getElementById('receiptsTableBody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">เกิดข้อผิดพลาดในการเชื่อมต่อ</td></tr>';
+            }
+        }
+
+        async function submitManualReceipt(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/api/admin/receipts/manual', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('สร้างใบเสร็จสำเร็จ');
+                    bootstrap.Modal.getInstance(document.getElementById('createReceiptModal')).hide();
+                    form.reset();
+                    fetchReceipts(); // Refresh the table
+                } else {
+                    alert(result.message || 'เกิดข้อผิดพลาดในการสร้างใบเสร็จ');
+                }
+            } catch (error) {
+                console.error('Error submitting manual receipt:', error);
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+            }
+        }
+
+        function renderTable(receipts) {
+            const tbody = document.getElementById('receiptsTableBody');
+
+            if (receipts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">ไม่พบข้อมูลใบเสร็จรับเงิน</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = receipts.map((r, index) => {
+                const dateObj = new Date(r.receipt_date);
+                const formatDate = dateObj.toLocaleDateString('th-TH', {
+                    day: 'numeric', month: 'short', year: 'numeric'
+                });
+
+                return `
+                    <tr>
+                        <td><strong>#${r.receipt_id}</strong></td>
+                        <td>${r.user_name}</td>
+                        <td>${r.item_name}</td>
+                        <td style="font-weight:600;">฿${r.amount.toLocaleString()}</td>
+                        <td>${formatDate}</td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="action-btn view" onclick="viewReceipt(${index})" title="ดูพรีวิว"><i class="bi bi-eye"></i></button>
+                                <button class="action-btn edit" onclick="printReceipt(${index})" title="พิมพ์ใบเสร็จ"><i class="bi bi-printer"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function viewReceipt(index) {
+            const r = currentReceipts[index];
+            if (!r) return;
+
+            const dateObj = new Date(r.receipt_date);
+            const formatDate = dateObj.toLocaleDateString('th-TH', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            });
+
+            document.getElementById('previewReceiptId').textContent = '#' + r.receipt_id;
+            document.getElementById('previewDate').textContent = formatDate;
+            document.getElementById('previewName').textContent = r.user_name;
+            document.getElementById('previewStudentId').textContent = r.student_id || '-';
+
+            let itemText = r.item_name;
+            if (r.hours_booked > 0) itemText += ` (${r.hours_booked} ชม.)`;
+
+            document.getElementById('previewItem').textContent = itemText;
+            document.getElementById('previewItemPrice').textContent = '฿' + r.amount.toLocaleString();
+            document.getElementById('previewTotal').textContent = '฿' + r.amount.toLocaleString();
+
+            // Highlight the selected row (optional UI enhancement)
+            const rows = document.getElementById('receiptsTableBody').querySelectorAll('tr');
+            rows.forEach(row => row.style.backgroundColor = '');
+            if (rows[index]) rows[index].style.backgroundColor = '#f8f9fa';
+        }
+
+        function clearPreview() {
+            document.getElementById('previewReceiptId').textContent = '-';
+            document.getElementById('previewDate').textContent = '-';
+            document.getElementById('previewName').textContent = '-';
+            document.getElementById('previewStudentId').textContent = '-';
+            document.getElementById('previewItem').textContent = '-';
+            document.getElementById('previewItemPrice').textContent = '-';
+            document.getElementById('previewTotal').textContent = '-';
+        }
+
+        function printReceipt(index) {
+            viewReceipt(index);
+            // Slight delay to ensure DOM is updated before print dialog opens
+            setTimeout(() => {
+                window.print();
+            }, 100);
+        }
+    </script>
+</body>
+
+</html>

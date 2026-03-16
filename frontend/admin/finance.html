@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายรับ-รายจ่าย - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/admin-style.css">
+    <style>
+        .finance-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .summary-card.income {
+            border-left: 4px solid #38ef7d;
+        }
+
+        .summary-card.expense {
+            border-left: 4px solid #f5576c;
+        }
+
+        .summary-card.balance {
+            border-left: 4px solid #667eea;
+        }
+
+        .summary-card h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .summary-card h2.income {
+            color: #11998e;
+        }
+
+        .summary-card h2.expense {
+            color: #f5576c;
+        }
+
+        .summary-card h2.balance {
+            color: #667eea;
+        }
+
+        .summary-card p {
+            color: #6c7293;
+            margin: 0;
+        }
+
+        .chart-placeholder {
+            height: 250px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c7293;
+            margin: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .finance-summary {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png" alt="Logo">
+            <div>
+                <h4>Payap Sports</h4><span>Admin Dashboard</span>
+            </div>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/admin-dashboard.html"><i class="bi bi-grid-1x2-fill"></i> แดชบอร์ด</a></li>
+            <li><a href="/admin/bookings.html"><i class="bi bi-calendar-check"></i> การจองทั้งหมด</a></li>
+            <li><a href="/admin/users.html"><i class="bi bi-people"></i> จัดการผู้ใช้</a></li>
+            <li><a href="/admin/courts.html"><i class="bi bi-dribbble"></i> จัดการสนาม</a></li>
+            <li><a href="/admin/calendar.html"><i class="bi bi-calendar3"></i> ปฏิทินการจอง</a></li>
+            <p class="nav-section-title">อุปกรณ์</p>
+            <li><a href="/admin/equipment.html"><i class="bi bi-box-seam"></i> รายการอุปกรณ์</a></li>
+            <li><a href="/admin/borrow-reports.html"><i class="bi bi-clipboard-data"></i> รายงานการยืม</a></li>
+            <p class="nav-section-title">การเงิน</p>
+            <li><a href="/admin/finance.html" class="active"><i class="bi bi-cash-stack"></i> รายรับ-รายจ่าย</a></li>
+            <li><a href="/admin/receipts.html"><i class="bi bi-receipt"></i> ใบเสร็จรับเงิน</a></li>
+            <p class="nav-section-title">ระบบ</p>
+            <li><a href="/index.html"><i class="bi bi-box-arrow-left"></i> กลับสู่หน้าหลัก</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div>
+                <h1><i class="bi bi-cash-stack me-2"></i>รายรับ-รายจ่าย</h1>
+                <p style="margin:0; color:#6c7293; font-size:0.9rem;">สรุปรายรับรายจ่ายประจำเดือน</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <select class="form-select" style="width:auto;">
+                    <option>กุมภาพันธ์ 2026</option>
+                    <option>มกราคม 2026</option>
+                    <option>ธันวาคม 2025</option>
+                </select>
+                <button id="exportBtn" class="btn-gradient"><i class="bi bi-download me-2"></i>Export</button>
+            </div>
+        </header>
+
+        <div class="finance-summary">
+            <div class="summary-card income">
+                <p><i class="bi bi-arrow-down-circle me-1"></i> รายรับทั้งหมด</p>
+                <h2 class="income" id="totalIncome">฿0</h2>
+                <small style="color:#11998e;">จากค่าจองสนาม</small>
+            </div>
+            <div class="summary-card expense">
+                <p><i class="bi bi-arrow-up-circle me-1"></i> รายจ่ายทั้งหมด</p>
+                <h2 class="expense" id="totalExpense">฿0</h2>
+                <small style="color:#f5576c;">ค่าใช้จ่ายอื่นๆ</small>
+            </div>
+            <div class="summary-card balance">
+                <p><i class="bi bi-wallet2 me-1"></i> ยอดคงเหลือ</p>
+                <h2 class="balance" id="balanceAmount">฿0</h2>
+                <small style="color:#667eea;">กำไรสุทธิ</small>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+                <h5><i class="bi bi-graph-up me-2"></i>กราฟรายรับ-รายจ่าย</h5>
+                <div class="btn-group btn-group-sm me-3" id="chartViewMode">
+                    <button type="button" class="btn btn-outline-primary active" data-mode="daily">รายวัน</button>
+                    <button type="button" class="btn btn-outline-primary" data-mode="monthly">รายเดือน</button>
+                    <button type="button" class="btn btn-outline-primary" data-mode="yearly">รายปี</button>
+                </div>
+            </div>
+            <div style="padding: 20px; height: 400px; position: relative;">
+                <canvas id="financeChart"></canvas>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="filter-bar">
+                <select id="typeFilter" class="form-select" style="max-width:150px;">
+                    <option value="">ทั้งหมด</option>
+                    <option value="รายรับ">รายรับ</option>
+                    <option value="รายจ่าย">รายจ่าย</option>
+                </select>
+                <input type="date" id="startDateFilter" class="form-control" style="max-width:160px;">
+                <input type="date" id="endDateFilter" class="form-control" style="max-width:160px;">
+                <button id="searchBtn" class="btn-gradient"><i class="bi bi-search"></i> ค้นหา</button>
+            </div>
+
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>วันที่</th>
+                        <th>รายการ</th>
+                        <th>ประเภท</th>
+                        <th>จำนวนเงิน</th>
+                        <th>หมายเหตุ</th>
+                        <th>สถานะสลิป</th>
+                    </tr>
+                </thead>
+                <tbody id="transactionTableBody">
+                    <tr>
+                        <td colspan="6" class="text-center">กำลังโหลดข้อมูล...</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="pagination-custom">
+                <button><i class="bi bi-chevron-left"></i></button>
+                <button class="active">1</button><button>2</button><button>3</button>
+                <button><i class="bi bi-chevron-right"></i></button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Slip Preview Modal -->
+    <div class="modal fade" id="slipModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header" style="background: var(--primary-gradient); color: white;">
+                    <h5 class="modal-title"><i class="bi bi-image me-2"></i>สลิปการชำระเงิน</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div id="slipModalLoading" class="spinner-border text-primary d-none" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <img id="slipModalImg" src="" alt="สลิปโอนเงิน" class="img-fluid rounded shadow d-none"
+                        style="max-height: 70vh; object-fit: contain;">
+                    <div id="slipModalError" class="text-danger d-none">
+                        <i class="bi bi-image-alt me-2" style="font-size: 2rem;"></i>
+                        <p>ไม่สามารถโหลดรูปได้</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a id="slipModalDownload" href="#" target="_blank" class="btn btn-outline-primary">
+                        <i class="bi bi-download me-1"></i>เปิดรูปเต็มขนาด
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+        let financeChartInstance = null;
+        let currentTransactions = [];
+        let currentViewMode = 'daily';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchFinanceData();
+
+            // Setup event listeners
+            document.getElementById('searchBtn').addEventListener('click', fetchFinanceData);
+            document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+
+            // Chart View Mode Listeners
+            document.querySelectorAll('#chartViewMode button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('#chartViewMode button').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentViewMode = e.target.dataset.mode;
+                    renderChart(currentTransactions);
+                });
+            });
+        });
+
+        function exportToCSV() {
+            if (!currentTransactions || currentTransactions.length === 0) {
+                alert('ไม่มีข้อมูลสำหรับ Export');
+                return;
+            }
+
+            let csvRows = [];
+            // Headers
+            csvRows.push(['วันที่', 'รายการ', 'ประเภท', 'จำนวนเงิน', 'หมายเหตุ'].join(','));
+
+            currentTransactions.forEach(t => {
+                const dateObj = new Date(t.date || t.created_at);
+                const formatDate = dateObj.toLocaleDateString('th-TH', {
+                    day: 'numeric', month: 'short', year: 'numeric'
+                });
+
+                const desc = `"${(t.description || '').replace(/"/g, '""')}"`;
+                const type = `"${t.type}"`;
+                const amount = t.amount;
+                const note = `"${(t.note || '').replace(/"/g, '""')}"`;
+
+                csvRows.push([`"${formatDate}"`, desc, type, amount, note].join(','));
+            });
+
+            const csvString = '\uFEFF' + csvRows.join('\n'); // BOM for Excel UTF-8
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `finance_report_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function renderChart(transactions) {
+            if (!transactions || transactions.length === 0) return;
+            const ctx = document.getElementById('financeChart').getContext('2d');
+
+            // 1. Group transactions by selected timeframe (Daily, Monthly, Yearly)
+            const groupedData = {};
+            transactions.forEach(t => {
+                let dateKey;
+                
+                // Use direct date string if available from backend (YYYY-MM-DD)
+                // Otherwise fallback to parsing what we have
+                if (t.date && typeof t.date === 'string' && t.date.includes('-') && !t.date.includes('T')) {
+                    dateKey = t.date; // It's already YYYY-MM-DD
+                } else {
+                    const dateObj = new Date(t.date || t.created_at);
+                    // For legacy objects or created_at, use local date components to avoid shifting
+                    const y = dateObj.getFullYear();
+                    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const d = String(dateObj.getDate()).padStart(2, '0');
+                    dateKey = `${y}-${m}-${d}`;
+                }
+
+                let groupKey = dateKey;
+                if (currentViewMode === 'yearly') {
+                    groupKey = dateKey.split('-')[0];
+                } else if (currentViewMode === 'monthly') {
+                    groupKey = dateKey.substring(0, 7); // YYYY-MM
+                }
+
+                if (!groupedData[groupKey]) {
+                    groupedData[groupKey] = { income: 0, expense: 0 };
+                }
+
+                if (t.type === 'รายรับ') {
+                    groupedData[dateKey].income += parseFloat(t.amount);
+                } else {
+                    groupedData[dateKey].expense += parseFloat(t.amount);
+                }
+            });
+
+            // 2. Sort by date ascending
+            const sortedKeys = Object.keys(groupedData).sort();
+
+            // 3. Prepare Chart.js datasets
+            const labels = sortedKeys.map(k => {
+                if (currentViewMode === 'yearly') return k;
+                if (currentViewMode === 'monthly') {
+                    const [y, m] = k.split('-');
+                    const date = new Date(y, m - 1, 1);
+                    return date.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' });
+                }
+                const [y, m, d] = k.split('-');
+                const date = new Date(y, m - 1, d);
+                return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+            });
+            const incomeData = sortedKeys.map(k => groupedData[k].income);
+            const expenseData = sortedKeys.map(k => groupedData[k].expense);
+
+            // Destroy previous chart if exists
+            if (financeChartInstance) {
+                financeChartInstance.destroy();
+            }
+
+            // Create new chart
+            financeChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'รายรับ (Income)',
+                            data: incomeData,
+                            backgroundColor: 'rgba(56, 239, 125, 0.8)',
+                            borderColor: '#11998e',
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                            barThickness: 30
+                        },
+                        {
+                            label: 'รายจ่าย (Expense)',
+                            data: expenseData,
+                            backgroundColor: 'rgba(245, 87, 108, 0.8)',
+                            borderColor: '#f5576c',
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                            barThickness: 30
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 25,
+                                font: { size: 14, weight: '600' }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#1a1c2e',
+                            bodyColor: '#1a1c2e',
+                            borderColor: '#e0e0e0',
+                            borderWidth: 1,
+                            padding: 12,
+                            boxPadding: 8,
+                            usePointStyle: true,
+                            callbacks: {
+                                label: function (context) {
+                                    return ` ${context.dataset.label}: ฿${context.parsed.y.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { weight: '600' }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { 
+                                color: 'rgba(0,0,0,0.05)',
+                                drawTicks: false
+                            },
+                            ticks: {
+                                padding: 10,
+                                callback: value => '฿' + value.toLocaleString()
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function fetchFinanceData() {
+            try {
+                const typeFilter = document.getElementById('typeFilter').value;
+                const startDate = document.getElementById('startDateFilter').value;
+                const endDate = document.getElementById('endDateFilter').value;
+
+                let urlFilter = '/api/admin/finance?';
+                if (typeFilter) urlFilter += `type=${encodeURIComponent(typeFilter)}&`;
+                if (startDate) urlFilter += `startDate=${encodeURIComponent(startDate)}&`;
+                if (endDate) urlFilter += `endDate=${encodeURIComponent(endDate)}`;
+
+                document.getElementById('transactionTableBody').innerHTML = '<tr><td colspan="5" class="text-center">กำลังโหลดข้อมูล...</td></tr>';
+
+                const response = await fetch(urlFilter, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    alert('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+                    localStorage.removeItem('adminToken');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update Summary
+                    document.getElementById('totalIncome').textContent = '฿' + data.summary.totalIncome.toLocaleString();
+                    document.getElementById('totalExpense').textContent = '฿' + data.summary.totalExpense.toLocaleString();
+                    document.getElementById('balanceAmount').textContent = '฿' + data.summary.balance.toLocaleString();
+
+                    currentTransactions = data.transactions;
+
+                    // Render Chart
+                    renderChart(data.transactions);
+
+                    // Update Transactions Table
+                    const tbody = document.getElementById('transactionTableBody');
+                    if (data.transactions.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">ไม่พบข้อมูลการทำธุรกรรมในช่วงเวลานี้</td></tr>';
+                    } else {
+                        tbody.innerHTML = data.transactions.map(t => {
+                            const dateObj = new Date(t.date || t.created_at);
+                            const formatDate = dateObj.toLocaleDateString('th-TH', {
+                                day: 'numeric', month: 'short', year: 'numeric'
+                            });
+                            const isIncome = t.type === 'รายรับ';
+                            const badgeClass = isIncome ? 'confirmed' : 'cancelled';
+                            const amountColor = isIncome ? '#11998e' : '#f5576c';
+                            const sign = isIncome ? '+' : '-';
+
+                            // Payment status badge
+                            const statusMap = { pending: 'รอตรวจ', verified: 'ยืนยันแล้ว', rejected: 'ปฏิเสธ' };
+                            const statusColor = { pending: '#ffc107', verified: '#11998e', rejected: '#f5576c' };
+                            const ps = t.payment_status || 'pending';
+                            
+                            // Normalize slip path
+                            let slipUrl = t.payment_slip || '';
+                            if (slipUrl && !slipUrl.startsWith('http') && !slipUrl.startsWith('/')) {
+                                slipUrl = '/photo/slips/' + slipUrl;
+                            }
+
+                            const slipHtml = slipUrl
+                                ? `<button data-slip="${slipUrl}" class="btn btn-sm btn-outline-primary ms-1 slip-btn" title="ดูสลิป"><i class="bi bi-image"></i> ดูสลิป</button>`
+                                : '<span class="text-muted" style="font-size:0.8em;">ไม่มีสลิป</span>';
+                            const verifyBtns = ps === 'pending' ? `
+                                <button data-payment-id="${t.id}" data-action="verified" class="btn btn-sm btn-success ms-1 verify-btn" title="ยืนยัน"><i class="bi bi-check"></i></button>
+                                <button data-payment-id="${t.id}" data-action="rejected" class="btn btn-sm btn-danger ms-1 verify-btn" title="ปฏิเสธ"><i class="bi bi-x"></i></button>
+                            ` : '';
+
+                            return `
+                                <tr>
+                                    <td>${formatDate}</td>
+                                    <td>${t.description}</td>
+                                    <td><span class="status-badge ${badgeClass}">${t.type}</span></td>
+                                    <td style="color:${amountColor}; font-weight:600;">${sign}฿${t.amount.toLocaleString()}</td>
+                                    <td style="font-size:0.85em;">${t.note || '-'}</td>
+                                    <td>
+                                        <span style="color:${statusColor[ps]}; font-weight:600;">${statusMap[ps]}</span>
+                                        ${slipHtml}${verifyBtns}
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('');
+                    }
+                } else {
+                    console.error('Failed to load finance data');
+                    document.getElementById('transactionTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger">ไม่สามารถโหลดข้อมูลได้</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error fetching finance data:', error);
+                document.getElementById('transactionTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+            }
+        }
+
+        async function updatePaymentStatus(paymentId, status) {
+            const label = status === 'verified' ? 'ยืนยัน' : 'ปฏิเสธ';
+            if (!confirm(`ต้องการ ${label} สลิปการชำระนี้ใช่ไหม?`)) return;
+            try {
+                const res = await fetch(`/api/admin/payments/${paymentId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ status })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    fetchFinanceData();
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + data.message);
+                }
+            } catch(e) {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+            }
+        }
+
+        function showSlip(slipPath) {
+            console.log('Opening slip modal for path:', slipPath);
+            const img = document.getElementById('slipModalImg');
+            const loader = document.getElementById('slipModalLoading');
+            const error = document.getElementById('slipModalError');
+            const downloadBtn = document.getElementById('slipModalDownload');
+
+            // Reset state
+            img.classList.add('d-none');
+            error.classList.add('d-none');
+            loader.classList.remove('d-none');
+            img.src = '';
+            
+            // Handle path normalization
+            let fullPath = slipPath;
+            if (fullPath && !fullPath.startsWith('/') && !fullPath.startsWith('http')) {
+                fullPath = '/photo/slips/' + fullPath;
+            }
+            downloadBtn.href = fullPath;
+
+            img.onload = () => {
+                console.log('Image loaded successfully');
+                loader.classList.add('d-none');
+                img.classList.remove('d-none');
+            };
+
+            img.onerror = () => {
+                loader.classList.add('d-none');
+                error.classList.remove('d-none');
+                console.error('Failed to load image from:', fullPath);
+            };
+
+            // Start loading
+            img.src = fullPath;
+            
+            const modal = new bootstrap.Modal(document.getElementById('slipModal'));
+            modal.show();
+        }
+
+        // Event delegation — handles dynamically-rendered slip and verify buttons
+        document.addEventListener('click', function(e) {
+            const slipBtn = e.target.closest('.slip-btn');
+            if (slipBtn) {
+                e.preventDefault();
+                showSlip(slipBtn.dataset.slip);
+                return;
+            }
+            const verifyBtn = e.target.closest('.verify-btn');
+            if (verifyBtn) {
+                e.preventDefault();
+                updatePaymentStatus(verifyBtn.dataset.paymentId, verifyBtn.dataset.action);
+            }
+        });
+    </script>
+</body>
+</html>

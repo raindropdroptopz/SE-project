@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายการอุปกรณ์ - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/admin-style.css">
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png" alt="Logo">
+            <div>
+                <h4>Payap Sports</h4><span>Admin Dashboard</span>
+            </div>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/admin-dashboard.html"><i class="bi bi-grid-1x2-fill"></i> แดชบอร์ด</a></li>
+            <li><a href="/admin/bookings.html"><i class="bi bi-calendar-check"></i> การจองทั้งหมด</a></li>
+            <li><a href="/admin/users.html"><i class="bi bi-people"></i> จัดการผู้ใช้</a></li>
+            <li><a href="/admin/courts.html"><i class="bi bi-dribbble"></i> จัดการสนาม</a></li>
+            <li><a href="/admin/calendar.html"><i class="bi bi-calendar3"></i> ปฏิทินการจอง</a></li>
+            <p class="nav-section-title">อุปกรณ์</p>
+            <li><a href="/admin/equipment.html" class="active"><i class="bi bi-box-seam"></i> รายการอุปกรณ์</a></li>
+            <li><a href="/admin/borrow-reports.html"><i class="bi bi-clipboard-data"></i> รายงานการยืม</a></li>
+            <p class="nav-section-title">การเงิน</p>
+            <li><a href="/admin/finance.html"><i class="bi bi-cash-stack"></i> รายรับ-รายจ่าย</a></li>
+            <li><a href="/admin/receipts.html"><i class="bi bi-receipt"></i> ใบเสร็จรับเงิน</a></li>
+            <p class="nav-section-title">ระบบ</p>
+            <li><a href="/index.html"><i class="bi bi-box-arrow-left"></i> กลับสู่หน้าหลัก</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div>
+                <h1><i class="bi bi-box-seam me-2"></i>รายการอุปกรณ์</h1>
+                <p style="margin:0; color:#6c7293; font-size:0.9rem;">จัดการอุปกรณ์กีฬาทั้งหมด</p>
+            </div>
+            <button class="btn-gradient" onclick="openEquipmentModal()"><i
+                    class="bi bi-plus-lg me-2"></i>เพิ่มอุปกรณ์</button>
+        </header>
+
+        <div class="stats-row">
+            <div class="stat-mini">
+                <div class="stat-mini-icon total"><i class="bi bi-box-seam"></i></div>
+                <div>
+                    <h3 id="statTotal">0</h3>
+                    <p>อุปกรณ์ทั้งหมด</p>
+                </div>
+            </div>
+            <div class="stat-mini">
+                <div class="stat-mini-icon income"><i class="bi bi-check-circle"></i></div>
+                <div>
+                    <h3 id="statAvailable">0</h3>
+                    <p>พร้อมใช้งาน</p>
+                </div>
+            </div>
+            <div class="stat-mini">
+                <div class="stat-mini-icon pending"><i class="bi bi-arrow-repeat"></i></div>
+                <div>
+                    <h3 id="statBorrowed">0</h3>
+                    <p>กำลังถูกยืม</p>
+                </div>
+            </div>
+            <div class="stat-mini">
+                <div class="stat-mini-icon expense"><i class="bi bi-tools"></i></div>
+                <div>
+                    <h3 id="statMaintenance">0</h3>
+                    <p>อยู่ระหว่างซ่อม</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="filter-bar">
+                <input type="text" id="searchInput" class="form-control" placeholder="ค้นหาอุปกรณ์..."
+                    style="max-width:250px;">
+                <select id="categoryFilter" class="form-select" style="max-width:180px;">
+                    <option value="">ประเภททั้งหมด</option>
+                    <option value="ลูกบอล">ลูกบอล</option>
+                    <option value="ไม้และแร็กเก็ต">ไม้และแร็กเก็ต</option>
+                    <option value="อุปกรณ์ฝึกซ้อม">อุปกรณ์ฝึกซ้อม</option>
+                    <option value="อื่นๆ">อื่นๆ</option>
+                </select>
+                <select id="statusFilter" class="form-select" style="max-width:150px;">
+                    <option value="">สถานะทั้งหมด</option>
+                    <option value="พร้อมใช้งาน">พร้อมใช้งาน</option>
+                    <option value="เหลือน้อย">เหลือน้อย</option>
+                    <option value="หมด">หมด</option>
+                </select>
+                <button id="searchBtn" class="btn-gradient"><i class="bi bi-search"></i></button>
+            </div>
+
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>รหัส</th>
+                        <th>อุปกรณ์</th>
+                        <th>ประเภท</th>
+                        <th>จำนวนทั้งหมด</th>
+                        <th>คงเหลือ</th>
+                        <th>กำลังถูกยืม</th>
+                        <th>สถานะ</th>
+                        <th>การจัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="equipmentTableBody">
+                    <!-- Data will be loaded via JS -->
+                </tbody>
+            </table>
+            <div class="pagination-custom">
+                <button><i class="bi bi-chevron-left"></i></button>
+                <button class="active">1</button><button>2</button>
+                <button><i class="bi bi-chevron-right"></i></button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Equipment Modal -->
+    <div class="modal fade" id="equipmentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="equipmentModalTitle">เพิ่มอุปกรณ์</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="equipmentForm">
+                        <input type="hidden" id="eqId">
+                        <div class="mb-3">
+                            <label class="form-label">ชื่ออุปกรณ์</label>
+                            <input type="text" class="form-control" id="eqName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ประเภท</label>
+                            <select class="form-select" id="eqCategory" required>
+                                <option value="ลูกบอล">ลูกบอล</option>
+                                <option value="ไม้และแร็กเก็ต">ไม้และแร็กเก็ต</option>
+                                <option value="อุปกรณ์ฝึกซ้อม">อุปกรณ์ฝึกซ้อม</option>
+                                <option value="อื่นๆ">อื่นๆ</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">จำนวน (Stock)</label>
+                            <input type="number" class="form-control" id="eqStock" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">คำบรรยายสั้นๆ</label>
+                            <textarea class="form-control" id="eqDesc" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" onclick="saveEquipment()"
+                        style="background: linear-gradient(135deg, #4f46e5, #7c3aed); border: none;">บันทึก</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Equipment Modal -->
+    <div class="modal fade" id="viewEquipmentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">รายละเอียดอุปกรณ์</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <img id="viewEqImage" src="/photo/default.jpg" alt="Equipment"
+                            style="max-width: 150px; border-radius: 8px;">
+                    </div>
+                    <table class="table table-bordered">
+                        <tbody>
+                            <tr>
+                                <th width="35%">รหัสอุปกรณ์</th>
+                                <td id="viewEqId"></td>
+                            </tr>
+                            <tr>
+                                <th>ชื่ออุปกรณ์</th>
+                                <td id="viewEqName"></td>
+                            </tr>
+                            <tr>
+                                <th>ประเภท</th>
+                                <td id="viewEqCategory"></td>
+                            </tr>
+                            <tr>
+                                <th>จำนวนทั้งหมด (Stock)</th>
+                                <td id="viewEqStock"></td>
+                            </tr>
+                            <tr>
+                                <th>พร้อมใช้งาน</th>
+                                <td id="viewEqAvailable"></td>
+                            </tr>
+                            <tr>
+                                <th>สถานะ</th>
+                                <td><span id="viewEqStatusBadge" class="status-badge"></span></td>
+                            </tr>
+                            <tr>
+                                <th>คำบรรยาย</th>
+                                <td id="viewEqDesc" style="white-space: pre-wrap;"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let equipmentModalWrapper;
+        let viewEquipmentModalWrapper;
+
+        async function fetchEquipment() {
+            try {
+                const search = document.getElementById('searchInput').value.trim();
+                const category = document.getElementById('categoryFilter').value;
+                const status = document.getElementById('statusFilter').value;
+
+                let url = '/api/equipment?';
+                if (search) url += `search=${encodeURIComponent(search)}&`;
+                if (category) url += `category=${encodeURIComponent(category)}&`;
+                if (status) url += `status=${encodeURIComponent(status)}&`;
+
+                const tbody = document.getElementById('equipmentTableBody');
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success && data.equipment) {
+                    // Update stats from backend aggregation
+                    document.getElementById('statTotal').innerText = data.stats.total || 0;
+                    document.getElementById('statAvailable').innerText = data.stats.available || 0;
+                    document.getElementById('statBorrowed').innerText = data.stats.borrowed || 0;
+                    document.getElementById('statMaintenance').innerText = data.stats.maintenance || 0;
+
+                    renderTable(data.equipment);
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">ไม่สามารถโหลดข้อมูลได้</td></tr>`;
+                }
+            } catch (error) {
+                console.error('Error fetching admin equipment:', error);
+                document.getElementById('equipmentTableBody').innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">เกิดข้อผิดพลาดในการเชื่อมต่อ</td></tr>`;
+            }
+        }
+
+        function renderTable(equipmentList) {
+            const tbody = document.getElementById('equipmentTableBody');
+
+            if (equipmentList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">ไม่พบข้อมูลอุปกรณ์</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = equipmentList.map(eq => {
+                let badgeClass = 'confirmed';
+                let badgeText = 'พร้อมใช้งาน';
+                if (eq.status === 'low') {
+                    badgeClass = 'pending';
+                    badgeText = 'เหลือน้อย';
+                } else if (eq.status === 'out' || eq.available === 0) {
+                    badgeClass = 'cancelled';
+                    badgeText = 'หมด';
+                }
+
+                return `
+    <tr>
+        <td><strong>#EQ${String(eq.id).padStart(3, '0')}</strong></td>
+        <td>
+            <div class="user-cell">
+                <img src="${eq.image_url || '/photo/default.jpg'}" alt="">
+                <div class="user-cell-info">
+                    <h6>${eq.name}</h6><span>${eq.description ? eq.description.substring(0, 20) + '...' : ''}</span>
+                </div>
+            </div>
+        </td>
+        <td>${eq.category}</td>
+        <td>${eq.stock}</td>
+        <td>${eq.available}</td>
+        <td>${eq.stock - eq.available}</td>
+        <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
+        <td>
+            <div class="action-btns">
+                <button class="action-btn view" title="ดูรายละเอียด" onclick="openViewEquipmentModal(this.dataset.eq)"
+                    data-eq='${JSON.stringify(eq).replace(/'/g, "&#39;")}'>
+                    <i class="bi bi-eye"></i>
+                </button>
+                <button class="action-btn edit" title="แก้ไข" onclick="openEquipmentModal(this.dataset.eq)"
+                    data-eq='${JSON.stringify(eq).replace(/'/g, "&#39;")}'>
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="action-btn delete" title="ลบ" onclick="deleteEquipment(${eq.id})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </td>
+    </tr>
+    `;
+            }).join('');
+        }
+
+        function openEquipmentModal(eqData = null) {
+            let eq = null;
+            if (eqData) {
+                try {
+                    // eqData might be a string if passed from dataset
+                    eq = typeof eqData === 'string' ? JSON.parse(eqData) : eqData;
+                } catch (e) {
+                    console.error("Error parsing equipment data:", e);
+                    return;
+                }
+            }
+            document.getElementById('eqId').value = eq ? eq.id : '';
+            document.getElementById('eqName').value = eq ? eq.name : '';
+            document.getElementById('eqCategory').value = eq ? eq.category : 'อื่นๆ';
+            document.getElementById('eqStock').value = eq ? eq.stock : '';
+            document.getElementById('eqDesc').value = eq ? eq.description : '';
+
+            document.getElementById('equipmentModalTitle').innerText = eq ? 'แก้ไขอุปกรณ์' : 'เพิ่มอุปกรณ์';
+            equipmentModalWrapper.show();
+        }
+
+        function openViewEquipmentModal(eqData) {
+            let eq = null;
+            try {
+                eq = typeof eqData === 'string' ? JSON.parse(eqData) : eqData;
+            } catch (e) {
+                console.error("Error parsing equipment data:", e);
+                return;
+            }
+
+            if (eq) {
+                document.getElementById('viewEqId').innerText = `#EQ${String(eq.id).padStart(3, '0')}`;
+                document.getElementById('viewEqName').innerText = eq.name;
+                document.getElementById('viewEqCategory').innerText = eq.category;
+                document.getElementById('viewEqStock').innerText = eq.stock;
+                document.getElementById('viewEqAvailable').innerText = eq.available;
+
+                document.getElementById('viewEqImage').src = eq.image_url || '/photo/default.jpg';
+                document.getElementById('viewEqDesc').innerText = eq.description || '-';
+
+                let badgeClass = 'confirmed';
+                let badgeText = 'พร้อมใช้งาน';
+                if (eq.status === 'low') {
+                    badgeClass = 'pending';
+                    badgeText = 'เหลือน้อย';
+                } else if (eq.status === 'out' || eq.available === 0) {
+                    badgeClass = 'cancelled';
+                    badgeText = 'หมด';
+                }
+
+                const badgeEl = document.getElementById('viewEqStatusBadge');
+                badgeEl.className = `status-badge ${badgeClass}`;
+                badgeEl.innerText = badgeText;
+
+                viewEquipmentModalWrapper.show();
+            }
+        }
+
+        async function saveEquipment() {
+            const id = document.getElementById('eqId').value;
+            const name = document.getElementById('eqName').value.trim();
+            const category = document.getElementById('eqCategory').value;
+            const stock = document.getElementById('eqStock').value;
+            const description = document.getElementById('eqDesc').value.trim();
+
+            if (!name || stock === '') {
+                alert('กรุณากรอกชื่อและจำนวนของอุปกรณ์');
+                return;
+            }
+
+            const url = id ? `/api/admin/equipment/${id}` : '/api/admin/equipment';
+            const method = id ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ name, category, stock, description })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    equipmentModalWrapper.hide();
+                    fetchEquipment(); // Refresh list
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Save equipment error:', error);
+                alert('เกิดข้อผิดพลาดในการบันทึกอุปกรณ์');
+            }
+        }
+
+        async function deleteEquipment(id) {
+            if (confirm('ระบบจะลบประวัติการยืมของอุปกรณ์นี้ด้วย ยืนยันที่จะลบอุปกรณ์นี้หรือไม่?')) {
+                try {
+                    const response = await fetch(`/api/admin/equipment/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        fetchEquipment(); // Refresh list
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Delete equipment error:', error);
+                    alert('เกิดข้อผิดพลาดในการลบอุปกรณ์');
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            equipmentModalWrapper = new bootstrap.Modal(document.getElementById('equipmentModal'));
+            viewEquipmentModalWrapper = new bootstrap.Modal(document.getElementById('viewEquipmentModal'));
+            fetchEquipment();
+
+            document.getElementById('searchBtn').addEventListener('click', fetchEquipment);
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') fetchEquipment();
+            });
+            document.getElementById('categoryFilter').addEventListener('change', fetchEquipment);
+            document.getElementById('statusFilter').addEventListener('change', fetchEquipment);
+        });
+    </script>
+</body>
+
+</html>

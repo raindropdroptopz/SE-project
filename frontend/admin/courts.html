@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการสนาม - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/admin-style.css">
+</head>
+
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png" alt="Logo">
+            <div>
+                <h4>Payap Sports</h4><span>Admin Dashboard</span>
+            </div>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/admin-dashboard.html"><i class="bi bi-grid-1x2-fill"></i> แดชบอร์ด</a></li>
+            <li><a href="/admin/bookings.html"><i class="bi bi-calendar-check"></i> การจองทั้งหมด</a></li>
+            <li><a href="/admin/users.html"><i class="bi bi-people"></i> จัดการผู้ใช้</a></li>
+            <li><a href="/admin/courts.html" class="active"><i class="bi bi-dribbble"></i> จัดการสนาม</a></li>
+            <li><a href="/admin/calendar.html"><i class="bi bi-calendar3"></i> ปฏิทินการจอง</a></li>
+            <p class="nav-section-title">อุปกรณ์</p>
+            <li><a href="/admin/equipment.html"><i class="bi bi-box-seam"></i> รายการอุปกรณ์</a></li>
+            <li><a href="/admin/borrow-reports.html"><i class="bi bi-clipboard-data"></i> รายงานการยืม</a></li>
+            <p class="nav-section-title">การเงิน</p>
+            <li><a href="/admin/finance.html"><i class="bi bi-cash-stack"></i> รายรับ-รายจ่าย</a></li>
+            <li><a href="/admin/receipts.html"><i class="bi bi-receipt"></i> ใบเสร็จรับเงิน</a></li>
+            <p class="nav-section-title">ระบบ</p>
+            <li><a href="/index.html"><i class="bi bi-box-arrow-left"></i> กลับสู่หน้าหลัก</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div>
+                <h1><i class="bi bi-dribbble me-2"></i>จัดการสนาม</h1>
+                <p style="margin:0; color:#6c7293; font-size:0.9rem;">จัดการข้อมูลสนามกีฬาทั้งหมด</p>
+            </div>
+            <button class="btn-gradient"><i class="bi bi-plus-lg me-2"></i>เพิ่มสนามใหม่</button>
+        </header>
+
+        <div class="courts-grid" id="courtsContainer">
+            <!-- Courts will be loaded here dynamically -->
+        </div>
+
+        <!-- Add Court Modal -->
+        <div class="modal fade" id="addCourtModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">เพิ่มสนามใหม่</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addCourtForm">
+                            <div class="mb-3">
+                                <label class="form-label">ชื่อสนาม</label>
+                                <input type="text" class="form-control" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">รายละเอียด</label>
+                                <textarea class="form-control" name="description" rows="3"></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">ราคา (ต่อชั่วโมง)</label>
+                                    <input type="number" class="form-control" name="price" min="0" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">รองรับคน</label>
+                                    <input type="number" class="form-control" name="capacity" min="1" value="10">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">เวลาเปิด</label>
+                                    <input type="time" class="form-control" name="open_time" value="06:00">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">เวลาปิด</label>
+                                    <input type="time" class="form-control" name="close_time" value="20:00">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">URL รูปภาพ</label>
+                                <input type="text" class="form-control" name="image_url" placeholder="/photo/court.jpg">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">บันทึก</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Court Modal -->
+        <div class="modal fade" id="editCourtModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">แก้ไขข้อมูลสนาม</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editCourtForm">
+                            <input type="hidden" id="editCourtId">
+                            <div class="mb-3">
+                                <label class="form-label">ชื่อสนาม</label>
+                                <input type="text" class="form-control" id="editName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">รายละเอียด</label>
+                                <textarea class="form-control" id="editDesc" rows="3"></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">ราคา (ต่อชั่วโมง)</label>
+                                    <input type="number" class="form-control" id="editPrice" min="0" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">รองรับคน</label>
+                                    <input type="number" class="form-control" id="editCapacity" min="1">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">เวลาเปิด</label>
+                                    <input type="time" class="form-control" id="editOpenTime">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">เวลาปิด</label>
+                                    <input type="time" class="form-control" id="editCloseTime">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">สถานะ</label>
+                                <select class="form-select" id="editStatus">
+                                    <option value="available">พร้อมใช้งาน</option>
+                                    <option value="maintenance">ปิดปรับปรุง</option>
+                                    <option value="unavailable">งดให้บริการ</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">บันทึกการเปลี่ยนแปลง</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        let courtsData = [];
+        let editModal;
+        let addModal;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            editModal = new bootstrap.Modal(document.getElementById('editCourtModal'));
+            addModal = new bootstrap.Modal(document.getElementById('addCourtModal'));
+            fetchCourts();
+        });
+
+        async function fetchCourts() {
+            try {
+                const response = await fetch('/api/admin/courts', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    courtsData = data.courts;
+                    renderCourts();
+                }
+            } catch (error) {
+                console.error('Error fetching courts:', error);
+            }
+        }
+
+        function renderCourts() {
+            const container = document.getElementById('courtsContainer');
+            container.innerHTML = courtsData.map(court => `
+                <div class="court-card">
+                    <img src="${court.image_url || '/photo/default.jpg'}" class="court-image" alt="${court.name}">
+                    <div class="court-body">
+                        <div class="court-header">
+                            <h3 class="court-title">${court.name}</h3>
+                            <span class="court-status ${court.status}">${getStatusText(court.status)}</span>
+                        </div>
+                        <div class="court-info">
+                            <span><i class="bi bi-clock"></i> ${formatTime(court.open_time)}-${formatTime(court.close_time)}</span>
+                            <span><i class="bi bi-people"></i> ${court.capacity} คน</span>
+                        </div>
+                        <div class="court-price">฿${court.price} / ชั่วโมง</div>
+                        <div class="court-actions">
+                            <button class="btn-edit" onclick="openEditModal(${court.id})"><i class="bi bi-pencil"></i></button>
+                            <button class="btn-delete" onclick="deleteCourt(${court.id})"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            return timeStr.substring(0, 5);
+        }
+
+        function getStatusText(status) {
+            switch (status) {
+                case 'available': return 'พร้อมใช้งาน';
+                case 'maintenance': return 'ปิดปรับปรุง';
+                case 'unavailable': return 'งดให้บริการ';
+                default: return status;
+            }
+        }
+
+        document.querySelector('.btn-gradient').onclick = () => addModal.show();
+
+        document.getElementById('addCourtForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            if (data.price < 0) {
+                alert('ราคาไม่สามารถติดลบได้');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/courts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    addModal.hide();
+                    e.target.reset();
+                    fetchCourts();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                console.error('Error adding court:', error);
+            }
+        });
+
+        function openEditModal(id) {
+            const court = courtsData.find(c => c.id === id);
+            if (!court) return;
+
+            document.getElementById('editCourtId').value = court.id;
+            document.getElementById('editName').value = court.name;
+            document.getElementById('editDesc').value = court.description || '';
+            document.getElementById('editPrice').value = court.price;
+            document.getElementById('editCapacity').value = court.capacity;
+            document.getElementById('editOpenTime').value = formatTime(court.open_time);
+            document.getElementById('editCloseTime').value = formatTime(court.close_time);
+            document.getElementById('editStatus').value = court.status;
+
+            editModal.show();
+        }
+
+        document.getElementById('editCourtForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editCourtId').value;
+            const price = parseInt(document.getElementById('editPrice').value);
+
+            if (price < 0) {
+                alert('ราคาไม่สามารถติดลบได้');
+                return;
+            }
+
+            const data = {
+                name: document.getElementById('editName').value,
+                description: document.getElementById('editDesc').value,
+                price: price,
+                capacity: document.getElementById('editCapacity').value,
+                open_time: document.getElementById('editOpenTime').value,
+                close_time: document.getElementById('editCloseTime').value,
+                status: document.getElementById('editStatus').value
+            };
+
+            try {
+                const response = await fetch(`/api/admin/courts/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    editModal.hide();
+                    fetchCourts();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                console.error('Error updating court:', error);
+            }
+        });
+
+        async function deleteCourt(id) {
+            if (!confirm('คุณแน่ใจหรือไม่ที่จะลบสนามกีฬานี้? ข้อมูลการจองที่เกี่ยวข้องจะถูกลบด้วย')) return;
+
+            try {
+                const response = await fetch(`/api/admin/courts/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    fetchCourts();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                console.error('Error deleting court:', error);
+            }
+        }
+    </script>
+</body>
+
+</html>

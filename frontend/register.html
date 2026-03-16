@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สมัครสมาชิก - Payap Sports</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            position: relative;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: -15%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            left: -10%;
+            width: 600px;
+            height: 600px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+        }
+
+        .register-container {
+            display: flex;
+            width: 100%;
+            max-width: 1100px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 50px;
+            color: white;
+        }
+
+        .brand-logo {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 25px;
+            padding: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .brand-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .brand-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .brand-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            text-align: center;
+            max-width: 350px;
+        }
+
+        .form-side {
+            width: 550px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 50px 60px;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        .form-side::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(to bottom, #11998e, #38ef7d);
+        }
+
+        .form-header {
+            margin-bottom: 30px;
+        }
+
+        .form-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1a1c2e;
+            margin-bottom: 8px;
+        }
+
+        .form-header p {
+            color: #6c7293;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #1a1c2e;
+            font-size: 0.9rem;
+        }
+
+        .input-group-custom {
+            position: relative;
+        }
+
+        .input-group-custom i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c7293;
+        }
+
+        .form-control-custom {
+            width: 100%;
+            padding: 14px 18px 14px 45px;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .form-control-custom:focus {
+            outline: none;
+            border-color: #11998e;
+            box-shadow: 0 0 0 4px rgba(17, 153, 142, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-register:hover {
+            box-shadow: 0 10px 30px rgba(17, 153, 142, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 25px;
+            color: #6c7293;
+        }
+
+        .login-link a {
+            color: #11998e;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .alert-custom {
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+
+        .alert-danger-custom {
+            background: rgba(245, 87, 108, 0.1);
+            color: #f5576c;
+            border: 1px solid rgba(245, 87, 108, 0.2);
+        }
+
+        .user-type-select {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .user-type-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e8e8e8;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .user-type-btn:hover,
+        .user-type-btn.active {
+            border-color: #11998e;
+            background: rgba(17, 153, 142, 0.05);
+        }
+
+        .user-type-btn i {
+            font-size: 1.3rem;
+            color: #11998e;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        @media (max-width: 992px) {
+            .register-container {
+                flex-direction: column;
+            }
+
+            .brand-side {
+                padding: 30px;
+                min-height: auto;
+            }
+
+            .form-side {
+                width: 100%;
+                padding: 30px;
+            }
+
+            .form-side::before {
+                display: none;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .invalid-feedback-custom {
+            display: none;
+            color: #f5576c;
+            font-size: 0.75rem;
+            margin-top: 4px;
+            opacity: 0.8;
+            padding-left: 2px;
+        }
+
+        .form-control-custom.is-invalid {
+            border-color: #f5576c;
+            background-color: rgba(245, 87, 108, 0.02);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="register-container">
+        <div class="brand-side">
+            <div class="brand-logo"><img
+                    src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png" alt="Payap Logo">
+            </div>
+            <h1 class="brand-title">Payap Sports</h1>
+            <p class="brand-subtitle">สมัครสมาชิกเพื่อใช้งานระบบจองสนามกีฬาและยืมอุปกรณ์</p>
+        </div>
+        <div class="form-side">
+            <div class="form-header">
+                <h2><i class="bi bi-person-plus me-2"></i>สมัครสมาชิก</h2>
+                <p>กรอกข้อมูลด้านล่างเพื่อสร้างบัญชีใหม่</p>
+            </div>
+            <div id="errorMessage" class="alert-custom alert-danger-custom" style="display: none;"><i
+                    class="bi bi-exclamation-circle"></i><span id="errorText"></span></div>
+
+            <form id="registerForm" action="/register" method="POST">
+                <div class="user-type-select">
+                    <label class="user-type-btn active"><input type="radio" name="userType" value="student" checked
+                            hidden><i class="bi bi-mortarboard"></i><span>นักศึกษา</span></label>
+                    <label class="user-type-btn"><input type="radio" name="userType" value="staff" hidden><i
+                            class="bi bi-person-badge"></i><span>อาจารย์</span></label>
+                    <label class="user-type-btn"><input type="radio" name="userType" value="external" hidden><i
+                            class="bi bi-person"></i><span>บุคคลภายนอก</span></label>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>ชื่อ</label>
+                        <div class="input-group-custom"><i class="bi bi-person"></i><input type="text"
+                                class="form-control-custom" id="firstName" name="firstName" placeholder="กรอกชื่อ" required></div>
+                        <div id="firstNameError" class="invalid-feedback-custom">ชื่อต้องเป็นตัวอักษรไทยหรืออังกฤษเท่านั้น</div>
+                    </div>
+                    <div class="form-group"><label>นามสกุล</label>
+                        <div class="input-group-custom"><i class="bi bi-person"></i><input type="text"
+                                class="form-control-custom" id="lastName" name="lastName" placeholder="กรอกนามสกุล" required></div>
+                        <div id="lastNameError" class="invalid-feedback-custom">นามสกุลต้องเป็นตัวอักษรไทยหรืออังกฤษเท่านั้น</div>
+                    </div>
+                </div>
+                <div class="form-group"><label>รหัสนักศึกษา / รหัสอาจารย์</label>
+                    <div class="input-group-custom"><i class="bi bi-credit-card"></i><input type="text"
+                            class="form-control-custom" name="identificationNumber" placeholder="กรอกรหัสประจำตัว"
+                            required></div>
+                </div>
+                <div class="form-group"><label>อีเมล</label>
+                    <div class="input-group-custom"><i class="bi bi-envelope"></i><input type="email"
+                            class="form-control-custom" name="email" placeholder="example@payap.ac.th" required></div>
+                </div>
+                <div class="form-group"><label>เบอร์โทรศัพท์</label>
+                    <div class="input-group-custom"><i class="bi bi-telephone"></i><input type="tel"
+                            class="form-control-custom" name="phone" placeholder="0xx-xxx-xxxx"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>รหัสผ่าน</label>
+                        <div class="input-group-custom"><i class="bi bi-lock"></i><input type="password"
+                                class="form-control-custom" id="password" name="password" placeholder="รหัสผ่าน"
+                                required></div>
+                        <div id="passwordError" class="invalid-feedback-custom">ต้องมี 8-16 ตัว (พิมพ์ใหญ่, เล็ก, ตัวเลข)</div>
+                    </div>
+                    <div class="form-group"><label>ยืนยันรหัสผ่าน</label>
+                        <div class="input-group-custom"><i class="bi bi-lock-fill"></i><input type="password"
+                                class="form-control-custom" id="confirmPassword" name="confirmPassword"
+                                placeholder="ยืนยันรหัสผ่าน" required></div>
+                        <div id="confirmPasswordError" class="invalid-feedback-custom">รหัสผ่านไม่ตรงกัน</div>
+                    </div>
+                </div>
+                <button type="submit" class="btn-register"><i class="bi bi-check-circle"></i> สมัครสมาชิก</button>
+            </form>
+            <p class="login-link">มีบัญชีอยู่แล้ว? <a href="/login.html">เข้าสู่ระบบ</a></p>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.querySelectorAll('.user-type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.user-type-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const pass = document.getElementById('password').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            const errorDiv = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const formData = new FormData(e.target);
+
+            // รีเซ็ตการแสดงผลแจ้งเตือนเดิม
+            document.querySelectorAll('.invalid-feedback-custom').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.form-control-custom').forEach(el => el.classList.remove('is-invalid'));
+            errorDiv.style.display = 'none';
+
+            const firstName = formData.get('firstName') || '';
+            const lastName = formData.get('lastName') || '';
+            let hasError = false;
+
+            // 1. ตรวจสอบชื่อ-นามสกุล (ไทย-อังกฤษ เท่านั้น)
+            const nameRegex = /^[a-zA-Z\u0E00-\u0E7F]+$/;
+            if (!nameRegex.test(firstName)) {
+                document.getElementById('firstName').classList.add('is-invalid');
+                document.getElementById('firstNameError').style.display = 'block';
+                hasError = true;
+            }
+            if (!nameRegex.test(lastName)) {
+                document.getElementById('lastName').classList.add('is-invalid');
+                document.getElementById('lastNameError').style.display = 'block';
+                hasError = true;
+            }
+
+            // 2. ตรวจสอบรหัสผ่าน (8-16 ตัว, พิมพ์ใหญ่, พิมพ์เล็ก, ตัวเลข)
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,16}$/;
+            if (!passwordRegex.test(pass)) {
+                document.getElementById('password').classList.add('is-invalid');
+                document.getElementById('passwordError').style.display = 'block';
+                hasError = true;
+            }
+
+            if (pass !== confirm) {
+                document.getElementById('confirmPassword').classList.add('is-invalid');
+                document.getElementById('confirmPasswordError').style.display = 'block';
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            const userType = document.querySelector('.user-type-btn.active')?.querySelector('input').value || 'student';
+            const fullName = `${firstName} ${lastName}`.trim();
+
+            const data = {
+                email: formData.get('email'),
+                password: pass,
+                fullName: fullName,
+                studentId: formData.get('identificationNumber'),
+                phone: formData.get('phone'),
+                userType: userType,
+                faculty: null,
+                major: null
+            };
+
+            console.log('Register data:', data);
+            // Debug: แสดงข้อมูลที่จะส่ง
+            if (!data.email || !data.password || !data.fullName) {
+                errorDiv.style.display = 'flex';
+                errorText.textContent = 'กรุณากรอก Email, รหัสผ่าน และชื่อ-นามสกุล';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
+                    window.location.href = '/login.html';
+                } else {
+                    errorDiv.style.display = 'flex';
+                    errorText.textContent = result.message || 'การสมัครสมาชิกไม่สำเร็จ';
+                }
+            } catch (error) {
+                console.error('Register error:', error);
+                errorDiv.style.display = 'flex';
+                errorText.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
+            }
+        });
+    </script>
+</body>
+
+</html>
