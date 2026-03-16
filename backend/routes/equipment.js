@@ -85,6 +85,31 @@ router.get('/', async (req, res) => {
 });
 
 // ===============================================
+// GET /api/equipment/my/borrowed - รายการยืมอุปกรณ์ของผู้ใช้ (ต้องอยู่ก่อน /:id)
+// ===============================================
+router.get('/my/borrowed', authenticateToken, async (req, res) => {
+    try {
+        const [borrows] = await db.execute(`
+            SELECT 
+                eb.*,
+                e.name as equipment_name,
+                e.image_url as equipment_image,
+                e.category
+            FROM equipment_bookings eb
+            JOIN equipment e ON eb.equipment_id = e.id
+            WHERE eb.user_id = ?
+            ORDER BY eb.borrow_date DESC
+        `, [req.user.userId]);
+
+        res.json({ success: true, borrows });
+
+    } catch (error) {
+        console.error('Get my borrowed error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    }
+});
+
+// ===============================================
 // GET /api/equipment/:id - ดึงข้อมูลอุปกรณ์ตาม ID
 // ===============================================
 router.get('/:id', async (req, res) => {
@@ -212,31 +237,6 @@ router.put('/return/:id', authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.error('Return equipment error:', error);
-        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
-    }
-});
-
-// ===============================================
-// GET /api/equipment/my/borrowed - รายการที่ยืมอยู่
-// ===============================================
-router.get('/my/borrowed', authenticateToken, async (req, res) => {
-    try {
-        const [borrows] = await db.execute(`
-            SELECT 
-                eb.*,
-                e.name as equipment_name,
-                e.image_url as equipment_image,
-                e.category
-            FROM equipment_bookings eb
-            JOIN equipment e ON eb.equipment_id = e.id
-            WHERE eb.user_id = ?
-            ORDER BY eb.borrow_date DESC
-        `, [req.user.userId]);
-
-        res.json({ success: true, borrows });
-
-    } catch (error) {
-        console.error('Get my borrowed error:', error);
         res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
     }
 });
