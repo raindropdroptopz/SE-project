@@ -336,6 +336,21 @@
             cursor: not-allowed;
         }
 
+        .time-slot.past {
+            background: #f0f0f0;
+            color: #bbb;
+            cursor: not-allowed;
+            text-decoration: line-through;
+            position: relative;
+        }
+
+        .time-slot.past::after {
+            content: '⏰';
+            font-size: 0.65rem;
+            display: block;
+            color: #999;
+        }
+
         .summary-box {
             background: #f8f9fa;
             border-radius: 15px;
@@ -685,18 +700,38 @@
             document.getElementById('courtType').value = court.name;
             document.title = 'จอง' + court.name + ' - Payap Sports';
 
+            // Rebuild time slots จากเวลาเปิด-ปิดของสนามนี้
+            allTimeSlots = generateTimeSlots(court.open_time, court.close_time);
+            selectedSlots = []; // reset เมื่อเปลี่ยนสนาม
+
             // Re-fetch booked slots for this court
             const date = document.getElementById('bookingDate').value;
             if (date) {
                 fetchBookedSlots(date);
+            } else {
+                renderTimeSlots();
             }
         }
 
         loadCourtDetails();
 
-        const allTimeSlots = ['08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00'];
+        // สร้าง time slots แบบ dynamic จากเวลาเปิด-ปิดสนาม
+        function generateTimeSlots(openTime, closeTime) {
+            const slots = [];
+            // รับ format "HH:MM:SS" หรือ "HH:MM"
+            const openHour  = parseInt((openTime  || '06:00').split(':')[0]);
+            const closeHour = parseInt((closeTime || '20:00').split(':')[0]);
+            for (let h = openHour; h < closeHour; h++) {
+                const start = String(h).padStart(2, '0') + ':00';
+                const end   = String(h + 1).padStart(2, '0') + ':00';
+                slots.push(`${start}-${end}`);
+            }
+            return slots;
+        }
+
+        let allTimeSlots = generateTimeSlots('06:00', '20:00'); // default จนกว่าจะโหลด court
         let bookedSlots = [];
-        let selectedSlots = []; // เปลี่ยนเป็นเก็บหลายช่อง
+        let selectedSlots = [];
         let equipmentData = [];
         let selectedEquipments = [];
 
@@ -800,6 +835,21 @@
 
         loadEquipment();
 
+        function isPastSlot(timeSlot) {
+            const selectedDate = document.getElementById('bookingDate').value;
+            const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local time
+            if (selectedDate !== todayStr) return false; // ถ้าไม่ใช่วันนี้ ไม่ต้อง disable
+
+            const slotStartHour = parseInt(timeSlot.split(':')[0]);
+            const slotStartMin  = parseInt(timeSlot.split(':')[1]);
+            const now = new Date();
+            const nowHour = now.getHours();
+            const nowMin  = now.getMinutes();
+
+            // disable ถ้าเวลา start ของ slot <= เวลาปัจจุบัน
+            return (slotStartHour < nowHour) || (slotStartHour === nowHour && slotStartMin <= nowMin);
+        }
+
         function renderTimeSlots() {
             const container = document.getElementById('timeSlots');
             container.innerHTML = '';
@@ -807,9 +857,15 @@
                 const slot = document.createElement('div');
                 slot.className = 'time-slot';
                 slot.textContent = time;
-                
+
+                const past = isPastSlot(time.split('-')[0]);
+
                 if (bookedSlots.includes(time)) {
                     slot.classList.add('disabled');
+                    slot.title = 'ถูกจองแล้ว';
+                } else if (past) {
+                    slot.classList.add('disabled', 'past');
+                    slot.title = 'เวลาผ่านมาแล้ว';
                 } else {
                     if (selectedSlots.includes(time)) {
                         slot.classList.add('selected');
@@ -902,16 +958,21 @@
 
         document.getElementById('bookingDate').addEventListener('change', function () {
             const date = this.value;
-            document.getElementById('summaryDate').textContent = new Date(date).toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            // ล้าง selection เก่าที่อาจเป็น past slot เมื่อกลับมาเลือกวันนี้ใหม่
+            selectedSlots = selectedSlots.filter(t => !isPastSlot(t.split('-')[0]));
+            document.getElementById('selectedTime').value = '';
+            document.getElementById('summaryTime').textContent = '-';
+            document.getElementById('summaryDate').textContent = new Date(date + 'T00:00:00').toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             if (date) {
                 fetchBookedSlots(date);
             }
         });
 
-        const today = new Date().toISOString().split('T')[0];
+        // ใช้ local date (ไม่ใช่ UTC) เพื่อป้องกัน timezone bug
+        const today = new Date().toLocaleDateString('en-CA');
         document.getElementById('bookingDate').min = today;
         document.getElementById('bookingDate').value = today;
-        document.getElementById('summaryDate').textContent = new Date(today).toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('summaryDate').textContent = new Date(today + 'T00:00:00').toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
         // Fetch initially for today
         fetchBookedSlots(today);
