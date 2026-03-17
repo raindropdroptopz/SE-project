@@ -1,1069 +1,1291 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>จองสนาม - Payap Sports</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
     <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --secondary-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            --sidebar-bg: #1a1c2e;
-            --sidebar-hover: #2d3154;
-        }
+      :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        --sidebar-bg: #1a1c2e;
+        --sidebar-hover: #2d3154;
+      }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f7fa;
-            min-height: 100vh;
-        }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #f5f7fa;
+        min-height: 100vh;
+      }
 
-        /* Sidebar */
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 280px;
-            height: 100vh;
-            background: var(--sidebar-bg);
-            padding: 20px;
-            overflow-y: auto;
-            z-index: 1050;
-            transition: all 0.3s ease;
-        }
+      /* Sidebar */
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 280px;
+        height: 100vh;
+        background: var(--sidebar-bg);
+        padding: 20px;
+        overflow-y: auto;
+        z-index: 1050;
+        transition: all 0.3s ease;
+      }
 
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            padding: 20px 10px;
-            margin-bottom: 30px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            text-decoration: none;
-        }
+      .sidebar-brand {
+        display: flex;
+        align-items: center;
+        padding: 20px 10px;
+        margin-bottom: 30px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        text-decoration: none;
+      }
 
-        .sidebar-brand img {
-            width: 45px;
-            height: 45px;
-            border-radius: 12px;
-            margin-right: 15px;
-        }
+      .sidebar-brand img {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        margin-right: 15px;
+      }
 
-        .sidebar-brand h4 {
-            color: #fff;
-            font-weight: 600;
-            margin: 0;
-            font-size: 1.1rem;
-        }
+      .sidebar-brand h4 {
+        color: #fff;
+        font-weight: 600;
+        margin: 0;
+        font-size: 1.1rem;
+      }
 
-        .sidebar-brand span {
-            color: #667eea;
-            font-size: 0.8rem;
-        }
+      .sidebar-brand span {
+        color: #667eea;
+        font-size: 0.8rem;
+      }
 
-        .nav-menu {
-            list-style: none;
-            padding: 0;
-        }
+      .nav-menu {
+        list-style: none;
+        padding: 0;
+      }
 
-        .nav-menu li {
-            margin-bottom: 8px;
-        }
+      .nav-menu li {
+        margin-bottom: 8px;
+      }
 
-        .nav-menu a {
-            display: flex;
-            align-items: center;
-            padding: 14px 20px;
-            color: #a4a6b3;
-            text-decoration: none;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
+      .nav-menu a {
+        display: flex;
+        align-items: center;
+        padding: 14px 20px;
+        color: #a4a6b3;
+        text-decoration: none;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+      }
 
-        .nav-menu a:hover,
-        .nav-menu a.active {
-            background: var(--sidebar-hover);
-            color: #fff;
-        }
+      .nav-menu a:hover,
+      .nav-menu a.active {
+        background: var(--sidebar-hover);
+        color: #fff;
+      }
 
-        .nav-menu a.active {
-            background: var(--primary-gradient);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
+      .nav-menu a.active {
+        background: var(--primary-gradient);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
 
-        .nav-menu i {
-            font-size: 1.3rem;
-            margin-right: 15px;
-            width: 25px;
-        }
+      .nav-menu i {
+        font-size: 1.3rem;
+        margin-right: 15px;
+        width: 25px;
+      }
 
-        /* Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 30px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(15px);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
-            position: sticky;
-            top: 0;
-            z-index: 999;
-        }
+      /* Header */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 30px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(15px);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        position: sticky;
+        top: 0;
+        z-index: 999;
+      }
 
-        .header-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1a1c2e;
-            margin: 0;
-        }
+      .header-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1a1c2e;
+        margin: 0;
+      }
 
-        .mobile-toggle {
-            background: transparent;
-            border: none;
-            font-size: 1.5rem;
-            color: #1a1c2e;
-            cursor: pointer;
-        }
+      .mobile-toggle {
+        background: transparent;
+        border: none;
+        font-size: 1.5rem;
+        color: #1a1c2e;
+        cursor: pointer;
+      }
 
-        .breadcrumb-custom {
-            background: transparent;
-            padding: 20px 0;
-        }
+      .breadcrumb-custom {
+        background: transparent;
+        padding: 20px 0;
+      }
 
-        .breadcrumb-custom a {
-            color: #6c7293;
-            text-decoration: none;
-        }
+      .breadcrumb-custom a {
+        color: #6c7293;
+        text-decoration: none;
+      }
 
-        .breadcrumb-custom a:hover {
-            color: #667eea;
-        }
+      .breadcrumb-custom a:hover {
+        color: #667eea;
+      }
 
-        .content-container {
-            padding-bottom: 50px;
-        }
+      .content-container {
+        padding-bottom: 50px;
+      }
 
-        /* Main Content Wrapper */
-        .main-content {
-            margin-left: 280px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.3s ease;
-            background: #f5f7fa;
-        }
+      /* Main Content Wrapper */
+      .main-content {
+        margin-left: 280px;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s ease;
+        background: #f5f7fa;
+      }
 
-        .booking-card {
-            background: white;
-            border-radius: 25px;
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
+      .booking-card {
+        background: white;
+        border-radius: 25px;
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
 
+      .booking-row {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+      }
+
+      .court-preview {
+        position: relative;
+      }
+
+      .court-preview img {
+        width: 100%;
+        height: 100%;
+        min-height: 500px;
+        object-fit: cover;
+      }
+
+      .court-preview .overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 30px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+        color: white;
+      }
+
+      .court-preview h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+      }
+
+      .court-preview p {
+        opacity: 0.9;
+        margin-bottom: 0;
+      }
+
+      .booking-form {
+        padding: 50px;
+      }
+
+      .form-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1a1c2e;
+        margin-bottom: 30px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .form-title i {
+        color: #667eea;
+      }
+
+      .step-indicator {
+        display: flex;
+        margin-bottom: 35px;
+      }
+
+      .step {
+        flex: 1;
+        text-align: center;
+        position: relative;
+      }
+
+      .step::after {
+        content: "";
+        position: absolute;
+        top: 15px;
+        left: 50%;
+        width: 100%;
+        height: 3px;
+        background: #e8e8e8;
+      }
+
+      .step:last-child::after {
+        display: none;
+      }
+
+      .step-number {
+        width: 32px;
+        height: 32px;
+        background: #e8e8e8;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #6c7293;
+        position: relative;
+        z-index: 1;
+        margin-bottom: 8px;
+      }
+
+      .step.active .step-number {
+        background: var(--primary-gradient);
+        color: white;
+      }
+
+      .step.completed .step-number {
+        background: var(--secondary-gradient);
+        color: white;
+      }
+
+      .step span {
+        font-size: 0.85rem;
+        color: #6c7293;
+      }
+
+      .form-group {
+        margin-bottom: 25px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 600;
+        color: #1a1c2e;
+      }
+
+      .form-control-custom {
+        width: 100%;
+        padding: 15px 20px;
+        border: 2px solid #e8e8e8;
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: all 0.3s;
+      }
+
+      .form-control-custom:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+      }
+
+      .time-slots {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+
+      .time-slot {
+        padding: 12px;
+        border: 2px solid #e8e8e8;
+        border-radius: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .time-slot:hover {
+        border-color: #667eea;
+      }
+
+      .time-slot.selected {
+        background: var(--primary-gradient);
+        border-color: transparent;
+        color: white;
+      }
+
+      .time-slot.disabled {
+        background: #f8f9fa;
+        color: #ccc;
+        cursor: not-allowed;
+      }
+
+      .time-slot.past {
+        background: #f0f0f0;
+        color: #bbb;
+        cursor: not-allowed;
+        text-decoration: line-through;
+        position: relative;
+      }
+
+      .time-slot.past::after {
+        content: "⏰";
+        font-size: 0.65rem;
+        display: block;
+        color: #999;
+      }
+
+      .summary-box {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+      }
+
+      .summary-box h6 {
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #1a1c2e;
+      }
+
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        color: #6c7293;
+      }
+
+      .summary-row.total {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #1a1c2e;
+        border-top: 1px solid #e8e8e8;
+        padding-top: 15px;
+        margin-top: 15px;
+      }
+
+      .btn-submit {
+        width: 100%;
+        padding: 16px;
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .btn-submit:hover {
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        transform: translateY(-2px);
+      }
+
+      @media (max-width: 992px) {
         .booking-row {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-        }
-
-        .court-preview {
-            position: relative;
+          grid-template-columns: 1fr;
         }
 
         .court-preview img {
-            width: 100%;
-            height: 100%;
-            min-height: 500px;
-            object-fit: cover;
-        }
-
-        .court-preview .overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 30px;
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-            color: white;
-        }
-
-        .court-preview h2 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .court-preview p {
-            opacity: 0.9;
-            margin-bottom: 0;
+          min-height: 250px;
         }
 
         .booking-form {
-            padding: 50px;
-        }
-
-        .form-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1a1c2e;
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .form-title i {
-            color: #667eea;
-        }
-
-        .step-indicator {
-            display: flex;
-            margin-bottom: 35px;
-        }
-
-        .step {
-            flex: 1;
-            text-align: center;
-            position: relative;
-        }
-
-        .step::after {
-            content: '';
-            position: absolute;
-            top: 15px;
-            left: 50%;
-            width: 100%;
-            height: 3px;
-            background: #e8e8e8;
-        }
-
-        .step:last-child::after {
-            display: none;
-        }
-
-        .step-number {
-            width: 32px;
-            height: 32px;
-            background: #e8e8e8;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: #6c7293;
-            position: relative;
-            z-index: 1;
-            margin-bottom: 8px;
-        }
-
-        .step.active .step-number {
-            background: var(--primary-gradient);
-            color: white;
-        }
-
-        .step.completed .step-number {
-            background: var(--secondary-gradient);
-            color: white;
-        }
-
-        .step span {
-            font-size: 0.85rem;
-            color: #6c7293;
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: 600;
-            color: #1a1c2e;
-        }
-
-        .form-control-custom {
-            width: 100%;
-            padding: 15px 20px;
-            border: 2px solid #e8e8e8;
-            border-radius: 12px;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-
-        .form-control-custom:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+          padding: 30px;
         }
 
         .time-slots {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
+          grid-template-columns: repeat(2, 1fr);
         }
 
-        .time-slot {
-            padding: 12px;
-            border: 2px solid #e8e8e8;
-            border-radius: 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
+        .sidebar {
+          transform: translateX(-100%);
         }
 
-        .time-slot:hover {
-            border-color: #667eea;
+        .sidebar.show {
+          transform: translateX(0);
         }
 
-        .time-slot.selected {
-            background: var(--primary-gradient);
-            border-color: transparent;
-            color: white;
+        .main-content {
+          margin-left: 0;
         }
-
-        .time-slot.disabled {
-            background: #f8f9fa;
-            color: #ccc;
-            cursor: not-allowed;
-        }
-
-        .time-slot.past {
-            background: #f0f0f0;
-            color: #bbb;
-            cursor: not-allowed;
-            text-decoration: line-through;
-            position: relative;
-        }
-
-        .time-slot.past::after {
-            content: '⏰';
-            font-size: 0.65rem;
-            display: block;
-            color: #999;
-        }
-
-        .summary-box {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-        }
-
-        .summary-box h6 {
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: #1a1c2e;
-        }
-
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            color: #6c7293;
-        }
-
-        .summary-row.total {
-            font-weight: 700;
-            font-size: 1.1rem;
-            color: #1a1c2e;
-            border-top: 1px solid #e8e8e8;
-            padding-top: 15px;
-            margin-top: 15px;
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 16px;
-            background: var(--primary-gradient);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn-submit:hover {
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-            transform: translateY(-2px);
-        }
-
-        @media (max-width: 992px) {
-            .booking-row {
-                grid-template-columns: 1fr;
-            }
-
-            .court-preview img {
-                min-height: 250px;
-            }
-
-            .booking-form {
-                padding: 30px;
-            }
-
-            .time-slots {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            .sidebar.show {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-        }
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <!-- Sidebar -->
     <aside class="sidebar">
-        <a href="/index.html" class="sidebar-brand">
-            <img src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png" alt="Logo">
-            <div>
-                <h4>Payap Sports</h4>
-                <span>ระบบจองสนามกีฬา</span>
-            </div>
-        </a>
+      <a href="/index.html" class="sidebar-brand">
+        <img
+          src="https://www.payap.ac.th/site/wp-content/uploads/2023/09/Payap-Logo-Blue.png"
+          alt="Logo"
+        />
+        <div>
+          <h4>Payap Sports</h4>
+          <span>ระบบจองสนามกีฬา</span>
+        </div>
+      </a>
 
-        <ul class="nav-menu">
-            <li><a href="/index.html"><i class="bi bi-house-door"></i> หน้าหลัก</a></li>
-            <li><a href="/sportarea.html" class="active"><i class="bi bi-dribbble"></i> สนามกีฬา</a></li>
-            <li><a href="/items.html"><i class="bi bi-box-seam"></i> ยืมอุปกรณ์</a></li>
-            <li><a href="/calendar.html"><i class="bi bi-calendar3"></i> ปฏิทิน</a></li>
-            <!-- Logged in items -->
-            <li class="logged-in-menu" style="display: none;"><a href="/profile.html"><i class="bi bi-person-circle"></i> โปรไฟล์</a></li>
-            <li class="logged-in-menu" style="display: none;"><a href="/bookings.html"><i class="bi bi-clock-history"></i> ประวัติการจอง</a></li>
-        </ul>
+      <ul class="nav-menu">
+        <li>
+          <a href="/index.html"><i class="bi bi-house-door"></i> หน้าหลัก</a>
+        </li>
+        <li>
+          <a href="/sportarea.html" class="active"
+            ><i class="bi bi-dribbble"></i> สนามกีฬา</a
+          >
+        </li>
+        <li>
+          <a href="/items.html"><i class="bi bi-box-seam"></i> ยืมอุปกรณ์</a>
+        </li>
+        <li>
+          <a href="/calendar.html"><i class="bi bi-calendar3"></i> ปฏิทิน</a>
+        </li>
+        <!-- Logged in items -->
+        <li class="logged-in-menu" style="display: none">
+          <a href="/profile.html"
+            ><i class="bi bi-person-circle"></i> โปรไฟล์</a
+          >
+        </li>
+        <li class="logged-in-menu" style="display: none">
+          <a href="/bookings.html"
+            ><i class="bi bi-clock-history"></i> ประวัติการจอง</a
+          >
+        </li>
+      </ul>
     </aside>
 
     <!-- Main Content wrapper -->
     <main class="main-content">
-        <!-- Header -->
-        <header class="header">
-            <div class="d-flex align-items-center gap-3">
-                <button class="mobile-toggle d-lg-none"
-                    onclick="document.querySelector('.sidebar').classList.toggle('show')">
-                    <i class="bi bi-list"></i>
+      <!-- Header -->
+      <header class="header">
+        <div class="d-flex align-items-center gap-3">
+          <button
+            class="mobile-toggle d-lg-none"
+            onclick="
+              document.querySelector('.sidebar').classList.toggle('show')
+            "
+          >
+            <i class="bi bi-list"></i>
+          </button>
+          <h1 class="header-title d-none d-md-block">จองสนาม</h1>
+        </div>
+        <div class="d-flex gap-2" id="header-buttons">
+          <a
+            href="/login.html"
+            class="btn btn-outline-primary rounded-pill px-4"
+            >เข้าสู่ระบบ</a
+          >
+        </div>
+      </header>
+      <div class="container breadcrumb-custom">
+        <a href="/sportarea.html"
+          ><i class="bi bi-arrow-left me-2"></i>กลับไปเลือกสนาม</a
+        >
+      </div>
+      <div class="container content-container">
+        <div class="booking-card">
+          <div class="booking-row">
+            <div class="court-preview">
+              <img
+                id="courtImage"
+                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT2dHK0IJCWFlgb-tGAJN8JR3_yV6BXJunZXA&s"
+                alt="สนาม"
+              />
+              <div class="overlay">
+                <h2 id="courtName">สนามฟุตบอลและลู่วิ่ง</h2>
+                <p id="courtDesc">
+                  สำหรับกิจกรรมฟุตบอลและการฝึกซ้อมวิ่งรอบสนาม
+                </p>
+                <p
+                  id="courtPrice"
+                  style="
+                    font-size: 1.2rem;
+                    font-weight: bold;
+                    margin-top: 10px;
+                    color: #38ef7d;
+                  "
+                >
+                  ฿500 / ชม.
+                </p>
+              </div>
+            </div>
+            <div class="booking-form">
+              <h3 class="form-title">
+                <i class="bi bi-calendar-plus"></i> จองสนาม
+              </h3>
+              <div class="step-indicator">
+                <div class="step active">
+                  <div class="step-number">1</div>
+                  <span>เลือกวันเวลา</span>
+                </div>
+                <div class="step">
+                  <div class="step-number">2</div>
+                  <span>กรอกข้อมูล</span>
+                </div>
+                <div class="step">
+                  <div class="step-number">3</div>
+                  <span>ยืนยัน</span>
+                </div>
+              </div>
+              <form id="bookingForm">
+                <input type="hidden" id="courtType" name="courtType" />
+                <div class="form-group">
+                  <label><i class="bi bi-calendar3 me-2"></i>วันที่จอง</label
+                  ><input
+                    type="date"
+                    class="form-control-custom"
+                    id="bookingDate"
+                    name="date"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label><i class="bi bi-clock me-2"></i>เลือกช่วงเวลา</label>
+                  <div class="time-slots" id="timeSlots"></div>
+                  <input type="hidden" id="selectedTime" name="time" required />
+                </div>
+                <div class="form-group">
+                  <label><i class="bi bi-people me-2"></i>จำนวนผู้เล่น</label
+                  ><input
+                    type="number"
+                    class="form-control-custom"
+                    id="players"
+                    name="players"
+                    min="1"
+                    max="22"
+                    placeholder="กรอกจำนวนผู้เล่น"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label
+                    ><i class="bi bi-chat-text me-2"></i>หมายเหตุ (ถ้ามี)</label
+                  ><textarea
+                    class="form-control-custom"
+                    id="note"
+                    name="note"
+                    rows="2"
+                    placeholder="เช่น ต้องการอุปกรณ์เสริม"
+                  ></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label
+                    ><i class="bi bi-box-seam me-2"></i>อุปกรณ์เสริม
+                    (สามารถเลือกยืมได้)</label
+                  >
+                  <div
+                    id="equipmentList"
+                    style="
+                      display: grid;
+                      grid-template-columns: 1fr 1fr;
+                      gap: 10px;
+                    "
+                  >
+                    <!-- Equipment Checkboxes Inserted Here -->
+                  </div>
+                </div>
+
+                <div class="summary-box">
+                  <h6><i class="bi bi-receipt me-2"></i>สรุปรายการ</h6>
+                  <div class="summary-row">
+                    <span>สนาม:</span
+                    ><span id="summaryCourtName">สนามฟุตบอล</span>
+                  </div>
+                  <div class="summary-row">
+                    <span>วันที่:</span><span id="summaryDate">-</span>
+                  </div>
+                  <div class="summary-row">
+                    <span>เวลา:</span><span id="summaryTime">-</span>
+                  </div>
+                  <div class="summary-row">
+                    <span>ค่าบริการ (ต่อชม.):</span
+                    ><span id="summaryPrice">ฟรี (นักศึกษา)</span>
+                  </div>
+                  <div id="summaryEquipments"></div>
+                  <div class="summary-row total">
+                    <span>รวมทั้งหมด:</span><span id="summaryTotal">฿0</span>
+                  </div>
+                </div>
+                <div
+                  id="errorMessage"
+                  style="
+                    display: none;
+                    background: #ffe6e6;
+                    color: #dc3545;
+                    padding: 15px;
+                    border-radius: 10px;
+                    margin-bottom: 15px;
+                  "
+                >
+                  <i class="bi bi-exclamation-circle me-2"></i
+                  ><span id="errorText"></span>
+                </div>
+                <button type="submit" class="btn-submit">
+                  <i class="bi bi-check-circle"></i> ยืนยันการจอง
                 </button>
-                <h1 class="header-title d-none d-md-block">จองสนาม</h1>
+              </form>
             </div>
-            <div class="d-flex gap-2" id="header-buttons">
-                <a href="/login.html" class="btn btn-outline-primary rounded-pill px-4">เข้าสู่ระบบ</a>
-            </div>
-        </header>
-        <div class="container breadcrumb-custom"><a href="/sportarea.html"><i
-                    class="bi bi-arrow-left me-2"></i>กลับไปเลือกสนาม</a></div>
-        <div class="container content-container">
-            <div class="booking-card">
-                <div class="booking-row">
-                    <div class="court-preview">
-                        <img id="courtImage"
-                            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT2dHK0IJCWFlgb-tGAJN8JR3_yV6BXJunZXA&s"
-                            alt="สนาม">
-                        <div class="overlay">
-                            <h2 id="courtName">สนามฟุตบอลและลู่วิ่ง</h2>
-                            <p id="courtDesc">สำหรับกิจกรรมฟุตบอลและการฝึกซ้อมวิ่งรอบสนาม</p>
-                            <p id="courtPrice"
-                                style="font-size: 1.2rem; font-weight: bold; margin-top: 10px; color: #38ef7d;">฿500 /
-                                ชม.</p>
-                        </div>
-                    </div>
-                    <div class="booking-form">
-                        <h3 class="form-title"><i class="bi bi-calendar-plus"></i> จองสนาม</h3>
-                        <div class="step-indicator">
-                            <div class="step active">
-                                <div class="step-number">1</div><span>เลือกวันเวลา</span>
-                            </div>
-                            <div class="step">
-                                <div class="step-number">2</div><span>กรอกข้อมูล</span>
-                            </div>
-                            <div class="step">
-                                <div class="step-number">3</div><span>ยืนยัน</span>
-                            </div>
-                        </div>
-                        <form id="bookingForm">
-                            <input type="hidden" id="courtType" name="courtType">
-                            <div class="form-group"><label><i class="bi bi-calendar3 me-2"></i>วันที่จอง</label><input
-                                    type="date" class="form-control-custom" id="bookingDate" name="date" required></div>
-                            <div class="form-group">
-                                <label><i class="bi bi-clock me-2"></i>เลือกช่วงเวลา</label>
-                                <div class="time-slots" id="timeSlots"></div>
-                                <input type="hidden" id="selectedTime" name="time" required>
-                            </div>
-                            <div class="form-group"><label><i class="bi bi-people me-2"></i>จำนวนผู้เล่น</label><input
-                                    type="number" class="form-control-custom" id="players" name="players" min="1"
-                                    max="22" placeholder="กรอกจำนวนผู้เล่น" required></div>
-                            <div class="form-group"><label><i class="bi bi-chat-text me-2"></i>หมายเหตุ
-                                    (ถ้ามี)</label><textarea class="form-control-custom" id="note" name="note" rows="2"
-                                    placeholder="เช่น ต้องการอุปกรณ์เสริม"></textarea></div>
-
-                            <div class="form-group">
-                                <label><i class="bi bi-box-seam me-2"></i>อุปกรณ์เสริม (สามารถเลือกยืมได้)</label>
-                                <div id="equipmentList"
-                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                    <!-- Equipment Checkboxes Inserted Here -->
-                                </div>
-                            </div>
-
-                            <div class="summary-box">
-                                <h6><i class="bi bi-receipt me-2"></i>สรุปรายการ</h6>
-                                <div class="summary-row"><span>สนาม:</span><span id="summaryCourtName">สนามฟุตบอล</span>
-                                </div>
-                                <div class="summary-row"><span>วันที่:</span><span id="summaryDate">-</span></div>
-                                <div class="summary-row"><span>เวลา:</span><span id="summaryTime">-</span></div>
-                                <div class="summary-row"><span>ค่าบริการ (ต่อชม.):</span><span id="summaryPrice">ฟรี
-                                        (นักศึกษา)</span></div>
-                                <div id="summaryEquipments"></div>
-                                <div class="summary-row total"><span>รวมทั้งหมด:</span><span id="summaryTotal">฿0</span>
-                                </div>
-                            </div>
-                            <div id="errorMessage"
-                                style="display:none; background:#ffe6e6; color:#dc3545; padding:15px; border-radius:10px; margin-bottom:15px;">
-                                <i class="bi bi-exclamation-circle me-2"></i><span id="errorText"></span>
-                            </div>
-                            <button type="submit" class="btn-submit"><i class="bi bi-check-circle"></i>
-                                ยืนยันการจอง</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
+          </div>
         </div>
+      </div>
 
-        <!-- Payment Modal -->
-        <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title" id="paymentModalLabel"><i
-                                class="bi bi-wallet2 me-2"></i>ชำระเงินค่าบริการ</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body text-center">
-                        <p class="text-muted mb-3">กรุณาสแกน QR Code ด้านล่างเพื่อชำระเงิน</p>
-                        <img src="/photo/QR.png" alt="QR Code" class="img-fluid mb-3"
-                            style="max-height: 250px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-
-                        <div class="bg-light p-3 rounded-3 mb-3 text-start">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted">ชื่อบัญชี:</span>
-                                <strong>ระบบจองสนามกีฬา Sports Area</strong>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted">เลขบัญชี (พร้อมเพย์):</span>
-                                <strong>098-XXX-XXXX</strong>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <span class="text-muted">ยอดที่ต้องชำระ:</span>
-                                <strong class="text-primary fs-5" id="modalTotalAmount">฿0</strong>
-                            </div>
-                        </div>
-
-                        <div class="text-start">
-                            <label for="slipUpload" class="form-label fw-bold"><i
-                                    class="bi bi-file-earmark-image me-2"></i>อัปโหลดสลิปโอนเงิน <span
-                                    class="text-danger">*จำเป็น</span></label>
-                            <input class="form-control" type="file" id="slipUpload" accept="image/*" required>
-                            <small class="text-muted">กรุณาแนบภาพสลิปการโอนเงินเพื่อยืนยันการจองของคุณ</small>
-                        </div>
-                    </div>
-                    <div class="modal-footer d-flex justify-content-between">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button>
-                        <button type="button" class="btn btn-primary" id="confirmPaymentBtn">
-                            <i class="bi bi-check-circle me-2"></i>ส่งข้อมูลการจอง
-                        </button>
-                    </div>
-                </div>
+      <!-- Payment Modal -->
+      <div
+        class="modal fade"
+        id="paymentModal"
+        tabindex="-1"
+        aria-labelledby="paymentModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title" id="paymentModalLabel">
+                <i class="bi bi-wallet2 me-2"></i>ชำระเงินค่าบริการ
+              </h5>
+              <button
+                type="button"
+                class="btn-close btn-close-white"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
             </div>
+            <div class="modal-body text-center">
+              <p class="text-muted mb-3">
+                กรุณาสแกน QR Code ด้านล่างเพื่อชำระเงิน
+              </p>
+              <img
+                src="/photo/QR.png"
+                alt="QR Code"
+                class="img-fluid mb-3"
+                style="
+                  max-height: 250px;
+                  border-radius: 10px;
+                  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                "
+              />
+
+              <div class="bg-light p-3 rounded-3 mb-3 text-start">
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-muted">ชื่อบัญชี:</span>
+                  <strong>ระบบจองสนามกีฬา Sports Area</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-muted">เลขบัญชี (พร้อมเพย์):</span>
+                  <strong>098-XXX-XXXX</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <span class="text-muted">ยอดที่ต้องชำระ:</span>
+                  <strong class="text-primary fs-5" id="modalTotalAmount"
+                    >฿0</strong
+                  >
+                </div>
+              </div>
+
+              <div class="text-start">
+                <label for="slipUpload" class="form-label fw-bold"
+                  ><i class="bi bi-file-earmark-image me-2"></i
+                  >อัปโหลดสลิปโอนเงิน
+                  <span class="text-danger">*จำเป็น</span></label
+                >
+                <input
+                  class="form-control"
+                  type="file"
+                  id="slipUpload"
+                  accept="image/*"
+                  required
+                />
+                <small class="text-muted"
+                  >กรุณาแนบภาพสลิปการโอนเงินเพื่อยืนยันการจองของคุณ</small
+                >
+              </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+              <button
+                type="button"
+                class="btn btn-light"
+                data-bs-dismiss="modal"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                id="confirmPaymentBtn"
+              >
+                <i class="bi bi-check-circle me-2"></i>ส่งข้อมูลการจอง
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-        const userEmail = localStorage.getItem('userEmail');
-        if (!isLoggedIn) {
-            alert('กรุณาเข้าสู่ระบบก่อนทำการจอง');
-            window.location.href = '/login.html';
-        }
+      const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+      const userEmail = localStorage.getItem("userEmail");
+      if (!isLoggedIn) {
+        alert("กรุณาเข้าสู่ระบบก่อนทำการจอง");
+        window.location.href = "/login.html";
+      }
 
-        function handleLogout() {
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('userName');
-            localStorage.removeItem('userToken');
-            localStorage.removeItem('isAdmin');
-            localStorage.removeItem('adminToken');
-            window.location.reload();
-        }
+      function handleLogout() {
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("userToken");
+        localStorage.removeItem("isAdmin");
+        localStorage.removeItem("adminToken");
+        window.location.reload();
+      }
 
-        function updateHeaderButtons() {
-            const headerButtons = document.getElementById('header-buttons');
-            const userName = localStorage.getItem('userName');
-            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+      function updateHeaderButtons() {
+        const headerButtons = document.getElementById("header-buttons");
+        const userName = localStorage.getItem("userName");
+        const isAdmin = localStorage.getItem("isAdmin") === "true";
 
-            if (isLoggedIn && headerButtons) {
-                // แสดงเมนูด้านข้างเพิ่มเติม
-                document.querySelectorAll('.logged-in-menu').forEach(el => el.style.display = 'block');
+        if (isLoggedIn && headerButtons) {
+          // แสดงเมนูด้านข้างเพิ่มเติม
+          document
+            .querySelectorAll(".logged-in-menu")
+            .forEach((el) => (el.style.display = "block"));
 
-                let profileLink = '/profile.html';
-                if (isAdmin) {
-                    profileLink = '/admin-dashboard.html';
-                }
+          let profileLink = "/profile.html";
+          if (isAdmin) {
+            profileLink = "/admin-dashboard.html";
+          }
 
-                headerButtons.innerHTML = `
+          headerButtons.innerHTML = `
                     <a href="${profileLink}" class="btn btn-outline-primary rounded-pill px-4" style="display:flex; align-items:center;">
-                        <i class="bi bi-person-circle me-1"></i> ${userName || 'โปรไฟล์'}
+                        <i class="bi bi-person-circle me-1"></i> ${userName || "โปรไฟล์"}
                     </a>
                     <button onclick="handleLogout()" class="btn btn-danger rounded-pill px-4" style="display:flex; align-items:center;">
                         <i class="bi bi-box-arrow-right me-1"></i> ออกจากระบบ
                     </button>
                 `;
-            }
         }
+      }
 
-        // CAll the function immediately
-        updateHeaderButtons();
+      // CAll the function immediately
+      updateHeaderButtons();
 
-        const params = new URLSearchParams(window.location.search);
-        const courtId = params.get('courtId');
-        const courtSlug = params.get('court'); // For legacy support
-        let currentCourt = null;
+      const params = new URLSearchParams(window.location.search);
+      const courtId = params.get("courtId");
+      const courtSlug = params.get("court"); // For legacy support
+      let currentCourt = null;
 
-        async function loadCourtDetails() {
-            try {
-                let url = '';
-                if (courtId) {
-                    url = `/api/bookings/courts/${courtId}`;
-                } else if (courtSlug) {
-                    // Fallback to searching by name for legacy links
-                    const courtNameMap = {
-                        'football': 'สนามฟุตบอลและลู่วิ่ง',
-                        'basketball': 'สนามบาสเกตบอล',
-                        'tennis': 'สนามเทนนิส',
-                        'badminton': 'สนามแบดมินตัน',
-                        'volleyball': 'สนามวอลเลย์บอล'
-                    };
-                    const searchName = courtNameMap[courtSlug] || courtSlug;
-                    const res = await fetch('/api/bookings/courts');
-                    const allCourts = await res.json();
-                    if (allCourts.success) {
-                        currentCourt = allCourts.courts.find(c => c.name.includes(searchName));
-                    }
-                }
-
-                if (url) {
-                    const response = await fetch(url);
-                    const data = await response.json();
-                    if (data.success) {
-                        currentCourt = data.court;
-                    }
-                }
-
-                if (currentCourt) {
-                    updateCourtUI(currentCourt);
-                } else {
-                    alert('ไม่พบข้อมูลสนามกีฬา');
-                }
-            } catch (error) {
-                console.error('Error loading court details:', error);
+      async function loadCourtDetails() {
+        try {
+          let url = "";
+          if (courtId) {
+            url = `/api/bookings/courts/${courtId}`;
+          } else if (courtSlug) {
+            // Fallback to searching by name for legacy links
+            const courtNameMap = {
+              football: "สนามฟุตบอลและลู่วิ่ง",
+              basketball: "สนามบาสเกตบอล",
+              tennis: "สนามเทนนิส",
+              badminton: "สนามแบดมินตัน",
+              volleyball: "สนามวอลเลย์บอล",
+            };
+            const searchName = courtNameMap[courtSlug] || courtSlug;
+            const res = await fetch("/api/bookings/courts");
+            const allCourts = await res.json();
+            if (allCourts.success) {
+              currentCourt = allCourts.courts.find((c) =>
+                c.name.includes(searchName),
+              );
             }
-        }
+          }
 
-        function updateCourtUI(court) {
-            document.getElementById('courtName').textContent = court.name;
-            document.getElementById('courtDesc').textContent = court.description || '';
-            document.getElementById('courtImage').src = court.image_url || '/photo/default.jpg';
-            document.getElementById('courtPrice').textContent = `฿${court.price} / ชม.`;
-            document.getElementById('summaryCourtName').textContent = court.name;
-            document.getElementById('summaryPrice').textContent = `฿${court.price}`;
-            document.getElementById('summaryTotal').textContent = `฿${court.price}`;
-            document.getElementById('courtType').value = court.name;
-            document.title = 'จอง' + court.name + ' - Payap Sports';
-
-            // Rebuild time slots จากเวลาเปิด-ปิดของสนามนี้
-            allTimeSlots = generateTimeSlots(court.open_time, court.close_time);
-            selectedSlots = []; // reset เมื่อเปลี่ยนสนาม
-
-            // Re-fetch booked slots for this court
-            const date = document.getElementById('bookingDate').value;
-            if (date) {
-                fetchBookedSlots(date);
-            } else {
-                renderTimeSlots();
+          if (url) {
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.success) {
+              currentCourt = data.court;
             }
+          }
+
+          if (currentCourt) {
+            updateCourtUI(currentCourt);
+          } else {
+            alert("ไม่พบข้อมูลสนามกีฬา");
+          }
+        } catch (error) {
+          console.error("Error loading court details:", error);
         }
+      }
 
-        loadCourtDetails();
+      function updateCourtUI(court) {
+        document.getElementById("courtName").textContent = court.name;
+        document.getElementById("courtDesc").textContent =
+          court.description || "";
+        document.getElementById("courtImage").src =
+          court.image_url || "/photo/default.jpg";
+        document.getElementById("courtPrice").textContent =
+          `฿${court.price} / ชม.`;
+        document.getElementById("summaryCourtName").textContent = court.name;
+        document.getElementById("summaryPrice").textContent = `฿${court.price}`;
+        document.getElementById("summaryTotal").textContent = `฿${court.price}`;
+        document.getElementById("courtType").value = court.name;
+        document.title = "จอง" + court.name + " - Payap Sports";
 
-        // สร้าง time slots แบบ dynamic จากเวลาเปิด-ปิดสนาม
-        function generateTimeSlots(openTime, closeTime) {
-            const slots = [];
-            // รับ format "HH:MM:SS" หรือ "HH:MM"
-            const openHour  = parseInt((openTime  || '06:00').split(':')[0]);
-            const closeHour = parseInt((closeTime || '20:00').split(':')[0]);
-            for (let h = openHour; h < closeHour; h++) {
-                const start = String(h).padStart(2, '0') + ':00';
-                const end   = String(h + 1).padStart(2, '0') + ':00';
-                slots.push(`${start}-${end}`);
-            }
-            return slots;
+        // Rebuild time slots จากเวลาเปิด-ปิดของสนามนี้
+        allTimeSlots = generateTimeSlots(court.open_time, court.close_time);
+        selectedSlots = []; // reset เมื่อเปลี่ยนสนาม
+
+        // Re-fetch booked slots for this court
+        const date = document.getElementById("bookingDate").value;
+        if (date) {
+          fetchBookedSlots(date);
+        } else {
+          renderTimeSlots();
         }
+      }
 
-        let allTimeSlots = generateTimeSlots('06:00', '20:00'); // default จนกว่าจะโหลด court
-        let bookedSlots = [];
-        let selectedSlots = [];
-        let equipmentData = [];
-        let selectedEquipments = [];
+      loadCourtDetails();
 
-        async function loadEquipment() {
-            try {
-                const response = await fetch('/api/equipment');
-                const data = await response.json();
-                if (data.success && data.equipment) {
-                    equipmentData = data.equipment.filter(eq => eq.available > 0);
-                    renderEquipment();
-                }
-            } catch (error) {
-                console.error('Error loading equipment:', error);
-            }
+      // สร้าง time slots แบบ dynamic จากเวลาเปิด-ปิดสนาม
+      function generateTimeSlots(openTime, closeTime) {
+        const slots = [];
+        // รับ format "HH:MM:SS" หรือ "HH:MM"
+        const openHour = parseInt((openTime || "06:00").split(":")[0]);
+        const closeHour = parseInt((closeTime || "20:00").split(":")[0]);
+        for (let h = openHour; h < closeHour; h++) {
+          const start = String(h).padStart(2, "0") + ":00";
+          const end = String(h + 1).padStart(2, "0") + ":00";
+          slots.push(`${start}-${end}`);
         }
+        return slots;
+      }
 
-        function renderEquipment() {
-            const container = document.getElementById('equipmentList');
-            container.innerHTML = '';
-            equipmentData.forEach(eq => {
-                const selected = selectedEquipments.find(e => e.id === eq.id);
-                const isChecked = selected ? 'checked' : '';
-                const qty = selected ? selected.quantity : 1;
+      let allTimeSlots = generateTimeSlots("06:00", "20:00"); // default จนกว่าจะโหลด court
+      let bookedSlots = [];
+      let selectedSlots = [];
+      let equipmentData = [];
+      let selectedEquipments = [];
 
-                container.innerHTML += `
+      async function loadEquipment() {
+        try {
+          const response = await fetch("/api/equipment");
+          const data = await response.json();
+          if (data.success && data.equipment) {
+            equipmentData = data.equipment.filter((eq) => eq.available > 0);
+            renderEquipment();
+          }
+        } catch (error) {
+          console.error("Error loading equipment:", error);
+        }
+      }
+
+      function renderEquipment() {
+        const container = document.getElementById("equipmentList");
+        container.innerHTML = "";
+        equipmentData.forEach((eq) => {
+          const selected = selectedEquipments.find((e) => e.id === eq.id);
+          const isChecked = selected ? "checked" : "";
+          const qty = selected ? selected.quantity : 1;
+
+          // ตรวจสอบว่าเป็นซื้อหรือยืม
+          const isSell = eq.type === "sell";
+          const eqLabel = isSell
+            ? `${eq.name} (ซื้อ ${eq.price}฿/ชิ้น)`
+            : `${eq.name} (ยืมฟรี)`;
+          const badgeHtml = isSell
+            ? `<span class="badge bg-danger ms-2">ซื้อ ฿${eq.price}</span>`
+            : `<span class="badge bg-success ms-2">ยืมฟรี</span>`;
+
+          container.innerHTML += `
                     <div style="border: 2px solid #e8e8e8; border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <input type="checkbox" id="eq_${eq.id}" value="${eq.id}" onchange="toggleEquipment(${eq.id})" style="transform: scale(1.2);" ${isChecked}>
-                            <label for="eq_${eq.id}" style="margin: 0; font-weight: 500; cursor: pointer;">${eq.name} (เหลือ ${eq.available})</label>
+                            <label for="eq_${eq.id}" style="margin: 0; font-weight: 500; cursor: pointer;">
+                                ${eq.name} <span class="text-muted" style="font-size:0.85rem;">(เหลือ ${eq.available})</span>
+                                ${badgeHtml}
+                            </label>
                         </div>
-                        <input type="number" id="qty_${eq.id}" min="1" max="${eq.available}" value="${qty}" onchange="updateEquipmentQty(${eq.id})" style="width: 70px; padding: 4px; border-radius: 6px; border: 1px solid #ccc; display: ${isChecked ? 'block' : 'none'};">
+                        <input type="number" id="qty_${eq.id}" min="1" max="${eq.available}" value="${qty}" onchange="updateEquipmentQty(${eq.id})" style="width: 70px; padding: 4px; border-radius: 6px; border: 1px solid #ccc; display: ${isChecked ? "block" : "none"};">
                     </div>
                 `;
-            });
-        }
+        });
+      }
 
-        function toggleEquipment(id) {
-            const checkbox = document.getElementById(`eq_${id}`);
-            const qtyInput = document.getElementById(`qty_${id}`);
-            if (checkbox.checked) {
-                qtyInput.style.display = 'block';
-                const eq = equipmentData.find(e => e.id === id);
-                if (eq) {
-                    let qty = parseInt(qtyInput.value) || 1;
-                    if (qty > eq.available) qty = eq.available;
-                    qtyInput.value = qty;
-                    selectedEquipments.push({ ...eq, quantity: qty });
-                }
-            } else {
-                qtyInput.style.display = 'none';
-                selectedEquipments = selectedEquipments.filter(e => e.id !== id);
-            }
+      function toggleEquipment(id) {
+        const checkbox = document.getElementById(`eq_${id}`);
+        const qtyInput = document.getElementById(`qty_${id}`);
+        if (checkbox.checked) {
+          qtyInput.style.display = "block";
+          const eq = equipmentData.find((e) => e.id === id);
+          if (eq) {
+            let qty = parseInt(qtyInput.value) || 1;
+            if (qty > eq.available) qty = eq.available;
+            qtyInput.value = qty;
+            selectedEquipments.push({ ...eq, quantity: qty });
+          }
+        } else {
+          qtyInput.style.display = "none";
+          selectedEquipments = selectedEquipments.filter((e) => e.id !== id);
+        }
+        updateTotal();
+      }
+
+      function updateEquipmentQty(id) {
+        const qtyInput = document.getElementById(`qty_${id}`);
+        const eq = equipmentData.find((e) => e.id === id);
+        if (eq) {
+          let qty = parseInt(qtyInput.value) || 1;
+          if (qty < 1) qty = 1;
+          if (qty > eq.available) qty = eq.available;
+          qtyInput.value = qty;
+
+          const selected = selectedEquipments.find((e) => e.id === id);
+          if (selected) {
+            selected.quantity = qty;
             updateTotal();
+          }
+        }
+      }
+
+      function updateTotal() {
+        if (!currentCourt) return;
+
+        // คำนวณราคาตามจำนวน Slot (ชั่วโมง)
+        const hours = selectedSlots.length;
+        let courtTotalPrice = currentCourt.price * (hours || 1);
+        let total = courtTotalPrice;
+
+        const summaryEqContainer = document.getElementById("summaryEquipments");
+        summaryEqContainer.innerHTML = "";
+
+        if (selectedEquipments.length > 0) {
+          summaryEqContainer.innerHTML += `<div class="summary-row" style="margin-top: 10px; font-weight: 600; color: #1a1c2e;">อุปกรณ์และบริการเพิ่มเติม:</div>`;
         }
 
-        function updateEquipmentQty(id) {
-            const qtyInput = document.getElementById(`qty_${id}`);
-            const eq = equipmentData.find(e => e.id === id);
-            if (eq) {
-                let qty = parseInt(qtyInput.value) || 1;
-                if (qty < 1) qty = 1;
-                if (qty > eq.available) qty = eq.available;
-                qtyInput.value = qty;
+        selectedEquipments.forEach((eq) => {
+          let eqPrice = 0;
+          let eqPriceLabel = "ฟรี";
 
-                const selected = selectedEquipments.find(e => e.id === id);
-                if (selected) {
-                    selected.quantity = qty;
-                    updateTotal();
-                }
-            }
-        }
+          if (eq.type === "sell") {
+            eqPrice = (eq.price || 0) * eq.quantity;
+            eqPriceLabel = `฿${eqPrice}`;
+          }
 
-        function updateTotal() {
-            if (!currentCourt) return;
-            
-            // คำนวณราคาตามจำนวน Slot (ชั่วโมง)
-            const hours = selectedSlots.length;
-            let courtTotalPrice = currentCourt.price * (hours || 1);
-            let total = courtTotalPrice;
-
-            const summaryEqContainer = document.getElementById('summaryEquipments');
-            summaryEqContainer.innerHTML = '';
-
-            if (selectedEquipments.length > 0) {
-                summaryEqContainer.innerHTML += `<div class="summary-row" style="margin-top: 10px; font-weight: 600; color: #1a1c2e;">อุปกรณ์เสริม:</div>`;
-            }
-
-            selectedEquipments.forEach(eq => {
-                let eqPrice = 0; // ในระบบเดิมอุปกรณ์อาจจะฟรี หรือคำนวณเพิ่มถ้ามีฟิลด์ price
-                summaryEqContainer.innerHTML += `
+          summaryEqContainer.innerHTML += `
                     <div class="summary-row" style="padding-left: 10px;">
                         <span>- ${eq.name} x${eq.quantity}:</span>
-                        <span>ฟรี</span>
+                        <span>${eqPriceLabel}</span>
                     </div>
                 `;
-                total += eqPrice;
-            });
-
-            document.getElementById('summaryTotal').textContent = `฿${total}`;
-        }
-
-        loadEquipment();
-
-        function isPastSlot(timeSlot) {
-            const selectedDate = document.getElementById('bookingDate').value;
-            const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local time
-            if (selectedDate !== todayStr) return false; // ถ้าไม่ใช่วันนี้ ไม่ต้อง disable
-
-            const slotStartHour = parseInt(timeSlot.split(':')[0]);
-            const slotStartMin  = parseInt(timeSlot.split(':')[1]);
-            const now = new Date();
-            const nowHour = now.getHours();
-            const nowMin  = now.getMinutes();
-
-            // disable ถ้าเวลา start ของ slot <= เวลาปัจจุบัน
-            return (slotStartHour < nowHour) || (slotStartHour === nowHour && slotStartMin <= nowMin);
-        }
-
-        function renderTimeSlots() {
-            const container = document.getElementById('timeSlots');
-            container.innerHTML = '';
-            allTimeSlots.forEach(time => {
-                const slot = document.createElement('div');
-                slot.className = 'time-slot';
-                slot.textContent = time;
-
-                const past = isPastSlot(time.split('-')[0]);
-
-                if (bookedSlots.includes(time)) {
-                    slot.classList.add('disabled');
-                    slot.title = 'ถูกจองแล้ว';
-                } else if (past) {
-                    slot.classList.add('disabled', 'past');
-                    slot.title = 'เวลาผ่านมาแล้ว';
-                } else {
-                    if (selectedSlots.includes(time)) {
-                        slot.classList.add('selected');
-                    }
-                    slot.onclick = () => selectTime(slot, time);
-                }
-                container.appendChild(slot);
-            });
-        }
-
-        function selectTime(el, time) {
-            if (el.classList.contains('disabled')) return;
-
-            const index = selectedSlots.indexOf(time);
-            if (index > -1) {
-                // ถ้าคลิกตัวที่เลือกอยู่แล้ว ให้ยกเลิก (แต่ต้องเช็คความต่อเนื่อง)
-                // เพื่อความง่าย: ให้ยกเลิกได้ทุกลำดับ แต่ถ้าทำให้ขาดตอน ระบบจะเตือนตอน Submit หรือเราจัดการอัตโนมัติ
-                selectedSlots.splice(index, 1);
-            } else {
-                // ตรวจสอบความต่อเนื่อง (ต้องต่อจากตัวแรกหรือตัวสุดท้ายที่มีอยู่)
-                if (selectedSlots.length > 0) {
-                    // เรียงลำดับเวลาที่มีอยู่ก่อน
-                    const sortedSlots = [...selectedSlots].sort((a, b) => {
-                        return allTimeSlots.indexOf(a) - allTimeSlots.indexOf(b);
-                    });
-                    
-                    const firstIdx = allTimeSlots.indexOf(sortedSlots[0]);
-                    const lastIdx = allTimeSlots.indexOf(sortedSlots[sortedSlots.length - 1]);
-                    const currentIdx = allTimeSlots.indexOf(time);
-
-                    if (currentIdx === firstIdx - 1 || currentIdx === lastIdx + 1) {
-                        selectedSlots.push(time);
-                    } else {
-                        // ถ้าไม่ต่อเนื่อง ให้เริ่มเลือกใหม่ที่ตัวนี้ตัวเดียว
-                        selectedSlots = [time];
-                    }
-                } else {
-                    selectedSlots.push(time);
-                }
-            }
-
-            // จัดเรียง Slots ที่เลือกใหม่ให้สวยงาม
-            selectedSlots.sort((a, b) => allTimeSlots.indexOf(a) - allTimeSlots.indexOf(b));
-
-            // อัปเดต UI
-            renderTimeSlots();
-            
-            // อัปเดตข้อมูลสรุป
-            const selectedTimeInput = document.getElementById('selectedTime');
-            const summaryTime = document.getElementById('summaryTime');
-            
-            if (selectedSlots.length > 0) {
-                const startTime = selectedSlots[0].split('-')[0];
-                const endTime = selectedSlots[selectedSlots.length - 1].split('-')[1];
-                const timeRange = `${startTime}-${endTime}`;
-                selectedTimeInput.value = timeRange;
-                summaryTime.textContent = `${timeRange} (${selectedSlots.length} ชม.)`;
-            } else {
-                selectedTimeInput.value = '';
-                summaryTime.textContent = '-';
-            }
-            
-            updateTotal();
-        }
-
-        async function fetchBookedSlots(date) {
-            try {
-                const response = await fetch(`/api/bookings/slots?courtType=${encodeURIComponent(currentCourt.name)}&date=${date}`);
-                const result = await response.json();
-
-                if (result.success) {
-                    bookedSlots = result.bookedSlots || [];
-                } else {
-                    bookedSlots = [];
-                }
-
-                // ล้างค่าที่เคยเลือกไว้เมื่อเปลี่ยนวันที่
-                selectedSlots = [];
-                document.getElementById('selectedTime').value = '';
-                document.getElementById('summaryTime').textContent = '-';
-
-                renderTimeSlots();
-                updateTotal();
-            } catch (error) {
-                console.error('Error fetching booked slots:', error);
-                bookedSlots = [];
-                renderTimeSlots();
-            }
-        }
-
-        document.getElementById('bookingDate').addEventListener('change', function () {
-            const date = this.value;
-            // ล้าง selection เก่าที่อาจเป็น past slot เมื่อกลับมาเลือกวันนี้ใหม่
-            selectedSlots = selectedSlots.filter(t => !isPastSlot(t.split('-')[0]));
-            document.getElementById('selectedTime').value = '';
-            document.getElementById('summaryTime').textContent = '-';
-            document.getElementById('summaryDate').textContent = new Date(date + 'T00:00:00').toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            if (date) {
-                fetchBookedSlots(date);
-            }
+          total += eqPrice;
         });
 
-        // ใช้ local date (ไม่ใช่ UTC) เพื่อป้องกัน timezone bug
-        const today = new Date().toLocaleDateString('en-CA');
-        document.getElementById('bookingDate').min = today;
-        document.getElementById('bookingDate').value = today;
-        document.getElementById('summaryDate').textContent = new Date(today + 'T00:00:00').toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById("summaryTotal").textContent = `฿${total}`;
+      }
 
-        // Fetch initially for today
-        fetchBookedSlots(today);
+      loadEquipment();
 
-        let pendingBookingData = null;
-        let paymentModalInstance = null;
+      function isPastSlot(timeSlot) {
+        const selectedDate = document.getElementById("bookingDate").value;
+        const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD local time
+        if (selectedDate !== todayStr) return false; // ถ้าไม่ใช่วันนี้ ไม่ต้อง disable
 
-        document.getElementById('bookingForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const errorDiv = document.getElementById('errorMessage');
-            const errorText = document.getElementById('errorText');
-            errorDiv.style.display = 'none';
+        const slotStartHour = parseInt(timeSlot.split(":")[0]);
+        const slotStartMin = parseInt(timeSlot.split(":")[1]);
+        const now = new Date();
+        const nowHour = now.getHours();
+        const nowMin = now.getMinutes();
 
-            const date = document.getElementById('bookingDate').value;
-            const time = document.getElementById('selectedTime').value;
-            const players = document.getElementById('players').value;
-            const note = document.getElementById('note').value;
+        // disable ถ้าเวลา start ของ slot <= เวลาปัจจุบัน
+        return (
+          slotStartHour < nowHour ||
+          (slotStartHour === nowHour && slotStartMin <= nowMin)
+        );
+      }
 
-            if (!date || !time || !players) {
-                errorDiv.style.display = 'block';
-                errorText.textContent = 'กรุณากรอกข้อมูลให้ครบถ้วน';
-                return;
+      function renderTimeSlots() {
+        const container = document.getElementById("timeSlots");
+        container.innerHTML = "";
+        allTimeSlots.forEach((time) => {
+          const slot = document.createElement("div");
+          slot.className = "time-slot";
+          slot.textContent = time;
+
+          const past = isPastSlot(time.split("-")[0]);
+
+          if (bookedSlots.includes(time)) {
+            slot.classList.add("disabled");
+            slot.title = "ถูกจองแล้ว";
+          } else if (past) {
+            slot.classList.add("disabled", "past");
+            slot.title = "เวลาผ่านมาแล้ว";
+          } else {
+            if (selectedSlots.includes(time)) {
+              slot.classList.add("selected");
             }
+            slot.onclick = () => selectTime(slot, time);
+          }
+          container.appendChild(slot);
+        });
+      }
 
-            const [startTime, endTime] = time.split('-');
-            pendingBookingData = {
-                user_email: userEmail,
-                court_type: currentCourt.name,
-                booking_date: date,
-                start_time: startTime + ':00',
-                end_time: endTime + ':00',
-                players: parseInt(players),
-                note: note,
-                equipments: selectedEquipments.map(e => ({ id: e.id, name: e.name, quantity: e.quantity }))
-            };
+      function selectTime(el, time) {
+        if (el.classList.contains("disabled")) return;
 
-            // Set total amount in modal
-            const totalText = document.getElementById('summaryTotal').textContent;
-            document.getElementById('modalTotalAmount').textContent = totalText;
+        const index = selectedSlots.indexOf(time);
+        if (index > -1) {
+          // ถ้าคลิกตัวที่เลือกอยู่แล้ว ให้ยกเลิก (แต่ต้องเช็คความต่อเนื่อง)
+          // เพื่อความง่าย: ให้ยกเลิกได้ทุกลำดับ แต่ถ้าทำให้ขาดตอน ระบบจะเตือนตอน Submit หรือเราจัดการอัตโนมัติ
+          selectedSlots.splice(index, 1);
+        } else {
+          // ตรวจสอบความต่อเนื่อง (ต้องต่อจากตัวแรกหรือตัวสุดท้ายที่มีอยู่)
+          if (selectedSlots.length > 0) {
+            // เรียงลำดับเวลาที่มีอยู่ก่อน
+            const sortedSlots = [...selectedSlots].sort((a, b) => {
+              return allTimeSlots.indexOf(a) - allTimeSlots.indexOf(b);
+            });
 
-            // Clear previous file input
-            document.getElementById('slipUpload').value = '';
+            const firstIdx = allTimeSlots.indexOf(sortedSlots[0]);
+            const lastIdx = allTimeSlots.indexOf(
+              sortedSlots[sortedSlots.length - 1],
+            );
+            const currentIdx = allTimeSlots.indexOf(time);
 
-            // Show Payment Modal
-            if (!paymentModalInstance) {
-                paymentModalInstance = new bootstrap.Modal(document.getElementById('paymentModal'));
+            if (currentIdx === firstIdx - 1 || currentIdx === lastIdx + 1) {
+              selectedSlots.push(time);
+            } else {
+              // ถ้าไม่ต่อเนื่อง ให้เริ่มเลือกใหม่ที่ตัวนี้ตัวเดียว
+              selectedSlots = [time];
             }
-            paymentModalInstance.show();
+          } else {
+            selectedSlots.push(time);
+          }
+        }
+
+        // จัดเรียง Slots ที่เลือกใหม่ให้สวยงาม
+        selectedSlots.sort(
+          (a, b) => allTimeSlots.indexOf(a) - allTimeSlots.indexOf(b),
+        );
+
+        // อัปเดต UI
+        renderTimeSlots();
+
+        // อัปเดตข้อมูลสรุป
+        const selectedTimeInput = document.getElementById("selectedTime");
+        const summaryTime = document.getElementById("summaryTime");
+
+        if (selectedSlots.length > 0) {
+          const startTime = selectedSlots[0].split("-")[0];
+          const endTime = selectedSlots[selectedSlots.length - 1].split("-")[1];
+          const timeRange = `${startTime}-${endTime}`;
+          selectedTimeInput.value = timeRange;
+          summaryTime.textContent = `${timeRange} (${selectedSlots.length} ชม.)`;
+        } else {
+          selectedTimeInput.value = "";
+          summaryTime.textContent = "-";
+        }
+
+        updateTotal();
+      }
+
+      async function fetchBookedSlots(date) {
+        try {
+          const response = await fetch(
+            `/api/bookings/slots?courtType=${encodeURIComponent(currentCourt.name)}&date=${date}`,
+          );
+          const result = await response.json();
+
+          if (result.success) {
+            bookedSlots = result.bookedSlots || [];
+          } else {
+            bookedSlots = [];
+          }
+
+          // ล้างค่าที่เคยเลือกไว้เมื่อเปลี่ยนวันที่
+          selectedSlots = [];
+          document.getElementById("selectedTime").value = "";
+          document.getElementById("summaryTime").textContent = "-";
+
+          renderTimeSlots();
+          updateTotal();
+        } catch (error) {
+          console.error("Error fetching booked slots:", error);
+          bookedSlots = [];
+          renderTimeSlots();
+        }
+      }
+
+      document
+        .getElementById("bookingDate")
+        .addEventListener("change", function () {
+          const date = this.value;
+          // ล้าง selection เก่าที่อาจเป็น past slot เมื่อกลับมาเลือกวันนี้ใหม่
+          selectedSlots = selectedSlots.filter(
+            (t) => !isPastSlot(t.split("-")[0]),
+          );
+          document.getElementById("selectedTime").value = "";
+          document.getElementById("summaryTime").textContent = "-";
+          document.getElementById("summaryDate").textContent = new Date(
+            date + "T00:00:00",
+          ).toLocaleDateString("th-TH", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+          if (date) {
+            fetchBookedSlots(date);
+          }
         });
 
-        document.getElementById('confirmPaymentBtn').addEventListener('click', async function () {
-            if (!pendingBookingData) return;
+      // ใช้ local date (ไม่ใช่ UTC) เพื่อป้องกัน timezone bug
+      const today = new Date().toLocaleDateString("en-CA");
+      document.getElementById("bookingDate").min = today;
+      document.getElementById("bookingDate").value = today;
+      document.getElementById("summaryDate").textContent = new Date(
+        today + "T00:00:00",
+      ).toLocaleDateString("th-TH", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
 
-            const slipFile = document.getElementById('slipUpload').files[0];
-            if (!slipFile) {
-                alert('กรุณาแนบสลิปโอนเงินก่อนส่งข้อมูลการจอง');
-                return;
+      // Fetch initially for today
+      fetchBookedSlots(today);
+
+      let pendingBookingData = null;
+      let paymentModalInstance = null;
+
+      document
+        .getElementById("bookingForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const errorDiv = document.getElementById("errorMessage");
+          const errorText = document.getElementById("errorText");
+          errorDiv.style.display = "none";
+
+          const date = document.getElementById("bookingDate").value;
+          const time = document.getElementById("selectedTime").value;
+          const players = document.getElementById("players").value;
+          const note = document.getElementById("note").value;
+
+          if (!date || !time || !players) {
+            errorDiv.style.display = "block";
+            errorText.textContent = "กรุณากรอกข้อมูลให้ครบถ้วน";
+            return;
+          }
+
+          const [startTime, endTime] = time.split("-");
+          pendingBookingData = {
+            user_email: userEmail,
+            court_type: currentCourt.name,
+            booking_date: date,
+            start_time: startTime + ":00",
+            end_time: endTime + ":00",
+            players: parseInt(players),
+            note: note,
+            equipments: selectedEquipments.map((e) => ({
+              id: e.id,
+              name: e.name,
+              quantity: e.quantity,
+            })),
+          };
+
+          // Set total amount in modal
+          const totalText = document.getElementById("summaryTotal").textContent;
+          document.getElementById("modalTotalAmount").textContent = totalText;
+
+          // Clear previous file input
+          document.getElementById("slipUpload").value = "";
+
+          // Show Payment Modal
+          if (!paymentModalInstance) {
+            paymentModalInstance = new bootstrap.Modal(
+              document.getElementById("paymentModal"),
+            );
+          }
+          paymentModalInstance.show();
+        });
+
+      document
+        .getElementById("confirmPaymentBtn")
+        .addEventListener("click", async function () {
+          if (!pendingBookingData) return;
+
+          const slipFile = document.getElementById("slipUpload").files[0];
+          if (!slipFile) {
+            alert("กรุณาแนบสลิปโอนเงินก่อนส่งข้อมูลการจอง");
+            return;
+          }
+
+          const confirmBtn = this;
+          confirmBtn.disabled = true;
+          confirmBtn.innerHTML =
+            '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>กำลังส่งข้อมูล...';
+
+          const formData = new FormData();
+          formData.append("bookingData", JSON.stringify(pendingBookingData));
+          formData.append("slip", slipFile);
+
+          try {
+            const token = localStorage.getItem("userToken");
+            const response = await fetch("/api/bookings/with-payment", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+              body: formData, // No Content-Type header, browser sets it automatically with boundary for FormData
+            });
+            const result = await response.json();
+            if (result.success) {
+              paymentModalInstance.hide();
+              alert(
+                "ส่งข้อมูลการจองและชำระเงินเรียบร้อย กรุณารอแอดมินอนุมัติ\\n\\nหมายเลขการจอง: #" +
+                  result.bookingId,
+              );
+              window.location.href = "/profile.html";
+            } else {
+              alert(
+                "การจองไม่สำเร็จ: " +
+                  (result.message || "เกิดข้อผิดพลาดไม่ทราบสาเหตุ"),
+              );
             }
-
-            const confirmBtn = this;
-            confirmBtn.disabled = true;
-            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>กำลังส่งข้อมูล...';
-
-            const formData = new FormData();
-            formData.append('bookingData', JSON.stringify(pendingBookingData));
-            formData.append('slip', slipFile);
-
-            try {
-                const token = localStorage.getItem('userToken');
-                const response = await fetch('/api/bookings/with-payment', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData // No Content-Type header, browser sets it automatically with boundary for FormData
-                });
-                const result = await response.json();
-                if (result.success) {
-                    paymentModalInstance.hide();
-                    alert('ส่งข้อมูลการจองและชำระเงินเรียบร้อย กรุณารอแอดมินอนุมัติ\\n\\nหมายเลขการจอง: #' + result.bookingId);
-                    window.location.href = '/profile.html';
-                } else {
-                    alert('การจองไม่สำเร็จ: ' + (result.message || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ'));
-                }
-            } catch (error) {
-                console.error('Booking error:', error);
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อระบบ');
-            } finally {
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>ส่งข้อมูลการจอง';
-            }
+          } catch (error) {
+            console.error("Booking error:", error);
+            alert("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
+          } finally {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML =
+              '<i class="bi bi-check-circle me-2"></i>ส่งข้อมูลการจอง';
+          }
         });
     </script>
-</body>
-
+  </body>
 </html>
