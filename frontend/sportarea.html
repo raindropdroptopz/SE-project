@@ -578,6 +578,12 @@
                     </div>
                 </div>
             </div>
+            <!-- No results message -->
+            <div id="noResultsMessage" style="display: none; text-align: center; padding: 60px 20px; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); margin-bottom: 30px;">
+                <i class="bi bi-search" style="font-size: 3rem; color: #c0c0c0;"></i>
+                <h4 style="margin-top: 20px; color: #6c7293; font-weight: 600;">ไม่พบสนามที่ต้องการค้นหา</h4>
+                <p style="color: #a4a6b3;">ลองค้นหาด้วยคำอื่น เช่น ฟุตบอล, บาสเกตบอล, เทนนิส</p>
+            </div>
             <div class="equipment-section">
                 <h5><i class="bi bi-box-seam me-2"></i>ต้องการยืมอุปกรณ์กีฬาด้วยหรือไม่?</h5>
                 <a href="/items.html" class="equipment-link">
@@ -743,16 +749,23 @@
                     }
 
                     const courtCards = document.querySelectorAll('.court-card');
+                    const noResultsMsg = document.getElementById('noResultsMessage');
+                    let visibleCount = 0;
 
                     courtCards.forEach(card => {
                         const courtName = card.querySelector('.court-name')?.textContent.toLowerCase() || '';
 
                         if (courtName.includes(searchTerm)) {
                             card.style.display = 'block';
+                            visibleCount++;
                         } else {
                             card.style.display = 'none';
                         }
                     });
+
+                    if (noResultsMsg) {
+                        noResultsMsg.style.display = (searchTerm && visibleCount === 0) ? 'block' : 'none';
+                    }
                 });
             }
         });
