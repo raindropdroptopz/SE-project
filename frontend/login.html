@@ -456,6 +456,7 @@
                         localStorage.setItem('userEmail', data.user.email);
                         localStorage.setItem('userName', data.user.fullName);
                         localStorage.setItem('userToken', data.token);
+                        localStorage.setItem('userType', data.user.userType || '');
 
                         // ถ้าเป็น admin ให้เก็บ adminToken
                         if (data.user.role === 'admin') {

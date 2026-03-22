@@ -356,7 +356,13 @@ router.put('/:id', authenticateToken, upload.single('payment_slip'), async (req,
                 paymentItemRows.push({ id: item.id, name: item.name, unit_price: unitPrice, quantity: qty, subtotal: itemSub });
             }
         }
-        const totalAmount = courtSubtotal + equipmentSubtotal;
+
+        // ตรวจสอบประเภทผู้ใช้ → ส่วนลด 5% สำหรับนักศึกษา/อาจารย์
+        const [userRows] = await connection.execute('SELECT user_type FROM users WHERE id = ?', [req.user.userId]);
+        const userType = userRows[0]?.user_type || 'external';
+        const isDiscounted = userType === 'student' || userType === 'staff';
+        const discountAmount = isDiscounted ? Math.round(courtSubtotal * 0.05) : 0;
+        const totalAmount = courtSubtotal - discountAmount + equipmentSubtotal;
 
         // 6. บันทึก payment record สำหรับการต่อเวลา
         const [payResult] = await connection.execute(`

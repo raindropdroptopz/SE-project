@@ -628,9 +628,13 @@
                   </div>
                   <div class="summary-row">
                     <span>ค่าบริการ (ต่อชม.):</span
-                    ><span id="summaryPrice">ฟรี (นักศึกษา)</span>
+                    ><span id="summaryPrice">-</span>
                   </div>
                   <div id="summaryEquipments"></div>
+                  <div class="summary-row" id="discountRow" style="display:none; color:#28a745;">
+                    <span><i class="bi bi-tag-fill me-1"></i>ส่วนลด 15% (นักศึกษา/อาจารย์):</span>
+                    <span>-฿<span id="summaryDiscount">0</span></span>
+                  </div>
                   <div class="summary-row total">
                     <span>รวมทั้งหมด:</span><span id="summaryTotal">฿0</span>
                   </div>
@@ -991,7 +995,7 @@
         // คำนวณราคาตามจำนวน Slot (ชั่วโมง)
         const hours = selectedSlots.length;
         let courtTotalPrice = currentCourt.price * (hours || 1);
-        let total = courtTotalPrice;
+        let equipmentTotal = 0;
 
         const summaryEqContainer = document.getElementById("summaryEquipments");
         summaryEqContainer.innerHTML = "";
@@ -1015,10 +1019,24 @@
                         <span>${eqPriceLabel}</span>
                     </div>
                 `;
-          total += eqPrice;
+          equipmentTotal += eqPrice;
         });
 
-        document.getElementById("summaryTotal").textContent = `฿${total}`;
+        // ส่วนลด 15% สำหรับนักศึกษา/อาจารย์ (เฉพาะค่าสนาม)
+        const userType = localStorage.getItem('userType') || '';
+        const isDiscounted = userType === 'student' || userType === 'staff';
+        const discountAmount = isDiscounted ? Math.round(courtTotalPrice * 0.15) : 0;
+        const total = courtTotalPrice - discountAmount + equipmentTotal;
+
+        const discRow = document.getElementById('discountRow');
+        if (isDiscounted && courtTotalPrice > 0) {
+          discRow.style.display = 'flex';
+          document.getElementById('summaryDiscount').textContent = discountAmount.toLocaleString();
+        } else {
+          discRow.style.display = 'none';
+        }
+
+        document.getElementById("summaryTotal").textContent = `฿${total.toLocaleString()}`;
       }
 
       loadEquipment();

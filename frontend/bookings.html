@@ -440,6 +440,10 @@
                   <span>ลูกขนไก่ (<span id="summaryScHours">0</span> ชม. × ฿300):</span>
                   <strong>฿<span id="summaryScCost">0</span></strong>
                 </div>
+                <div class="d-flex justify-content-between text-success" id="discountRow" style="display:none !important;">
+                  <span><i class="bi bi-tag-fill me-1"></i>ส่วนลด 15% (นักศึกษา/อาจารย์):</span>
+                  <strong>-฿<span id="summaryDiscount">0</span></strong>
+                </div>
                 <hr class="my-2">
                 <div class="d-flex justify-content-between fw-bold fs-5">
                   <span>รวมทั้งสิ้น:</span>
@@ -923,6 +927,12 @@
           if (chk.dataset.shuttlecock === 'true') { hasShuttlecock = true; shuttlecockCost = Math.round(300 * hours); }
         });
 
+        // ส่วนลด 15% สำหรับนักศึกษา/อาจารย์
+        const userType = localStorage.getItem('userType') || '';
+        const isDiscounted = userType === 'student' || userType === 'staff';
+        const discountAmount = isDiscounted ? Math.round(courtCost * 0.15) : 0;
+        const total = courtCost - discountAmount + shuttlecockCost;
+
         document.getElementById('summaryHours').textContent = hours.toFixed(1);
         document.getElementById('summaryCourtCost').textContent = courtCost.toLocaleString();
         const scRow = document.getElementById('shuttlecockRow');
@@ -931,7 +941,14 @@
           document.getElementById('summaryScHours').textContent = hours.toFixed(1);
           document.getElementById('summaryScCost').textContent = shuttlecockCost.toLocaleString();
         } else { scRow.style.display = 'none'; }
-        document.getElementById('summaryTotal').textContent = (courtCost + shuttlecockCost).toLocaleString();
+
+        const discRow = document.getElementById('discountRow');
+        if (isDiscounted && courtCost > 0) {
+          discRow.style.display = 'flex';
+          document.getElementById('summaryDiscount').textContent = discountAmount.toLocaleString();
+        } else { discRow.style.display = 'none'; }
+
+        document.getElementById('summaryTotal').textContent = total.toLocaleString();
       };
 
       async function saveEditBooking() {
