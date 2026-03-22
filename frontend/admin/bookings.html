@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>การจองทั้งหมด - Admin Dashboard</title>
+    <title>การจองสนาม & อุปกรณ์ - Admin Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -329,14 +329,14 @@
         </div>
         <ul class="nav-menu">
             <li><a href="/admin-dashboard.html"><i class="bi bi-grid-1x2-fill"></i> แดชบอร์ด</a></li>
-            <li><a href="/admin/bookings.html" class="active"><i class="bi bi-calendar-check"></i> การจองทั้งหมด</a>
+            <li><a href="/admin/bookings.html" class="active"><i class="bi bi-calendar-check"></i> การจองสนาม &amp; อุปกรณ์</a>
             </li>
             <li><a href="/admin/users.html"><i class="bi bi-people"></i> จัดการผู้ใช้</a></li>
             <li><a href="/admin/courts.html"><i class="bi bi-dribbble"></i> จัดการสนาม</a></li>
             <li><a href="/admin/calendar.html"><i class="bi bi-calendar3"></i> ปฏิทินการจอง</a></li>
             <p class="nav-section-title">อุปกรณ์</p>
             <li><a href="/admin/equipment.html"><i class="bi bi-box-seam"></i> รายการอุปกรณ์</a></li>
-            <li><a href="/admin/borrow-reports.html"><i class="bi bi-clipboard-data"></i> รายงานการยืม</a></li>
+            
             <p class="nav-section-title">การเงิน</p>
             <li><a href="/admin/finance.html"><i class="bi bi-cash-stack"></i> รายรับ-รายจ่าย</a></li>
             <li><a href="/admin/receipts.html"><i class="bi bi-receipt"></i> ใบเสร็จรับเงิน</a></li>
@@ -348,24 +348,24 @@
     <main class="main-content">
         <header class="page-header">
             <div>
-                <h1><i class="bi bi-calendar-check me-2"></i>การจองทั้งหมด</h1>
-                <p style="margin:0; color:#6c7293; font-size:0.9rem;">จัดการและตรวจสอบการจองสนามกีฬาทั้งหมด</p>
+                <h1><i class="bi bi-calendar-check me-2"></i>การจองสนาม &amp; อุปกรณ์</h1>
+                <p style="margin:0; color:#6c7293; font-size:0.9rem;">จัดการและตรวจสอบประวัติการจองและยืมอุปกรณ์ทั้งหมด</p>
             </div>
             <button class="btn-gradient"><i class="bi bi-plus-lg me-2"></i>เพิ่มการจอง</button>
         </header>
 
         <div class="content-card">
             <div class="filter-bar">
-                <input type="text" id="filterSearch" class="form-control" placeholder="ค้นหาชื่อผู้จอง อีเมล รูปแบบ..." style="max-width:250px;">
-                <select id="filterCourt" class="form-select" style="max-width:180px;">
-                    <option value="">สนามและอุปกรณ์ทั้งหมด</option>
-                    <option value="สนามฟุตบอล">สนามฟุตบอล</option>
-                    <option value="สนามบาสเกตบอล">สนามบาสเกตบอล</option>
-                    <option value="สนามเทนนิส">สนามเทนนิส</option>
-                    <option value="สนามแบดมินตัน">สนามแบดมินตัน</option>
+                <input type="text" id="filterSearch" class="form-control" placeholder="ค้นหาชื่อผู้จอง อีเมล รูปแบบ..." style="max-width:250px;" oninput="applyFilters()">
+                <select id="filterCourt" class="form-select" style="max-width:180px;" onchange="handleCourtFilterChange()">
+                    <option value="">ทั้งหมด (สนามและอุปกรณ์)</option>
+                    <option value="สนาม">จองสนามกีฬา</option>
                     <option value="ยืม">ยืมอุปกรณ์กีฬา</option>
                 </select>
-                <select id="filterStatus" class="form-select" style="max-width:150px;">
+                <select id="filterSubSelect" class="form-select d-none" style="max-width:180px;" onchange="applyFilters()">
+                    <!-- จะถูกเติมด้วย Javascript -->
+                </select>
+                <select id="filterStatus" class="form-select" style="max-width:200px;" onchange="applyFilters()">
                     <option value="">สถานะทั้งหมด</option>
                     <option value="confirmed">ยืนยันแล้ว / สำเร็จ</option>
                     <option value="pending">รออนุมัติ / รอชำระเงิน</option>
@@ -673,12 +673,112 @@
             }
         }
 
+        let loadedEquipments = [];
+        let loadedCourts = [];
+
+        // จัดการเมื่อเปลี่ยนตัวกรอง "สนาม/อุปกรณ์"
+        async function handleCourtFilterChange() {
+            const courtVal = document.getElementById('filterCourt').value;
+            const subSelect = document.getElementById('filterSubSelect');
+            const statusSelect = document.getElementById('filterStatus');
+
+            if (courtVal === 'ยืม') {
+                // แสดงตัวเลือกอุปกรณ์
+                subSelect.classList.remove('d-none');
+                subSelect.innerHTML = '<option value="">อุปกรณ์กีฬาทั้งหมด</option>';
+                
+                if (loadedEquipments.length === 0) {
+                    try {
+                        const res = await fetch('/api/equipment');
+                        const data = await res.json();
+                        if (data.success) {
+                            loadedEquipments = data.equipment;
+                        }
+                    } catch (e) { console.error('Failed to load equipment list for filter', e); }
+                }
+
+                loadedEquipments.forEach(eq => {
+                    const opt = document.createElement('option');
+                    opt.value = eq.name;
+                    opt.textContent = eq.name;
+                    subSelect.appendChild(opt);
+                });
+
+                // เปลี่ยนสถานะให้เป็นของอุปกรณ์
+                statusSelect.innerHTML = `
+                    <option value="">สถานะทั้งหมด</option>
+                    <option value="borrowed">กำลังยืม</option>
+                    <option value="returned">คืนแล้ว</option>
+                    <option value="pending">รออนุมัติ</option>
+                    <option value="cancelled">ยกเลิก</option>
+                `;
+            } else if (courtVal === 'สนาม') {
+                // แสดงตัวเลือกสนาม
+                subSelect.classList.remove('d-none');
+                subSelect.innerHTML = '<option value="">สนามกีฬาทั้งหมด</option>';
+
+                if (loadedCourts.length === 0) {
+                    try {
+                        const res = await fetch('/api/courts');
+                        const data = await res.json();
+                        if (data.success && data.courts) {
+                            loadedCourts = data.courts;
+                        }
+                    } catch (e) {
+                        console.error('Failed to load courts list for filter', e);
+                    }
+                }
+
+                if (loadedCourts.length > 0) {
+                    loadedCourts.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.name;
+                        opt.textContent = c.name;
+                        subSelect.appendChild(opt);
+                    });
+                } else {
+                    const defaultCourts = ['สนามฟุตบอล', 'สนามบาสเกตบอล', 'สนามเทนนิส', 'สนามแบดมินตัน'];
+                    defaultCourts.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c;
+                        opt.textContent = c;
+                        subSelect.appendChild(opt);
+                    });
+                }
+
+                // สถานะของสนาม
+                statusSelect.innerHTML = `
+                    <option value="">สถานะทั้งหมด</option>
+                    <option value="confirmed">ยืนยันแล้ว</option>
+                    <option value="pending">รออนุมัติ / รอชำระเงิน</option>
+                    <option value="cancelled">ยกเลิก</option>
+                `;
+            } else {
+                // ดูทั้งหมด
+                subSelect.classList.add('d-none');
+                subSelect.value = '';
+
+                statusSelect.innerHTML = `
+                    <option value="">สถานะทั้งหมด</option>
+                    <option value="confirmed">ยืนยันแล้ว (สนาม)</option>
+                    <option value="borrowed">กำลังยืม (อุปกรณ์)</option>
+                    <option value="returned">คืนแล้ว (อุปกรณ์)</option>
+                    <option value="pending">รออนุมัติ / รอชำระเงิน</option>
+                    <option value="cancelled">ยกเลิก</option>
+                `;
+            }
+
+            // กรองข้อมูลทันทีที่เปลี่ยนหมวดหมู่หลัก
+            applyFilters();
+        }
+
         // กรองข้อมูลทั้งหมดจาก array ที่เตรียมไว้แล้ว
         function applyFilters() {
             const search = document.getElementById('filterSearch').value.toLowerCase();
             const court = document.getElementById('filterCourt').value;
             const status = document.getElementById('filterStatus').value;
             const date = document.getElementById('filterDate').value;
+            const subName = document.getElementById('filterSubSelect').value;
 
             const filtered = allBookings.filter(b => {
                 const matchSearch = !search || 
@@ -686,7 +786,18 @@
                     (b.user_email && b.user_email.toLowerCase().includes(search)) ||
                     (String(b.id).includes(search));
                 
-                const matchCourt = !court || (b.court_name && b.court_name.includes(court));
+                let matchCourt = true;
+                if (court === 'ยืม') {
+                    matchCourt = b.court_name && b.court_name.includes('ยืม:');
+                    if (matchCourt && subName) {
+                        matchCourt = b.court_name.includes(subName);
+                    }
+                } else if (court === 'สนาม') {
+                    matchCourt = b.court_name && !b.court_name.includes('ยืม:');
+                    if (matchCourt && subName) {
+                        matchCourt = b.court_name.includes(subName);
+                    }
+                }
                 
                 const matchStatus = !status || b.status === status;
                 
