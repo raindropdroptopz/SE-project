@@ -741,6 +741,61 @@ router.get('/equipment-borrows', authenticateAdmin, async (req, res) => {
 });
 
 // ===============================================
+// PUT /api/admin/equipment-borrows/:id/return - รับคืนอุปกรณ์
+// ===============================================
+router.put('/equipment-borrows/:id/return', authenticateAdmin, async (req, res) => {
+    try {
+        const borrowId = req.params.id;
+
+        // ค้นหารายการยืม
+        const [borrows] = await db.execute(
+            "SELECT * FROM equipment_bookings WHERE id = ?",
+            [borrowId]
+        );
+
+        if (borrows.length === 0) {
+            return res.status(404).json({ success: false, message: "ไม่พบรายการยืม" });
+        }
+
+        const borrow = borrows[0];
+
+        if (borrow.status === 'returned') {
+            return res.status(400).json({ success: false, message: "รายการนี้ถูกรับคืนไปแล้ว" });
+        }
+
+        // อัปเดตสถานะการยืม
+        await db.execute(
+            "UPDATE equipment_bookings SET status = ?, actual_return_date = CURDATE() WHERE id = ?",
+            ["returned", borrowId]
+        );
+
+        // อัปเดตจำนวนอุปกรณ์
+        const [equipment] = await db.execute(
+            "SELECT * FROM equipment WHERE id = ?",
+            [borrow.equipment_id]
+        );
+
+        if (equipment.length > 0) {
+            const item = equipment[0];
+            const newAvailable = item.available + borrow.quantity;
+            let newStatus = "available";
+            if (newAvailable <= 2) newStatus = "low";
+
+            await db.execute(
+                "UPDATE equipment SET available = ?, status = ? WHERE id = ?",
+                [newAvailable, newStatus, borrow.equipment_id]
+            );
+        }
+
+        res.json({ success: true, message: "รับคืนอุปกรณ์สำเร็จ" });
+
+    } catch (error) {
+        console.error("Return equipment error:", error);
+        res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการรับคืนอุปกรณ์" });
+    }
+});
+
+// ===============================================
 // POST /api/admin/equipment - เพิ่มอุปกรณ์ใหม่
 // ===============================================
 router.post('/equipment', authenticateAdmin, async (req, res) => {

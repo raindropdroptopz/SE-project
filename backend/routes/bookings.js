@@ -195,6 +195,35 @@ router.get('/my', authenticateToken, async (req, res) => {
             ORDER BY b.booking_date DESC, b.start_time ASC
         `, [req.user.userId]);
 
+        if (bookings.length > 0) {
+            const bookingIds = bookings.map(b => b.id);
+            const placeholders = bookingIds.map(() => '?').join(',');
+            const [equipmentBookings] = await db.execute(`
+                SELECT eb.*, e.name 
+                FROM equipment_bookings eb
+                JOIN equipment e ON eb.equipment_id = e.id
+                WHERE eb.booking_id IN (${placeholders})
+            `, bookingIds);
+
+            // Group equipment by booking_id
+            const equipMap = {};
+            equipmentBookings.forEach(eq => {
+                if (!equipMap[eq.booking_id]) {
+                    equipMap[eq.booking_id] = [];
+                }
+                equipMap[eq.booking_id].push({
+                    id: eq.equipment_id,
+                    name: eq.name,
+                    quantity: eq.quantity,
+                    status: eq.status
+                });
+            });
+
+            bookings.forEach(b => {
+                b.equipments = equipMap[b.id] || [];
+            });
+        }
+
         res.json({ success: true, bookings });
 
     } catch (error) {
@@ -254,7 +283,19 @@ router.put('/:id', authenticateToken, async (req, res) => {
             }
         }
 
-        // 2. (ลบส่วนคืนสต็อกด้วย booking_id ออก เพราะไม่มีฟิลด์นี้ในฐานข้อมูลจริง)
+        // 2. คืนสต็อกอุปกรณ์เก่าที่เชื่อมกับการจองนี้
+        const [oldEquipBookings] = await connection.execute('SELECT id, equipment_id, quantity FROM equipment_bookings WHERE booking_id = ?', [bookingId]);
+        for (const oldEq of oldEquipBookings) {
+            const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ? FOR UPDATE', [oldEq.equipment_id]);
+            if (eqRows.length > 0) {
+                let newAvailable = eqRows[0].available + oldEq.quantity;
+                let newStatus = 'available';
+                if (newAvailable <= 2) newStatus = 'low';
+                await connection.execute('UPDATE equipment SET available = ?, status = ? WHERE id = ?', [newAvailable, newStatus, oldEq.equipment_id]);
+            }
+        }
+        // ลบ equipment_bookings เดิมทิ้งเพื่อสร้างใหม่ (Clean reset)
+        await connection.execute('DELETE FROM equipment_bookings WHERE booking_id = ?', [bookingId]);
 
         // 3. ตรวจสอบสต็อกอุปกรณ์ใหม่ & จัดการ note
         let finalNote = note || '';
@@ -275,9 +316,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
         if (equipments && Array.isArray(equipments) && equipments.length > 0) {
             for (const item of equipments) {
                 await connection.execute(`
-                    INSERT INTO equipment_bookings (user_id, equipment_id, quantity, borrow_date, return_date, status)
-                    VALUES (?, ?, ?, ?, ?, 'pending')
-                `, [req.user.userId, item.id, item.quantity, newBookingDate, newBookingDate]);
+                    INSERT INTO equipment_bookings (user_id, equipment_id, booking_id, quantity, borrow_date, return_date, status)
+                    VALUES (?, ?, ?, ?, ?, ?, 'pending')
+                `, [req.user.userId, item.id, bookingId, item.quantity, newBookingDate, newBookingDate]);
 
                 const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ?', [item.id]);
                 if (eqRows.length > 0) {
@@ -394,9 +435,9 @@ router.post('/', upload.single('payment_slip'), async (req, res) => {
             for (const item of equipments) {
                 // insert
                 await connection.execute(`
-                    INSERT INTO equipment_bookings (user_id, equipment_id, quantity, borrow_date, return_date, status)
-                    VALUES (?, ?, ?, ?, ?, 'pending')
-                `, [userId, item.id, item.quantity, booking_date, booking_date]);
+                    INSERT INTO equipment_bookings (user_id, equipment_id, booking_id, quantity, borrow_date, return_date, status)
+                    VALUES (?, ?, ?, ?, ?, ?, 'pending')
+                `, [userId, item.id, result.insertId, item.quantity, booking_date, booking_date]);
 
                 // update equipment table stock (we already ensured it has enough and locked the row above)
                 const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ?', [item.id]);
@@ -546,9 +587,9 @@ router.post('/with-payment', authenticateToken, upload.single('slip'), async (re
         if (equipments && Array.isArray(equipments) && equipments.length > 0) {
             for (const item of equipments) {
                 await connection.execute(`
-                    INSERT INTO equipment_bookings (user_id, equipment_id, quantity, borrow_date, return_date, status)
-                    VALUES (?, ?, ?, ?, ?, 'pending')
-                `, [userId, item.id, item.quantity, booking_date, booking_date]);
+                    INSERT INTO equipment_bookings (user_id, equipment_id, booking_id, quantity, borrow_date, return_date, status)
+                    VALUES (?, ?, ?, ?, ?, ?, 'pending')
+                `, [userId, item.id, bookingId, item.quantity, booking_date, booking_date]);
 
                 const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ?', [item.id]);
                 if (eqRows.length > 0) {
@@ -631,7 +672,17 @@ router.put('/:id/cancel', authenticateToken, async (req, res) => {
             return res.status(404).json({ success: false, message: 'ไม่พบการจอง' });
         }
 
-        // 1. (ยกเลิกการคืนสต็อกอุปกรณ์ด้วย booking_id เพราะไม่มีฟิลด์นี้ในฐานข้อมูลจริง)
+        // 1. คืนสต็อกอุปกรณ์ก่อนที่จะลบการจอง
+        const [oldEquipBookings] = await db.execute('SELECT equipment_id, quantity FROM equipment_bookings WHERE booking_id = ?', [bookingId]);
+        for (const oldEq of oldEquipBookings) {
+            const [eqRows] = await db.execute('SELECT * FROM equipment WHERE id = ?', [oldEq.equipment_id]);
+            if (eqRows.length > 0) {
+                let newAvailable = eqRows[0].available + oldEq.quantity;
+                let newStatus = 'available';
+                if (newAvailable <= 2) newStatus = 'low';
+                await db.execute('UPDATE equipment SET available = ?, status = ? WHERE id = ?', [newAvailable, newStatus, oldEq.equipment_id]);
+            }
+        }
 
         // 2. ลบออกไปจาก database เลยตาม request ของ user (อุปกรณ์จะถูกลบตามเพราะ CASCADE DELETE)
         await db.execute(
