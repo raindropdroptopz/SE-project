@@ -477,35 +477,13 @@
       </section>
 
       <div class="container content-container">
-        <div class="filter-card">
-          <div class="row g-3 align-items-end">
-            <div class="col-md-4">
-              <input
-                type="text"
-                class="form-control"
-                placeholder="ค้นหาอุปกรณ์..."
-              />
-            </div>
-            <div class="col-md-3">
-              <select class="form-select">
-                <option value="">ประเภททั้งหมด</option>
-                <option>ลูกบอล</option>
-                <option>ไม้และแร็กเก็ต</option>
-                <option>อุปกรณ์ฝึกซ้อม</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <select class="form-select">
-                <option value="">สถานะทั้งหมด</option>
-                <option>พร้อมให้ยืม</option>
-                <option>เหลือน้อย</option>
-              </select>
-            </div>
-            <div class="col-md-2">
-              <button class="btn-filter w-100">
-                <i class="bi bi-search me-2"></i>ค้นหา
-              </button>
-            </div>
+        <div class="filter-card" style="padding: 15px; border-radius: 15px;">
+          <div class="input-group input-group-lg shadow-sm"
+            style="border-radius: 12px; overflow: hidden; border: 1px solid #e8e8e8;">
+            <span class="input-group-text bg-white border-0 px-4"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="searchEquipmentInput" class="form-control border-0 ps-2"
+              placeholder="ค้นหาอุปกรณ์ (เช่น ลูกบอล, ไม้แบดมินตัน)..."
+              style="box-shadow: none; font-size: 1.1rem;">
           </div>
         </div>
 
@@ -513,7 +491,14 @@
           <!-- Data will be loaded via JavaScript -->
         </div>
 
-        <div class="quick-actions">
+        <!-- No results message -->
+        <div id="noEquipmentMessage" style="display: none; text-align: center; padding: 60px 20px; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); margin-bottom: 30px;">
+          <i class="bi bi-search" style="font-size: 3rem; color: #c0c0c0;"></i>
+          <h4 style="margin-top: 20px; color: #6c7293; font-weight: 600;">ไม่พบอุปกรณ์ที่ต้องการค้นหา</h4>
+          <p style="color: #a4a6b3;">ลองค้นหาด้วยคำอื่น เช่น ลูกบอล, ไม้แบดมินตัน, สายรัดข้อมือ</p>
+        </div>
+
+        <!-- <div class="quick-actions">
           <h5><i class="bi bi-lightning-charge me-2"></i>ลิงก์ด่วน</h5>
           <div class="quick-action-grid">
             <a href="/calendar.html" class="quick-action-btn"
@@ -524,9 +509,9 @@
             >
             <a href="/profile.html" class="quick-action-btn"
               ><i class="bi bi-clock-history"></i><span>ประวัติการยืม</span></a
-            >
+            > -->
           </div>
-        </div>
+        <!-- </div> -->
       </div>
     </main>
 
@@ -661,6 +646,34 @@
       document.addEventListener("DOMContentLoaded", () => {
         loadEquipment();
         updateHeaderButtons();
+
+        // Real-time search
+        const searchInput = document.getElementById("searchEquipmentInput");
+        if (searchInput) {
+          searchInput.addEventListener("input", function () {
+            const searchTerm = this.value.toLowerCase().trim();
+            const cards = document.querySelectorAll(".equipment-card");
+            const noMsg = document.getElementById("noEquipmentMessage");
+            let visibleCount = 0;
+
+            cards.forEach((card) => {
+              const name = card.querySelector(".equipment-name")?.textContent.toLowerCase() || "";
+              const category = card.querySelector(".equipment-category")?.textContent.toLowerCase() || "";
+              const desc = card.querySelector(".equipment-desc")?.textContent.toLowerCase() || "";
+
+              if (!searchTerm || name.includes(searchTerm) || category.includes(searchTerm) || desc.includes(searchTerm)) {
+                card.style.display = "block";
+                visibleCount++;
+              } else {
+                card.style.display = "none";
+              }
+            });
+
+            if (noMsg) {
+              noMsg.style.display = (searchTerm && visibleCount === 0) ? "block" : "none";
+            }
+          });
+        }
       });
     </script>
   </body>

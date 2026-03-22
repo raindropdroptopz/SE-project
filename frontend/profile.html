@@ -810,6 +810,7 @@
                 <div class="modal-body p-4">
                     <form id="editBookingForm">
                         <input type="hidden" id="editBookingId">
+                        <input type="hidden" id="editCourtPrice" value="0">
 
                         <div class="mb-4">
                             <h6 class="fw-bold mb-3"><i class="bi bi-info-circle text-primary me-2"></i>ข้อมูลสนาม</h6>
@@ -834,7 +835,25 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">เวลาสิ้นสุด</label>
-                                <select class="form-select" id="editEndTime" required></select>
+                                <select class="form-select" id="editEndTime" required onchange="updatePriceSummary()"></select>
+                            </div>
+                        </div>
+
+                        <!-- Price Summary -->
+                        <div class="mb-4 p-3 rounded border" id="priceSummaryBox" style="background: #f0f4ff;">
+                            <h6 class="fw-bold mb-2"><i class="bi bi-calculator text-primary me-2"></i>สรุปค่าใช้จ่าย</h6>
+                            <div class="d-flex justify-content-between">
+                                <span>ค่าสนาม (<span id="summaryHours">0</span> ชม. × ฿<span id="summaryCourtRate">0</span>):</span>
+                                <strong>฿<span id="summaryCourtCost">0</span></strong>
+                            </div>
+                            <div class="d-flex justify-content-between" id="shuttlecockRow" style="display:none !important;">
+                                <span>ลูกขนไก่ (<span id="summaryScHours">0</span> ชม. × ฿300):</span>
+                                <strong>฿<span id="summaryScCost">0</span></strong>
+                            </div>
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between fw-bold fs-5">
+                                <span>รวมทั้งสิ้น:</span>
+                                <span class="text-primary">฿<span id="summaryTotal">0</span></span>
                             </div>
                         </div>
 
@@ -853,6 +872,16 @@
                                     class="bi bi-pencil-fill text-primary me-2"></i>หมายเหตุเพิ่มเติม</label>
                             <textarea class="form-control" id="editNote" rows="2"
                                 placeholder="เช่น ขอตาข่ายเพิ่ม..."></textarea>
+                        </div>
+
+                        <!-- Mandatory Slip Upload -->
+                        <div class="mb-3 p-3 rounded border" style="background: #fff8e1; border-color: #ffc107 !important;">
+                            <label class="form-label fw-bold"><i class="bi bi-receipt text-warning me-2"></i>แนบสลิปการชำระเงิน <span class="text-danger">*จำเป็น</span></label>
+                            <input type="file" class="form-control" id="editSlipFile" accept="image/*,.pdf" required>
+                            <small class="text-muted d-block mt-1"><i class="bi bi-info-circle me-1"></i>กรุณาแนบสลิปโอนเงินตามยอดรวมข้างต้นทุกครั้งที่แก้ไขการจอง</small>
+                            <div id="slipPreviewContainer" class="mt-2" style="display:none;">
+                                <img id="slipPreviewImg" src="" alt="slip preview" style="max-height:120px; border-radius:8px; border:1px solid #ddd;">
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -1009,6 +1038,20 @@
 
             // จัดการเปิด/ปิด Modal และเซฟข้อมูลการแก้ไข
             document.getElementById('saveEditBookingBtn').addEventListener('click', saveEditBooking);
+
+            // Slip preview
+            document.getElementById('editSlipFile').addEventListener('change', function () {
+                const file = this.files[0];
+                const container = document.getElementById('slipPreviewContainer');
+                const img = document.getElementById('slipPreviewImg');
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = e => { img.src = e.target.result; container.style.display = 'block'; };
+                    reader.readAsDataURL(file);
+                } else {
+                    container.style.display = 'none';
+                }
+            });
         });
 
         // ---------------- Variables -----------------
@@ -1105,60 +1148,127 @@
 
             document.getElementById('editBookingId').value = booking.id;
             document.getElementById('editCourtName').textContent = booking.court_name;
-            
+            document.getElementById('editSlipFile').value = '';
+            document.getElementById('slipPreviewContainer').style.display = 'none';
+
+            // โหลดราคาสนาม + เวลาเปิด/ปิดจาก API
+            let courtPrice = 0;
+            let courtOpenTime = '08:00';
+            let courtCloseTime = '22:00';
+            try {
+                const courtRes = await fetch('/api/bookings/courts?_t=' + Date.now(), {
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                });
+                const courtData = await courtRes.json();
+                if (courtData.success) {
+                    const matchedCourt = courtData.courts.find(c => c.name === booking.court_name);
+                    if (matchedCourt) {
+                        courtPrice = matchedCourt.price || 0;
+                        courtOpenTime = (matchedCourt.open_time || '08:00:00').substring(0, 5);
+                        courtCloseTime = (matchedCourt.close_time || '22:00:00').substring(0, 5);
+                    }
+                }
+            } catch(e) { console.warn('Court fetch failed, using fallback times', e); }
+            document.getElementById('editCourtPrice').value = courtPrice;
+            document.getElementById('summaryCourtRate').textContent = courtPrice;
+
             // ตั้งค่าวันที่เดิมใน Input
             const bookingDate = new Date(booking.booking_date);
             const formattedDate = bookingDate.toISOString().split('T')[0];
             document.getElementById('editBookingDateInput').value = formattedDate;
             document.getElementById('editBookingDateInput').min = new Date().toISOString().split('T')[0];
 
-            // Populate Time Slots
-            const allTimeSlots = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+            // แปลงสตริง HH:MM เป็นนาที (00:00 = 1440 = เที่ยงคืน)
+            const toMinutes = t => {
+                const [h, m] = t.split(':').map(Number);
+                return (h === 0 ? 24 : h) * 60 + (m || 0);
+            };
+            const closeMin = toMinutes(courtCloseTime);
+            const openMin  = toMinutes(courtOpenTime);
+
+            // สร้าง time slots ทุก 1 ชม. ระหว่าง open-close
+            function generateSlots(openM, closeM) {
+                const slots = [];
+                for (let m = openM; m <= closeM; m += 60) {
+                    const h = m / 60 === 24 ? 0 : m / 60;
+                    slots.push(String(h).padStart(2, '0') + ':00');
+                }
+                return slots;
+            }
+            const allTimeSlots = generateSlots(openMin, closeMin);
+
+            const currentStart = booking.start_time.substring(0, 5); // HH:MM
+            const currentEnd   = booking.end_time.substring(0, 5);
+
             const startSelect = document.getElementById('editStartTime');
-            const endSelect = document.getElementById('editEndTime');
+            const endSelect   = document.getElementById('editEndTime');
+
+            // ฟังก์ชันเติม endTime ให้เฉพาะหลัง startTime ที่เลือก (numeric comparison)
+            function refreshEndTimeSlots() {
+                const selStartMin = toMinutes(startSelect.value.substring(0, 5));
+                endSelect.innerHTML = '';
+                allTimeSlots.forEach(t => {
+                    const tMin = toMinutes(t);
+                    if (tMin > selStartMin && tMin <= closeMin) {
+                        const opt = document.createElement('option');
+                        opt.value = t + ':00';
+                        opt.text  = t;
+                        if (t === currentEnd) opt.selected = true;
+                        endSelect.appendChild(opt);
+                    }
+                });
+                updatePriceSummary();
+            }
+
+            // เติม startTime (ทุก slot ยกเว้นเวลาปิด)
             startSelect.innerHTML = '';
-            endSelect.innerHTML = '';
-
-            allTimeSlots.forEach(time => {
-                const optA = document.createElement('option');
-                optA.value = time + ':00'; optA.text = time;
-                if (time + ':00' === booking.start_time) optA.selected = true;
-                startSelect.appendChild(optA);
-
-                const optB = document.createElement('option');
-                optB.value = time + ':00'; optB.text = time;
-                if (time + ':00' === booking.end_time) optB.selected = true;
-                endSelect.appendChild(optB);
+            allTimeSlots.forEach(t => {
+                const tMin = toMinutes(t);
+                if (tMin < closeMin) {   // start ต้องน้อยกว่าเวลาปิด
+                    const opt = document.createElement('option');
+                    opt.value = t + ':00';
+                    opt.text  = t;
+                    if (t === currentStart) opt.selected = true;
+                    startSelect.appendChild(opt);
+                }
             });
+
+            // เมื่อ startTime เปลี่ยนให้ refresh endTime
+            startSelect.onchange = refreshEndTimeSlots;
+
+            // เติม endTime ครั้งแรก
+            refreshEndTimeSlots();
+
 
             // Populate Equipment
             if (globalEquipment.length === 0) await fetchAllEquipment();
             const eqContainer = document.getElementById('editEquipmentList');
             eqContainer.innerHTML = '';
 
-            // booking.equipments => [{id:1, name:'A', quantity:2}, ...]
             globalEquipment.forEach(eq => {
                 const existing = (booking.equipments || []).find(e => e.id === eq.id);
                 const isChecked = existing ? 'checked' : '';
                 const qty = existing ? existing.quantity : 1;
-                // Add the old quantity to available so user can pick the same amount they already had without hitting "not enough stock" easily on client-side UI
                 const totalAvailForUserContext = eq.available + (existing ? existing.quantity : 0);
+                const isShuttlecock = eq.name.includes('ขนไก่') || eq.name.toLowerCase().includes('shuttlecock');
+                const shuttlecockNote = isShuttlecock ? ' <span class="badge bg-warning text-dark">฿300/ชม.</span>' : '';
 
                 if (totalAvailForUserContext > 0) {
                     eqContainer.innerHTML += `
                         <div class="d-flex align-items-center justify-content-between border-bottom pb-2">
                             <div class="form-check">
-                                <input class="form-check-input edit-eq-check" type="checkbox" id="edit_eq_${eq.id}" value="${eq.id}" ${isChecked} onchange="toggleEditEqQty(${eq.id})">
-                                <label class="form-check-label" for="edit_eq_${eq.id}">${eq.name} (มีสูงสุด ${totalAvailForUserContext})</label>
+                                <input class="form-check-input edit-eq-check" type="checkbox" id="edit_eq_${eq.id}" value="${eq.id}" data-shuttlecock="${isShuttlecock}" ${isChecked} onchange="toggleEditEqQty(${eq.id}); updatePriceSummary();">
+                                <label class="form-check-label" for="edit_eq_${eq.id}">${eq.name} (มีสูงสุด ${totalAvailForUserContext})${shuttlecockNote}</label>
                             </div>
-                            <input type="number" id="edit_qty_${eq.id}" min="1" max="${totalAvailForUserContext}" value="${qty}" class="form-control form-control-sm text-center" style="width: 70px; display: ${isChecked ? 'block' : 'none'};">
+                            <input type="number" id="edit_qty_${eq.id}" min="1" max="${totalAvailForUserContext}" value="${qty}" class="form-control form-control-sm text-center" style="width: 70px; display: ${isChecked ? 'block' : 'none'};" onchange="updatePriceSummary()">
                         </div>
                     `;
                 }
             });
 
-            // Note extracting roughly from original string or just empty
             document.getElementById('editNote').value = booking.note ? booking.note.split(' | อุปกรณ์ที่ยืม:')[0] : '';
+
+            updatePriceSummary();
 
             const modal = new bootstrap.Modal(document.getElementById('editBookingModal'));
             modal.show();
@@ -1172,6 +1282,47 @@
             }
         };
 
+        // คำนวณราคาแบบ real-time
+        window.updatePriceSummary = function () {
+            const startTime = document.getElementById('editStartTime').value;
+            const endTime = document.getElementById('editEndTime').value;
+            if (!startTime || !endTime) return;
+
+            const startMins = parseInt(startTime) * 60 + parseInt(startTime.split(':')[1] || 0);
+            const endMins = parseInt(endTime) * 60 + parseInt(endTime.split(':')[1] || 0);
+
+            // Parse hours from HH:MM:SS string
+            const toMins = t => { const p = t.split(':'); return parseInt(p[0]) * 60 + parseInt(p[1] || 0); };
+            const hours = Math.max(0, (toMins(endTime) - toMins(startTime)) / 60);
+
+            const courtRate = parseFloat(document.getElementById('editCourtPrice').value) || 0;
+            const courtCost = Math.round(courtRate * hours);
+
+            // ตรวจสอบว่าเลือกลูกขนไก่ไหม
+            let shuttlecockCost = 0;
+            let hasShuttlecock = false;
+            document.querySelectorAll('.edit-eq-check:checked').forEach(chk => {
+                if (chk.dataset.shuttlecock === 'true') {
+                    hasShuttlecock = true;
+                    shuttlecockCost = Math.round(300 * hours);
+                }
+            });
+
+            document.getElementById('summaryHours').textContent = hours.toFixed(1);
+            document.getElementById('summaryCourtCost').textContent = courtCost.toLocaleString();
+
+            const scRow = document.getElementById('shuttlecockRow');
+            if (hasShuttlecock) {
+                scRow.style.display = 'flex';
+                document.getElementById('summaryScHours').textContent = hours.toFixed(1);
+                document.getElementById('summaryScCost').textContent = shuttlecockCost.toLocaleString();
+            } else {
+                scRow.style.display = 'none';
+            }
+
+            document.getElementById('summaryTotal').textContent = (courtCost + shuttlecockCost).toLocaleString();
+        };
+
         async function saveEditBooking() {
             const bookingId = document.getElementById('editBookingId').value;
             const token = localStorage.getItem('userToken');
@@ -1179,6 +1330,7 @@
             const startTime = document.getElementById('editStartTime').value;
             const endTime = document.getElementById('editEndTime').value;
             const note = document.getElementById('editNote').value;
+            const slipFile = document.getElementById('editSlipFile').files[0];
 
             if (!bookingDate) {
                 alert('กรุณาเลือกวันที่จอง');
@@ -1190,25 +1342,39 @@
                 return;
             }
 
+            if (!slipFile) {
+                alert('กรุณาแนบสลิปการชำระเงินก่อนบันทึก');
+                document.getElementById('editSlipFile').focus();
+                return;
+            }
+
+            // คำนวณชั่วโมงสำหรับส่ง isShuttlecock flag
+            const toMins = t => { const p = t.split(':'); return parseInt(p[0]) * 60 + parseInt(p[1] || 0); };
+            const hours = Math.max(0, (toMins(endTime) - toMins(startTime)) / 60);
+
             const selectedEquipments = [];
             document.querySelectorAll('.edit-eq-check:checked').forEach(chk => {
                 const id = parseInt(chk.value);
                 const qtyInput = document.getElementById('edit_qty_' + id);
                 const nameLabel = chk.nextElementSibling.innerText.split(' (')[0];
+                const isShuttlecock = chk.dataset.shuttlecock === 'true';
                 selectedEquipments.push({
                     id: id,
                     name: nameLabel,
-                    quantity: parseInt(qtyInput.value) || 1
+                    quantity: parseInt(qtyInput.value) || 1,
+                    isShuttlecock: isShuttlecock,
+                    hours: hours
                 });
             });
 
-            const payload = {
-                booking_date: bookingDate,
-                start_time: startTime,
-                end_time: endTime,
-                note: note,
-                equipments: selectedEquipments
-            };
+            // ส่งเป็น FormData (เพื่อแนบไฟล์สลิป)
+            const formData = new FormData();
+            formData.append('booking_date', bookingDate);
+            formData.append('start_time', startTime);
+            formData.append('end_time', endTime);
+            formData.append('note', note);
+            formData.append('equipments', JSON.stringify(selectedEquipments));
+            formData.append('payment_slip', slipFile);
 
             const btn = document.getElementById('saveEditBookingBtn');
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...';
@@ -1217,18 +1383,16 @@
             try {
                 const response = await fetch('/api/bookings/' + bookingId, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(payload)
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
                 });
 
                 const result = await response.json();
                 if (result.success) {
-                    alert('บันทึกการแก้ไขเรียบร้อยแล้ว');
+                    const totalTxt = result.totalAmount ? ` (ยอดรวม ฿${result.totalAmount.toLocaleString()})` : '';
+                    alert('บันทึกการแก้ไขเรียบร้อยแล้ว' + totalTxt + '\nกรุณารอผู้ดูแลระบบยืนยัน');
                     bootstrap.Modal.getInstance(document.getElementById('editBookingModal')).hide();
-                    await fetchMyBookings(); // refresh UI
+                    await fetchMyBookings();
                 } else {
                     alert(result.message || 'บันทึกไม่สำเร็จ');
                 }

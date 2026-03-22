@@ -233,20 +233,30 @@ router.get('/my', authenticateToken, async (req, res) => {
 });
 
 // ===============================================
-// PUT /api/bookings/:id - แก้ไขการจอง (วันที่ เวลา และอุปกรณ์)
+// PUT /api/bookings/:id - แก้ไขการจอง (รับ multipart/form-data พร้อมสลิป)
 // ===============================================
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, upload.single('payment_slip'), async (req, res) => {
     let connection;
     try {
         const bookingId = req.params.id;
-        const { booking_date, start_time, end_time, note, equipments } = req.body;
+        const { booking_date, start_time, end_time, note, equipments: equipmentsRaw } = req.body;
+        let equipments = [];
+        if (equipmentsRaw) {
+            try { equipments = JSON.parse(equipmentsRaw); } catch(e) {}
+        }
+        const slipUrl = req.file ? '/uploads/receipts/' + req.file.filename : null;
+
+        // --- บังคับต้องแนบสลิป ---
+        if (!slipUrl) {
+            return res.status(400).json({ success: false, message: 'กรุณาแนบสลิปการชำระเงินก่อนบันทึก' });
+        }
 
         connection = await db.getConnection();
         await connection.beginTransaction();
 
         // Lock the booking row
         const [bookings] = await connection.execute(
-            'SELECT * FROM bookings WHERE id = ? AND user_id = ? AND status != "cancelled" FOR UPDATE',
+            'SELECT b.*, c.price as court_price FROM bookings b JOIN courts c ON b.court_id = c.id WHERE b.id = ? AND b.user_id = ? AND b.status != "cancelled" FOR UPDATE',
             [bookingId, req.user.userId]
         );
 
@@ -257,62 +267,57 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
         const booking = bookings[0];
         const newBookingDate = booking_date || booking.booking_date;
+        const courtPriceRate = booking.court_price || 0;
 
-        // 1. ตรวจสอบเวลาว่าง (ถ้ามีการเปลี่ยนเวลาหรือวันที่)
+        // 1. ตรวจสอบเวลาว่าง
         if (newBookingDate !== booking.booking_date || start_time !== booking.start_time || end_time !== booking.end_time) {
             const [existingBookings] = await connection.execute(`
                 SELECT id FROM bookings 
-                WHERE court_id = ? 
-                AND booking_date = ? 
-                AND id != ?
-                AND status != 'cancelled'
+                WHERE court_id = ? AND booking_date = ? AND id != ? AND status != 'cancelled'
                 AND (
                     (start_time <= ? AND end_time > ?) OR
                     (start_time < ? AND end_time >= ?) OR
                     (start_time >= ? AND end_time <= ?)
-                )
-                FOR UPDATE
+                ) FOR UPDATE
             `, [booking.court_id, newBookingDate, bookingId, start_time, start_time, end_time, end_time, start_time, end_time]);
 
             if (existingBookings.length > 0) {
                 await connection.rollback();
-                return res.status(400).json({
-                    success: false,
-                    message: 'ช่วงเวลานี้ถูกจองแล้ว กรุณาเลือกเวลาอื่น'
-                });
+                return res.status(400).json({ success: false, message: 'ช่วงเวลานี้ถูกจองแล้ว กรุณาเลือกเวลาอื่น' });
             }
         }
 
-        // 2. คืนสต็อกอุปกรณ์เก่าที่เชื่อมกับการจองนี้
+        // 2. คืนสต็อกอุปกรณ์เก่า
         const [oldEquipBookings] = await connection.execute('SELECT id, equipment_id, quantity FROM equipment_bookings WHERE booking_id = ?', [bookingId]);
         for (const oldEq of oldEquipBookings) {
             const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ? FOR UPDATE', [oldEq.equipment_id]);
             if (eqRows.length > 0) {
                 let newAvailable = eqRows[0].available + oldEq.quantity;
-                let newStatus = 'available';
-                if (newAvailable <= 2) newStatus = 'low';
+                let newStatus = newAvailable <= 2 ? 'low' : 'available';
                 await connection.execute('UPDATE equipment SET available = ?, status = ? WHERE id = ?', [newAvailable, newStatus, oldEq.equipment_id]);
             }
         }
-        // ลบ equipment_bookings เดิมทิ้งเพื่อสร้างใหม่ (Clean reset)
         await connection.execute('DELETE FROM equipment_bookings WHERE booking_id = ?', [bookingId]);
 
-        // 3. ตรวจสอบสต็อกอุปกรณ์ใหม่ & จัดการ note
+        // 3. ตรวจสอบสต็อกอุปกรณ์ใหม่
         let finalNote = note || '';
+        const shuttlecockPricePerHour = 300;
+        let shuttlecockHours = 0;
         if (equipments && Array.isArray(equipments) && equipments.length > 0) {
             for (const item of equipments) {
-                // Check stock with FOR UPDATE lock
                 const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ? FOR UPDATE', [item.id]);
                 if (eqRows.length === 0 || eqRows[0].available < item.quantity) {
                     await connection.rollback();
                     return res.status(400).json({ success: false, message: `อุปกรณ์ ${item.name} มีจำนวนไม่เพียงพอ` });
                 }
+                // ตรวจสอบว่าเป็นลูกขนไก่ไหม
+                if (item.isShuttlecock) shuttlecockHours = item.hours || 0;
             }
             const eqText = 'อุปกรณ์ที่ยืมเพิ่มเติม: ' + equipments.map(e => `${e.name} (${e.quantity})`).join(', ');
             finalNote = finalNote ? `${finalNote} | ${eqText}` : eqText;
         }
 
-        // 4. บันทึกข้อมูลการเปลี่ยนแปลงอุปกรณ์ใหม่ลง DB
+        // 4. Insert equipment_bookings ใหม่
         if (equipments && Array.isArray(equipments) && equipments.length > 0) {
             for (const item of equipments) {
                 await connection.execute(`
@@ -322,24 +327,65 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
                 const [eqRows] = await connection.execute('SELECT available FROM equipment WHERE id = ?', [item.id]);
                 if (eqRows.length > 0) {
-                    let newAvailable = eqRows[0].available - item.quantity;
-                    let newStatus = 'available';
-                    if (newAvailable === 0) newStatus = 'out';
-                    else if (newAvailable <= 2) newStatus = 'low';
-                    await connection.execute('UPDATE equipment SET available = ?, status = ? WHERE id = ?', [newAvailable, newStatus, item.id]);
+                    let newAvail = eqRows[0].available - item.quantity;
+                    let newStatus = newAvail === 0 ? 'out' : newAvail <= 2 ? 'low' : 'available';
+                    await connection.execute('UPDATE equipment SET available = ?, status = ? WHERE id = ?', [newAvail, newStatus, item.id]);
                 }
             }
         }
 
-        // 5. อัปเดตข้อมูลตารางการจอง (เปลี่ยนสถานะกลับเป็น pending ให้ admin รับทราบ)
+        // 5. คำนวณค่าใช้จ่ายเพิ่มเติม (ค่าสนาม + ลูกขนไก่ถ้ามี)
+        const startParts = start_time.split(':').map(Number);
+        const endParts = end_time.split(':').map(Number);
+        const startMins = startParts[0] * 60 + (startParts[1] || 0);
+        const endMins = endParts[0] * 60 + (endParts[1] || 0);
+        const newHours = parseFloat(((endMins - startMins) / 60).toFixed(1));
+        const courtSubtotal = Math.round(courtPriceRate * newHours);
+        const shuttlecockSubtotal = Math.round(shuttlecockPricePerHour * newHours);
+
+        // คำนวณค่าอุปกรณ์อื่น
+        let equipmentSubtotal = shuttlecockSubtotal;
+        const paymentItemRows = [];
+        if (equipments && equipments.length > 0) {
+            for (const item of equipments) {
+                const [eqPriceRows] = await connection.execute('SELECT price, name FROM equipment WHERE id = ?', [item.id]);
+                const unitPrice = item.isShuttlecock ? shuttlecockPricePerHour : (eqPriceRows.length > 0 ? (eqPriceRows[0].price || 0) : 0);
+                const qty = item.isShuttlecock ? newHours : item.quantity;
+                const itemSub = item.isShuttlecock ? shuttlecockSubtotal : Math.round(unitPrice * item.quantity);
+                if (!item.isShuttlecock) equipmentSubtotal += itemSub;
+                paymentItemRows.push({ id: item.id, name: item.name, unit_price: unitPrice, quantity: qty, subtotal: itemSub });
+            }
+        }
+        const totalAmount = courtSubtotal + equipmentSubtotal;
+
+        // 6. บันทึก payment record สำหรับการต่อเวลา
+        const [payResult] = await connection.execute(`
+            INSERT INTO payments (booking_id, user_id, court_price_rate, court_hours, court_subtotal, equipment_subtotal, total_amount, payment_slip, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+        `, [bookingId, req.user.userId, courtPriceRate, newHours, courtSubtotal, equipmentSubtotal, totalAmount, slipUrl]);
+
+        for (const pi of paymentItemRows) {
+            await connection.execute(`
+                INSERT INTO payment_items (payment_id, equipment_id, equipment_name, unit_price, quantity, subtotal)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `, [payResult.insertId, pi.id, pi.name, pi.unit_price, pi.quantity, pi.subtotal]);
+        }
+
+        // 7. อัปเดตการจอง (status กลับเป็น pending ให้ admin รับทราบ)
         await connection.execute(
-            'UPDATE bookings SET booking_date = ?, start_time = ?, end_time = ?, note = ?, status = ? WHERE id = ?',
-            [newBookingDate, start_time, end_time, finalNote || null, 'pending', bookingId]
+            'UPDATE bookings SET booking_date = ?, start_time = ?, end_time = ?, note = ?, status = ?, payment_slip = ? WHERE id = ?',
+            [newBookingDate, start_time, end_time, finalNote || null, 'pending', slipUrl, bookingId]
         );
 
         await connection.commit();
 
-        res.json({ success: true, message: 'แก้ไขการจองสำเร็จ กรุณารอผู้ดูแลระบบยืนยันอีกครั้ง' });
+        res.json({
+            success: true,
+            message: 'แก้ไขการจองสำเร็จ กรุณารอผู้ดูแลระบบยืนยันอีกครั้ง',
+            totalAmount,
+            courtSubtotal,
+            equipmentSubtotal
+        });
 
     } catch (error) {
         if (connection) await connection.rollback();
