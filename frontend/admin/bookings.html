@@ -356,22 +356,23 @@
 
         <div class="content-card">
             <div class="filter-bar">
-                <input type="text" class="form-control" placeholder="ค้นหาชื่อผู้จอง..." style="max-width:250px;">
-                <select class="form-select" style="max-width:180px;">
-                    <option value="">สนามทั้งหมด</option>
-                    <option>สนามฟุตบอล</option>
-                    <option>สนามบาสเกตบอล</option>
-                    <option>สนามเทนนิส</option>
-                    <option>สนามแบดมินตัน</option>
+                <input type="text" id="filterSearch" class="form-control" placeholder="ค้นหาชื่อผู้จอง อีเมล รูปแบบ..." style="max-width:250px;">
+                <select id="filterCourt" class="form-select" style="max-width:180px;">
+                    <option value="">สนามและอุปกรณ์ทั้งหมด</option>
+                    <option value="สนามฟุตบอล">สนามฟุตบอล</option>
+                    <option value="สนามบาสเกตบอล">สนามบาสเกตบอล</option>
+                    <option value="สนามเทนนิส">สนามเทนนิส</option>
+                    <option value="สนามแบดมินตัน">สนามแบดมินตัน</option>
+                    <option value="ยืม">ยืมอุปกรณ์กีฬา</option>
                 </select>
-                <select class="form-select" style="max-width:150px;">
+                <select id="filterStatus" class="form-select" style="max-width:150px;">
                     <option value="">สถานะทั้งหมด</option>
-                    <option>ยืนยันแล้ว</option>
-                    <option>รอชำระเงิน</option>
-                    <option>ยกเลิก</option>
+                    <option value="confirmed">ยืนยันแล้ว / สำเร็จ</option>
+                    <option value="pending">รออนุมัติ / รอชำระเงิน</option>
+                    <option value="cancelled">ยกเลิก</option>
                 </select>
-                <input type="date" class="form-control" style="max-width:180px;">
-                <button class="btn-gradient"><i class="bi bi-search"></i></button>
+                <input type="date" id="filterDate" class="form-control" style="max-width:180px;">
+                <button class="btn-gradient" onclick="applyFilters()"><i class="bi bi-search"></i> ค้นหา</button>
             </div>
 
             <table class="table-custom">
@@ -670,6 +671,35 @@
                 console.error('Delete booking error:', error);
                 alert('เกิดข้อผิดพลาดในการลบ');
             }
+        }
+
+        // กรองข้อมูลทั้งหมดจาก array ที่เตรียมไว้แล้ว
+        function applyFilters() {
+            const search = document.getElementById('filterSearch').value.toLowerCase();
+            const court = document.getElementById('filterCourt').value;
+            const status = document.getElementById('filterStatus').value;
+            const date = document.getElementById('filterDate').value;
+
+            const filtered = allBookings.filter(b => {
+                const matchSearch = !search || 
+                    (b.user_name && b.user_name.toLowerCase().includes(search)) || 
+                    (b.user_email && b.user_email.toLowerCase().includes(search)) ||
+                    (String(b.id).includes(search));
+                
+                const matchCourt = !court || (b.court_name && b.court_name.includes(court));
+                
+                const matchStatus = !status || b.status === status;
+                
+                let matchDate = true;
+                if (date) {
+                    const bDate = new Date(b.booking_date).toISOString().split('T')[0];
+                    matchDate = bDate === date;
+                }
+
+                return matchSearch && matchCourt && matchStatus && matchDate;
+            });
+
+            renderBookings(filtered);
         }
 
         // โหลดข้อมูลเมื่อหน้าโหลด
