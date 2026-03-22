@@ -746,15 +746,15 @@
                             </div>
                             <div class="hero-stats">
                                 <div class="stat-item">
-                                    <div class="stat-number">4+</div>
+                                    <div class="stat-number" id="stat-courts">-</div>
                                     <div class="stat-label">สนามกีฬา</div>
                                 </div>
                                 <div class="stat-item">
-                                    <div class="stat-number">50+</div>
+                                    <div class="stat-number" id="stat-equipment">-</div>
                                     <div class="stat-label">อุปกรณ์</div>
                                 </div>
                                 <div class="stat-item">
-                                    <div class="stat-number">2,400+</div>
+                                    <div class="stat-number" id="stat-users">-</div>
                                     <div class="stat-label">ผู้ใช้งาน</div>
                                 </div>
                             </div>
@@ -989,7 +989,27 @@
             }
         }
 
+        // ดึงสถิติจริงจาก database
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('stat-courts').textContent = data.courts + '+';
+                    document.getElementById('stat-equipment').textContent = data.equipment + '+';
+                    document.getElementById('stat-users').textContent = data.users.toLocaleString() + '+';
+                }
+            } catch (err) {
+                // fallback: ถ้า fetch ไม่สำเร็จ แสดงค่าเดิม
+                document.getElementById('stat-courts').textContent = '4+';
+                document.getElementById('stat-equipment').textContent = '50+';
+                document.getElementById('stat-users').textContent = '2,400+';
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('login') === 'success') {
                 localStorage.setItem('isLoggedIn', 'true');
@@ -999,27 +1019,41 @@
             }
 
             const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-            const userName = localStorage.getItem('userName');
             const isAdmin = localStorage.getItem('isAdmin') === 'true';
             const headerButtons = document.getElementById('header-buttons');
 
             if (isLoggedIn && headerButtons) {
-                // Show logged-in menu items in sidebar
                 document.querySelectorAll('.logged-in-menu').forEach(el => el.style.display = 'block');
 
-                let profileLink = '/profile.html';
-                if (isAdmin) {
-                    profileLink = '/admin-dashboard.html';
-                }
+                let profileLink = isAdmin ? '/admin-dashboard.html' : '/profile.html';
 
-                headerButtons.innerHTML = `
-                    <a href="${profileLink}" class="btn btn-outline-primary rounded-pill px-4" style="display:flex; align-items:center;">
-                        <i class="bi bi-person-circle me-1"></i> ${userName || 'โปรไฟล์'}
-                    </a>
-                    <button onclick="handleLogout()" class="btn btn-danger rounded-pill px-4" style="display:flex; align-items:center;">
-                        <i class="bi bi-box-arrow-right me-1"></i> ออกจากระบบ
-                    </button>
-                `;
+                const renderHeader = (name) => {
+                    headerButtons.innerHTML = `
+                        <a href="${profileLink}" class="btn btn-outline-primary rounded-pill px-4" style="display:flex; align-items:center;">
+                            <i class="bi bi-person-circle me-1"></i> ${name || 'โปรไฟล์'}
+                        </a>
+                        <button onclick="handleLogout()" class="btn btn-danger rounded-pill px-4" style="display:flex; align-items:center;">
+                            <i class="bi bi-box-arrow-right me-1"></i> ออกจากระบบ
+                        </button>
+                    `;
+                };
+
+                // แสดงชื่อจาก localStorage ก่อน (ไม่รอ API)
+                renderHeader(localStorage.getItem('userName'));
+
+                // ดึงชื่อจริงจาก API แล้วอัปเดต
+                const token = localStorage.getItem('userToken');
+                if (token) {
+                    fetch('/api/profile', { headers: { 'Authorization': `Bearer ${token}` } })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success && data.user) {
+                                localStorage.setItem('userName', data.user.full_name);
+                                renderHeader(data.user.full_name);
+                            }
+                        })
+                        .catch(() => {});
+                }
             }
         });
     </script>

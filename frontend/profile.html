@@ -624,7 +624,7 @@
                         </div>
                     </div>
 
-                    <!-- Quick Actions -->
+                    <!--Quick Actions -->
                     <div class="content-card">
                         <div class="card-title-custom">
                             <i class="bi bi-lightning-charge"></i>
@@ -951,8 +951,16 @@
             // อัปเดตข้อมูลเบื้องต้น
             document.getElementById('profileForm').addEventListener('submit', async function (e) {
                 e.preventDefault();
+
+                // Clear previous email error
+                const emailInput = document.getElementById('email');
+                const existingEmailErr = document.getElementById('emailErrorMsg');
+                if (existingEmailErr) existingEmailErr.remove();
+                emailInput.style.borderColor = '';
+
                 const updateData = {
                     fullName: document.getElementById('fullName').value,
+                    email: emailInput.value,
                     phone: document.getElementById('phone').value,
                     faculty: document.getElementById('faculty').value,
                     major: document.getElementById('major').value
@@ -968,8 +976,28 @@
                     });
                     const result = await response.json();
                     if (result.success) {
+                        // อัปเดตข้อมูลจาก API response ทันที
+                        if (result.user) {
+                            document.getElementById('displayName').textContent = result.user.full_name;
+                            document.getElementById('fullName').value = result.user.full_name;
+                            document.getElementById('email').value = result.user.email || '';
+                            document.getElementById('phone').value = result.user.phone || '';
+                            document.getElementById('faculty').value = result.user.faculty || '';
+                            document.getElementById('major').value = result.user.major || '';
+                            // อัปเดต localStorage ด้วย
+                            localStorage.setItem('userName', result.user.full_name);
+                            localStorage.setItem('userEmail', result.user.email || '');
+                        }
                         alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
-                        location.reload();
+                    } else if (result.message && result.message.includes('อีเมลนี้มีการใช้แล้ว')) {
+                        // แสดง error ใต้ช่องอีเมล
+                        emailInput.style.borderColor = '#dc3545';
+                        const errEl = document.createElement('small');
+                        errEl.id = 'emailErrorMsg';
+                        errEl.style.cssText = 'color:#dc3545; margin-top:4px; display:block;';
+                        errEl.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>' + result.message;
+                        emailInput.parentNode.appendChild(errEl);
+                        emailInput.focus();
                     } else {
                         alert('เกิดข้อผิดพลาด: ' + result.message);
                     }

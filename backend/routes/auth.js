@@ -169,7 +169,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
         // 1. ดึงข้อมูลพื้นฐานผู้ใช้
         const [users] = await db.execute(
-            'SELECT id, email, full_name, student_id, phone, faculty, major, user_type, role, profile_image, created_at FROM users WHERE id = ?',
+            'SELECT id, email, full_name, student_id, phone, faculty, major, user_type, role, created_at FROM users WHERE id = ?',
             [userId]
         );
 
@@ -204,29 +204,54 @@ router.get('/profile', authenticateToken, async (req, res) => {
 // ===============================================
 // PUT /api/profile - อัปเดตโปรไฟล์
 // ===============================================
-router.put('/profile', async (req, res) => {
+router.put('/profile', authenticateToken, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const userId = req.user.userId;
+        const { fullName, phone, faculty, major, email } = req.body;
 
-        if (!token) {
-            return res.status(401).json({ success: false, message: 'กรุณาเข้าสู่ระบบ' });
+        if (!fullName || fullName.trim() === '') {
+            return res.status(400).json({ success: false, message: 'กรุณากรอกชื่อ-นามสกุล' });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const { fullName, phone, faculty, major } = req.body;
+        // Check email duplicate if email is being changed
+        if (email && email.trim() !== '') {
+            const [emailCheck] = await db.execute(
+                'SELECT id FROM users WHERE email = ? AND id != ?',
+                [email.trim(), userId]
+            );
+            if (emailCheck.length > 0) {
+                return res.status(409).json({ success: false, message: 'อีเมลนี้มีการใช้แล้ว กรุณากรอกอีเมลใหม่ ที่ไม่ซ้ำ' });
+            }
 
-        await db.execute(
-            'UPDATE users SET full_name = ?, phone = ?, faculty = ?, major = ? WHERE id = ?',
-            [fullName, phone, faculty, major, decoded.userId]
+            await db.execute(
+                'UPDATE users SET full_name = ?, phone = ?, faculty = ?, major = ?, email = ? WHERE id = ?',
+                [fullName.trim(), phone || null, faculty || null, major || null, email.trim(), userId]
+            );
+        } else {
+            await db.execute(
+                'UPDATE users SET full_name = ?, phone = ?, faculty = ?, major = ? WHERE id = ?',
+                [fullName.trim(), phone || null, faculty || null, major || null, userId]
+            );
+        }
+
+        // Return updated user data
+        const [users] = await db.execute(
+            'SELECT id, email, full_name, student_id, phone, faculty, major, user_type, role FROM users WHERE id = ?',
+            [userId]
         );
 
-        res.json({ success: true, message: 'อัปเดตข้อมูลสำเร็จ' });
+        if (users.length === 0) {
+            return res.status(404).json({ success: false, message: 'ไม่พบผู้ใช้งาน' });
+        }
+
+        res.json({ success: true, message: 'อัปเดตข้อมูลสำเร็จ', user: users[0] });
 
     } catch (error) {
         console.error('Update profile error:', error);
         res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
     }
 });
+
 
 // ===============================================
 // POST /api/auth/forgot-password - ขอ reset รหัสผ่าน
@@ -488,5 +513,33 @@ router.post('/auth/reset-password', async (req, res) => {
     }
 });
 
+// ===============================================
+// GET /api/stats - สถิติสาธารณะ (ไม่ต้อง login)
+// ===============================================
+router.get('/stats', async (req, res) => {
+    try {
+        const [[{ totalCourts }]] = await db.execute(
+            "SELECT COUNT(*) as totalCourts FROM courts WHERE status != 'maintenance'"
+        );
+        const [[{ totalEquipment }]] = await db.execute(
+            "SELECT COUNT(*) as totalEquipment FROM equipment"
+        );
+        const [[{ totalUsers }]] = await db.execute(
+            "SELECT COUNT(*) as totalUsers FROM users WHERE role != 'admin'"
+        );
+
+        res.json({
+            success: true,
+            courts: totalCourts || 0,
+            equipment: totalEquipment || 0,
+            users: totalUsers || 0
+        });
+    } catch (error) {
+        console.error('Stats error:', error);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในระบบ' });
+    }
+});
+
 module.exports = router;
+
 

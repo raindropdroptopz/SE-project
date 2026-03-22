@@ -686,26 +686,38 @@
         function updateHeaderButtons() {
             const headerButtons = document.getElementById('header-buttons');
             const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-            const userName = localStorage.getItem('userName');
             const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
             if (isLoggedIn && headerButtons) {
-                // Show logged-in menu items in sidebar
                 document.querySelectorAll('.logged-in-menu').forEach(el => el.style.display = 'block');
 
-                let profileLink = '/profile.html';
-                if (isAdmin) {
-                    profileLink = '/admin-dashboard.html';
-                }
+                const profileLink = isAdmin ? '/admin-dashboard.html' : '/profile.html';
 
-                headerButtons.innerHTML = `
-                    <a href="${profileLink}" class="btn btn-outline-primary rounded-pill px-4">
-                        <i class="bi bi-person-circle me-1"></i> ${userName || 'โปรไฟล์'}
-                    </a>
-                    <button onclick="handleLogout()" class="btn btn-danger rounded-pill px-4">
-                        <i class="bi bi-box-arrow-right me-1"></i> ออกจากระบบ
-                    </button>
-                `;
+                const renderHeader = (name) => {
+                    headerButtons.innerHTML = `
+                        <a href="${profileLink}" class="btn btn-outline-primary rounded-pill px-4">
+                            <i class="bi bi-person-circle me-1"></i> ${name || 'โปรไฟล์'}
+                        </a>
+                        <button onclick="handleLogout()" class="btn btn-danger rounded-pill px-4">
+                            <i class="bi bi-box-arrow-right me-1"></i> ออกจากระบบ
+                        </button>
+                    `;
+                };
+
+                renderHeader(localStorage.getItem('userName'));
+
+                const token = localStorage.getItem('userToken');
+                if (token) {
+                    fetch('/api/profile', { headers: { 'Authorization': `Bearer ${token}` } })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success && data.user) {
+                                localStorage.setItem('userName', data.user.full_name);
+                                renderHeader(data.user.full_name);
+                            }
+                        })
+                        .catch(() => {});
+                }
             }
         }
 
