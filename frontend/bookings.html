@@ -441,7 +441,7 @@
                   <strong>฿<span id="summaryScCost">0</span></strong>
                 </div>
                 <div class="d-flex justify-content-between text-success" id="discountRow" style="display:none !important;">
-                  <span><i class="bi bi-tag-fill me-1"></i>ส่วนลด 15% (นักศึกษา/อาจารย์):</span>
+                  <span><i class="bi bi-tag-fill me-1"></i><span id="discountLabel">ส่วนลด 15%</span></span>
                   <strong>-฿<span id="summaryDiscount">0</span></strong>
                 </div>
                 <hr class="my-2">
@@ -945,6 +945,8 @@
         const discRow = document.getElementById('discountRow');
         if (isDiscounted && courtCost > 0) {
           discRow.style.display = 'flex';
+          const label = userType === 'student' ? 'ส่วนลดสำหรับนักศึกษา 15%' : 'ส่วนลดสำหรับอาจารย์ 15%';
+          document.getElementById('discountLabel').textContent = label;
           document.getElementById('summaryDiscount').textContent = discountAmount.toLocaleString();
         } else { discRow.style.display = 'none'; }
 
