@@ -546,9 +546,9 @@
                   <div><span>สถานที่รับ</span><strong>อาคารกีฬา</strong></div>
                 </div>
                 <div class="spec-item">
-                  <i class="bi bi-currency-dollar"></i>
-                  <div><span>มัดจำ</span><strong>ฟรี</strong></div>
-                </div>
+                   <i class="bi bi-currency-dollar"></i>
+                   <div><span id="priceLabel">ราคา</span><strong id="itemPrice">ฟรี</strong></div>
+                 </div>
               </div>
               <div class="borrow-form">
                 <h5>
@@ -799,6 +799,12 @@
             document.getElementById("itemDesc").textContent =
               item.description || "ไม่มีรายละเอียด";
             document.title = `${item.name} - Payap Sports`;
+
+            // Show price or 'ฟรี'
+            const priceEl = document.getElementById("itemPrice");
+            if (priceEl) {
+              priceEl.textContent = item.price && item.price > 0 ? `฿${item.price}` : 'ฟรี';
+            }
 
             // Update form input max value based on available stock
             const qtyInput = document.getElementById("quantity");
