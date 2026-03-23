@@ -85,7 +85,7 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
         }
 
-        // สร้าง JWT Token
+        // สร้าง JWT Token เมื่ออีเมลถูกต้อง
         const token = jwt.sign(
             { userId: user.id, email: user.email, role: user.role },
             process.env.JWT_SECRET,
