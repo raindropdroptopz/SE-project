@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const db = require('../config/database');
+const db = require('../lib/db');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -23,22 +23,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Middleware ตรวจสอบ Token
-const authenticateToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ success: false, message: 'กรุณาเข้าสู่ระบบ' });
-    }
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (error) {
-        return res.status(401).json({ success: false, message: 'Token ไม่ถูกต้อง' });
-    }
-};
+const authenticateToken = require('../middleware/auth');
 
 // ===============================================
 // GET /api/bookings/slots - ดึงช่วงเวลาที่ถูกจองแล้วของสนามในวันที่กำหนด

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const db = require('../config/database');
+const db = require('../lib/db');
 
 // Middleware ตรวจสอบ Admin
 const authenticateAdmin = async (req, res, next) => {

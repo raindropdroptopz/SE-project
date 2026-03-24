@@ -15,7 +15,7 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 app.use('/photo/slips', express.static(path.join(__dirname, '../frontend/uploads/receipts')));
 
 // Import routes
-const authRoutes = require('./routes/auth');
+const authRoutes = require('./auth/auth');
 const bookingRoutes = require('./routes/bookings');
 const equipmentRoutes = require('./routes/equipment');
 const adminRoutes = require('./routes/admin');
