@@ -487,7 +487,7 @@
                             const slipHtml = slipUrl
                                 ? `<button data-slip="${slipUrl}" class="btn btn-sm btn-outline-primary ms-1 slip-btn" title="ดูสลิป"><i class="bi bi-image"></i> ดูสลิป</button>`
                                 : '<span class="text-muted" style="font-size:0.8em;">ไม่มีสลิป</span>';
-                            const verifyBtns = ps === 'pending' ? `
+                            const verifyBtns = (ps === 'pending' && (!t.id || String(t.id).startsWith('P'))) ? `
                                 <button data-payment-id="${t.id}" data-action="verified" class="btn btn-sm btn-success ms-1 verify-btn" title="ยืนยัน"><i class="bi bi-check"></i></button>
                                 <button data-payment-id="${t.id}" data-action="rejected" class="btn btn-sm btn-danger ms-1 verify-btn" title="ปฏิเสธ"><i class="bi bi-x"></i></button>
                             ` : '';

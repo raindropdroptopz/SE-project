@@ -503,8 +503,13 @@ router.get('/finance', authenticateAdmin, async (req, res) => {
 // ===============================================
 router.patch('/payments/:id/status', authenticateAdmin, async (req, res) => {
     try {
-        const paymentId = req.params.id;
+        let paymentId = req.params.id;
         const { status } = req.body; // 'verified' or 'rejected'
+        
+        // Remove 'P' prefix if sent from finance page
+        if (typeof paymentId === 'string' && paymentId.startsWith('P')) {
+            paymentId = paymentId.substring(1);
+        }
 
         if (!['verified', 'rejected'].includes(status)) {
             return res.status(400).json({ success: false, message: 'สถานะไม่ถูกต้อง' });
