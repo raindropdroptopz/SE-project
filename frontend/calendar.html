@@ -822,6 +822,33 @@
             });
         }
 
+        function updateDashboardStats(events) {
+            const today = new Date().toISOString().split('T')[0];
+            let todayCount = 0;
+            let confirmedCount = 0;
+            let pendingCount = 0;
+
+            events.forEach(ev => {
+                if (ev.start && ev.start.startsWith(today)) {
+                    todayCount++;
+                }
+                const status = (ev.extendedProps && ev.extendedProps.status) || ev.status;
+                if (status === 'confirmed') {
+                    confirmedCount++;
+                } else if (status === 'pending') {
+                    pendingCount++;
+                }
+            });
+
+            const elToday = document.getElementById('statToday');
+            const elConfirmed = document.getElementById('statConfirmed');
+            const elPending = document.getElementById('statPending');
+
+            if (elToday) elToday.textContent = todayCount;
+            if (elConfirmed) elConfirmed.textContent = confirmedCount;
+            if (elPending) elPending.textContent = pendingCount;
+        }
+
         // Call updateHeaderButtons upon loading
         updateHeaderButtons();
     </script>

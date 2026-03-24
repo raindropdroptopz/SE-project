@@ -2,6 +2,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
+const db = require('./lib/db');
 
 const app = express();
 
@@ -66,6 +67,24 @@ app.get('/', (req, res) => {
 app.use((req, res) => {
     res.status(404).send('404 - Page Not Found');
 });
+
+// Auto-update expired bookings to 'completed'
+setInterval(async () => {
+    try {
+        // อัปเดตการจองสนามที่เลยเวลาสิ้นสุดแล้วให้กลายเป็น 'completed' (หมดเวลา)
+        await db.execute(`
+            UPDATE bookings 
+            SET status = 'completed' 
+            WHERE status IN ('pending', 'confirmed') 
+            AND (
+                DATE(booking_date) < CURDATE() 
+                OR (DATE(booking_date) = CURDATE() AND end_time <= CURTIME())
+            )
+        `);
+    } catch (err) {
+        console.error('Auto-update expired bookings error:', err);
+    }
+}, 60000); // Run every 60 seconds (1 minute)
 
 // Start server
 const PORT = process.env.PORT || 3000;
