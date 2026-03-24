@@ -512,8 +512,22 @@
             tbody.innerHTML = bookings.map(b => {
                 const date = new Date(b.booking_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
                 const time = b.start_time.substring(0, 5) + ' - ' + b.end_time.substring(0, 5);
-                const statusClass = b.status === 'confirmed' ? 'confirmed' : (b.status === 'pending' ? 'pending' : 'cancelled');
-                const statusText = b.status === 'confirmed' ? 'ยืนยันแล้ว' : (b.status === 'pending' ? 'รออนุมัติ' : 'ยกเลิก');
+                const statusMap = {
+                    'confirmed': { class: 'confirmed', text: 'ยืนยันแล้ว' },
+                    'borrowed': { class: 'confirmed', text: 'กำลังยืม' },
+                    'returned': { class: 'confirmed', text: 'คืนแล้ว' },
+                    'purchased': { class: 'confirmed', text: 'ซื้อแล้ว' },
+                    'pending': { class: 'pending', text: 'รออนุมัติ' },
+                    'cancelled': { class: 'cancelled', text: 'ยกเลิก' },
+                    'overdue': { class: 'cancelled', text: 'เลยเวลา' }
+                };
+                
+                let statusClass = 'pending';
+                let statusText = 'รออนุมัติ';
+                if (statusMap[b.status]) {
+                    statusClass = statusMap[b.status].class;
+                    statusText = statusMap[b.status].text;
+                }
 
                 let actionBtns = `
                     <button class="action-btn view" onclick="viewBooking(${b.id})"><i class="bi bi-eye"></i></button>
@@ -521,16 +535,16 @@
 
                 if (b.status === 'pending') {
                     actionBtns += `
-                        <button class="action-btn" style="background:rgba(56,239,125,0.15);color:#11998e;" onclick="approveBooking(${b.id})">
+                        <button class="action-btn" style="background:rgba(56,239,125,0.15);color:#11998e;" onclick="approveBooking(${b.id}, '${b.type}')">
                             <i class="bi bi-check-lg"></i>
                         </button>
-                        <button class="action-btn delete" onclick="rejectBooking(${b.id})">
+                        <button class="action-btn delete" onclick="rejectBooking(${b.id}, '${b.type}')">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     `;
                 } else {
                     actionBtns += `
-                        <button class="action-btn delete" onclick="deleteBooking(${b.id})"><i class="bi bi-trash"></i></button>
+                        <button class="action-btn delete" onclick="deleteBooking(${b.id}, '${b.type}')"><i class="bi bi-trash"></i></button>
                     `;
                 }
 
@@ -557,7 +571,7 @@
         }
 
         // อนุมัติการจอง
-        async function approveBooking(id) {
+        async function approveBooking(id, type = 'court') {
             if (!confirm('ต้องการอนุมัติการจองนี้?')) return;
 
             try {
@@ -567,7 +581,7 @@
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + token
                     },
-                    body: JSON.stringify({ status: 'confirmed' })
+                    body: JSON.stringify({ status: 'confirmed', type })
                 });
                 const result = await response.json();
 
@@ -583,7 +597,7 @@
         }
 
         // ปฏิเสธการจอง
-        async function rejectBooking(id) {
+        async function rejectBooking(id, type = 'court') {
             if (!confirm('ต้องการปฏิเสธการจองนี้?')) return;
 
             try {
@@ -593,7 +607,7 @@
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + token
                     },
-                    body: JSON.stringify({ status: 'cancelled' })
+                    body: JSON.stringify({ status: 'cancelled', type })
                 });
                 const result = await response.json();
 
@@ -626,8 +640,23 @@
             // display calculated price from backend
             document.getElementById('viewBookingPrice').innerText = '฿' + (b.price || 0);
 
-            const statusText = b.status === 'confirmed' ? 'ยืนยันแล้ว' : (b.status === 'pending' ? 'รออนุมัติ' : 'ยกเลิก');
-            document.getElementById('viewBookingStatus').innerHTML = `<span class="status-badge ${b.status === 'confirmed' ? 'confirmed' : (b.status === 'pending' ? 'pending' : 'cancelled')}">${statusText}</span>`;
+            const statusMap = {
+                'confirmed': { class: 'confirmed', text: 'ยืนยันแล้ว' },
+                'borrowed': { class: 'confirmed', text: 'กำลังยืม' },
+                'returned': { class: 'confirmed', text: 'คืนแล้ว' },
+                'purchased': { class: 'confirmed', text: 'ซื้อแล้ว' },
+                'pending': { class: 'pending', text: 'รออนุมัติ' },
+                'cancelled': { class: 'cancelled', text: 'ยกเลิก' },
+                'overdue': { class: 'cancelled', text: 'เลยเวลา' }
+            };
+            
+            let statusClass = 'pending';
+            let statusText = 'รออนุมัติ';
+            if (statusMap[b.status]) {
+                statusClass = statusMap[b.status].class;
+                statusText = statusMap[b.status].text;
+            }
+            document.getElementById('viewBookingStatus').innerHTML = `<span class="status-badge ${statusClass}">${statusText}</span>`;
 
             const createdDate = new Date(b.created_at).toLocaleString('th-TH');
             document.getElementById('viewBookingCreatedAt').innerText = createdDate;
@@ -649,11 +678,11 @@
             viewBookingModalWrapper.show();
         }
 
-        async function deleteBooking(id) {
+        async function deleteBooking(id, type = 'court') {
             if (!confirm('ต้องการลบการจองนี้หรือไม่? การลบจะไม่สามารถกู้คืนได้')) return;
 
             try {
-                const response = await fetch(`/api/admin/bookings/${id}`, {
+                const response = await fetch(`/api/admin/bookings/${id}?type=${type}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': 'Bearer ' + token

@@ -15,8 +15,6 @@ async function hashPasswords() {
         console.log(`Hash: ${hash}`);
         console.log('-'.repeat(60));
     }
-
-    console.log('\n💡 คัดลอก hash ไปใส่ใน SQL INSERT ได้เลย');
 }
 
 hashPasswords();

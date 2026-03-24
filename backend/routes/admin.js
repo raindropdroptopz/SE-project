@@ -57,16 +57,32 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
             "SELECT COUNT(*) as count FROM equipment_bookings WHERE status = 'pending'"
         );
 
-        // การจองล่าสุด 10 รายการ
+        // การจองล่าสุด 5 รายการ (รวมทั้งจองและยืม)
         const [recentBookings] = await db.execute(`
-            SELECT b.*, c.name as court_name, u.full_name as user_name,
-                   p.payment_slip, p.total_amount, p.status as payment_status
+            SELECT 
+                b.id, b.booking_date, b.start_time, b.end_time, b.status, b.created_at, b.sub_court,
+                IF(b.sub_court IS NOT NULL, CONCAT(c.name, ' (คอร์ท ', b.sub_court, ')'), c.name) as court_name, 
+                u.full_name as user_name,
+                p.payment_slip, p.total_amount, p.status as payment_status, 'court' as type
             FROM bookings b
             JOIN courts c ON b.court_id = c.id
             JOIN users u ON b.user_id = u.id
             LEFT JOIN payments p ON b.id = p.booking_id
-            ORDER BY b.created_at DESC
-            LIMIT 10
+            
+            UNION ALL
+            
+            SELECT 
+                eb.id, eb.borrow_date as booking_date, '08:00:00' as start_time, '20:00:00' as end_time, 
+                eb.status, eb.created_at, NULL as sub_court,
+                CONCAT('ยืม: ', e.name, ' (x', eb.quantity, ')') as court_name, 
+                u.full_name as user_name,
+                NULL as payment_slip, (eb.quantity * e.price) as total_amount, 'confirmed' as payment_status, 'equipment' as type
+            FROM equipment_bookings eb
+            JOIN equipment e ON eb.equipment_id = e.id
+            JOIN users u ON eb.user_id = u.id
+            
+            ORDER BY created_at DESC
+            LIMIT 5
         `);
 
         res.json({
@@ -170,14 +186,15 @@ router.delete('/users/:id', authenticateAdmin, async (req, res) => {
 });
 
 // ===============================================
+// ===============================================
 // GET /api/admin/bookings - รายการจองทั้งหมด
 // ===============================================
 router.get('/bookings', authenticateAdmin, async (req, res) => {
     try {
         const [bookings] = await db.execute(`
             SELECT b.id, b.booking_date, b.start_time, b.end_time, b.status, 
-                   c.name as court_name, u.full_name as user_name, u.email as user_email, u.student_id,
-                   p.total_amount as price, p.payment_slip, 'court' as type
+                   IF(b.sub_court IS NOT NULL, CONCAT(c.name, ' (คอร์ท ', b.sub_court, ')'), c.name) as court_name, u.full_name as user_name, u.email as user_email, u.student_id,
+                   p.total_amount as price, p.payment_slip, 'court' as type, b.created_at
             FROM bookings b
             JOIN courts c ON b.court_id = c.id
             JOIN users u ON b.user_id = u.id
@@ -187,12 +204,12 @@ router.get('/bookings', authenticateAdmin, async (req, res) => {
             
             SELECT eb.id, eb.borrow_date as booking_date, '08:00:00' as start_time, '20:00:00' as end_time, eb.status,
                    CONCAT('ยืม: ', e.name, ' (x', eb.quantity, ')') as court_name, u.full_name as user_name, u.email as user_email, u.student_id,
-                   (eb.quantity * e.price) as price, NULL as payment_slip, 'equipment' as type
+                   (eb.quantity * e.price) as price, NULL as payment_slip, 'equipment' as type, eb.created_at
             FROM equipment_bookings eb
             JOIN equipment e ON eb.equipment_id = e.id
             JOIN users u ON eb.user_id = u.id
             
-            ORDER BY booking_date DESC, start_time ASC
+            ORDER BY created_at DESC
         `);
 
         res.json({ success: true, bookings });
@@ -210,10 +227,15 @@ router.put('/bookings/:id/status', authenticateAdmin, async (req, res) => {
     try {
         const { status, type } = req.body;
         const targetTable = type === 'equipment' ? 'equipment_bookings' : 'bookings';
+        
+        let mappedStatus = status;
+        if (type === 'equipment' && status === 'confirmed') {
+            mappedStatus = 'borrowed';
+        }
 
         await db.execute(
             `UPDATE ${targetTable} SET status = ? WHERE id = ?`,
-            [status, req.params.id]
+            [mappedStatus, req.params.id]
         );
 
         res.json({ success: true, message: 'อัปเดตสถานะสำเร็จ' });
@@ -230,15 +252,17 @@ router.put('/bookings/:id/status', authenticateAdmin, async (req, res) => {
 router.delete('/bookings/:id', authenticateAdmin, async (req, res) => {
     try {
         const bookingId = req.params.id;
+        const type = req.query.type || 'court';
+        const targetTable = type === 'equipment' ? 'equipment_bookings' : 'bookings';
 
         // ตรวจสอบว่ามีการจองนี้อยู่หรือไม่
-        const [bookings] = await db.execute('SELECT * FROM bookings WHERE id = ?', [bookingId]);
+        const [bookings] = await db.execute(`SELECT * FROM ${targetTable} WHERE id = ?`, [bookingId]);
         if (bookings.length === 0) {
             return res.status(404).json({ success: false, message: 'ไม่พบการจอง' });
         }
 
         // ลบการจอง
-        await db.execute('DELETE FROM bookings WHERE id = ?', [bookingId]);
+        await db.execute(`DELETE FROM ${targetTable} WHERE id = ?`, [bookingId]);
 
         res.json({ success: true, message: 'ลบการจองสำเร็จ' });
 

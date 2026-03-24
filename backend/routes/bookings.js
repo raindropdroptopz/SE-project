@@ -46,7 +46,7 @@ router.get('/slots', async (req, res) => {
 
         // ดึงการจองทั้งหมดของสนามนี้ในวันนี้ที่ไม่ได้ยกเลิก
         const [bookings] = await db.execute(`
-            SELECT start_time, end_time 
+            SELECT start_time, end_time, sub_court 
             FROM bookings 
             WHERE court_id = ? 
             AND booking_date = ? 
@@ -54,11 +54,10 @@ router.get('/slots', async (req, res) => {
         `, [courtId, date]);
 
         // แปลงเวลาให้เป็น format "HH:mm-HH:mm" (เฉพาะชั่วโมงชั่วโมงชนชั่วโมง)
-        // เพราะ frontend ส่งมา format นี้: ['08:00-09:00', '09:00-10:00', ...]
         const bookedSlots = bookings.map(b => {
             const start = b.start_time.substring(0, 5); // เอาแค่ HH:mm
             const end = b.end_time.substring(0, 5);
-            return `${start}-${end}`;
+            return { time: `${start}-${end}`, sub_court: b.sub_court };
         });
 
         res.json({ success: true, bookedSlots });
@@ -172,7 +171,7 @@ router.get('/my', authenticateToken, async (req, res) => {
         const [bookings] = await db.execute(`
             SELECT 
                 b.*,
-                c.name as court_name,
+                IF(b.sub_court IS NOT NULL, CONCAT(c.name, ' (คอร์ท ', b.sub_court, ')'), c.name) as court_name,
                 c.image_url as court_image
             FROM bookings b
             JOIN courts c ON b.court_id = c.id
@@ -565,7 +564,7 @@ router.post('/with-payment', authenticateToken, upload.single('slip'), async (re
         }
 
         const data = JSON.parse(bookingDataStr);
-        const { court_type, booking_date, start_time, end_time, players, note, equipments } = data;
+        const { court_type, booking_date, start_time, end_time, players, note, equipments, sub_court } = data;
         const userId = req.user.userId;
 
         // Path ของสลิปที่อัปโหลด
@@ -584,15 +583,27 @@ router.post('/with-payment', authenticateToken, upload.single('slip'), async (re
         const courtPriceRate = courts[0].price || 0;
 
         // ตรวจสอบช่วงเวลาว่าง
-        const [existingBookings] = await connection.execute(`
+        let existingQuery = `
             SELECT id FROM bookings 
             WHERE court_id = ? AND booking_date = ? AND status != 'cancelled'
+        `;
+        let existingParams = [courtId, booking_date];
+
+        if (sub_court) {
+            existingQuery += ` AND (sub_court = ? OR sub_court IS NULL)`;
+            existingParams.push(sub_court);
+        }
+
+        existingQuery += `
             AND (
                 (start_time <= ? AND end_time > ?) OR
                 (start_time < ? AND end_time >= ?) OR
                 (start_time >= ? AND end_time <= ?)
             ) FOR UPDATE
-        `, [courtId, booking_date, start_time, start_time, end_time, end_time, start_time, end_time]);
+        `;
+        existingParams.push(start_time, start_time, end_time, end_time, start_time, end_time);
+
+        const [existingBookings] = await connection.execute(existingQuery, existingParams);
 
         if (existingBookings.length > 0) {
             await connection.rollback();
@@ -615,9 +626,9 @@ router.post('/with-payment', authenticateToken, upload.single('slip'), async (re
 
         // Insert booking
         const [result] = await connection.execute(`
-            INSERT INTO bookings (user_id, court_id, booking_date, start_time, end_time, players, note, status, payment_slip)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)
-        `, [userId, courtId, booking_date, start_time, end_time, players || 1, finalNote || null, payment_slip_url]);
+            INSERT INTO bookings (user_id, court_id, booking_date, start_time, end_time, players, note, sub_court, status, payment_slip)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+        `, [userId, courtId, booking_date, start_time, end_time, players || 1, finalNote || null, sub_court || null, payment_slip_url]);
         const bookingId = result.insertId;
 
         // Insert equipment_bookings + update stock

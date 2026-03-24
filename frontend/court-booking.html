@@ -567,6 +567,14 @@
                     required
                   />
                 </div>
+                <div class="form-group" id="subCourtGroup" style="display: none;">
+                  <label><i class="bi bi-geo-alt me-2"></i>เลือกคอร์ท (เฉพาะแบดมินตัน)</label>
+                  <select class="form-control-custom" id="subCourtSelect" name="sub_court">
+                    <option value="1">คอร์ท 1</option>
+                    <option value="2">คอร์ท 2</option>
+                    <option value="3">คอร์ท 3</option>
+                  </select>
+                </div>
                 <div class="form-group">
                   <label><i class="bi bi-clock me-2"></i>เลือกช่วงเวลา</label>
                   <div class="time-slots" id="timeSlots"></div>
@@ -873,6 +881,23 @@
         document.getElementById("courtType").value = court.name;
         document.title = "จอง" + court.name + " - Payap Sports";
 
+        // อัปเดตจำนวนผู้เล่นสูงสุดตาม capacity ของสนาม
+        if (court.capacity) {
+          const playersInput = document.getElementById("players");
+          playersInput.max = court.capacity;
+          playersInput.placeholder = `กรอกจำนวนผู้เล่น (สูงสุด ${court.capacity} คน)`;
+        }
+
+        const subCourtGroup = document.getElementById("subCourtGroup");
+        const subCourtSelect = document.getElementById("subCourtSelect");
+        if (court.name.includes("แบดมินตัน")) {
+            subCourtGroup.style.display = "block";
+            subCourtSelect.disabled = false;
+        } else {
+            subCourtGroup.style.display = "none";
+            subCourtSelect.disabled = true;
+        }
+
         // Rebuild time slots จากเวลาเปิด-ปิดของสนามนี้
         allTimeSlots = generateTimeSlots(court.open_time, court.close_time);
         selectedSlots = []; // reset เมื่อเปลี่ยนสนาม
@@ -1071,7 +1096,15 @@
 
           const past = isPastSlot(time.split("-")[0]);
 
-          if (bookedSlots.includes(time)) {
+          let isBooked = false;
+          if (currentCourt && currentCourt.name.includes("แบดมินตัน")) {
+             const selectedSubCourt = parseInt(document.getElementById("subCourtSelect").value) || 1;
+             isBooked = bookedSlots.some(b => b.time === time && (b.sub_court === selectedSubCourt || b.sub_court === null));
+          } else {
+             isBooked = bookedSlots.some(b => b.time === time);
+          }
+
+          if (isBooked) {
             slot.classList.add("disabled");
             slot.title = "ถูกจองแล้ว";
           } else if (past) {
@@ -1196,6 +1229,15 @@
           }
         });
 
+      document
+        .getElementById("subCourtSelect")
+        .addEventListener("change", function () {
+          selectedSlots = [];
+          document.getElementById("selectedTime").value = "";
+          document.getElementById("summaryTime").textContent = "-";
+          renderTimeSlots();
+        });
+
       // ใช้ local date (ไม่ใช่ UTC) เพื่อป้องกัน timezone bug
       const today = new Date().toLocaleDateString("en-CA");
       document.getElementById("bookingDate").min = today;
@@ -1235,6 +1277,12 @@
           }
 
           const [startTime, endTime] = time.split("-");
+
+          let subCourtVal = null;
+          if (currentCourt && currentCourt.name.includes("แบดมินตัน")) {
+             subCourtVal = parseInt(document.getElementById("subCourtSelect").value) || 1;
+          }
+
           pendingBookingData = {
             user_email: userEmail,
             court_type: currentCourt.name,
@@ -1243,6 +1291,7 @@
             end_time: endTime + ":00",
             players: parseInt(players),
             note: note,
+            sub_court: subCourtVal,
             equipments: selectedEquipments.map((e) => ({
               id: e.id,
               name: e.name,

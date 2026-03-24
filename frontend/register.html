@@ -349,8 +349,9 @@
                 </div>
                 <div class="form-group"><label>รหัสนักศึกษา / รหัสอาจารย์</label>
                     <div class="input-group-custom"><i class="bi bi-credit-card"></i><input type="text"
-                            class="form-control-custom" name="identificationNumber" placeholder="กรอกรหัสประจำตัว"
-                            required></div>
+                            class="form-control-custom" id="identificationNumber" name="identificationNumber" placeholder="กรอกรหัสประจำตัว"
+                            maxlength="10" required></div>
+                    <div id="idError" class="invalid-feedback-custom">กรุณากรอกรหัสให้ถูกต้อง (จำนวน 10 ตัว)</div>
                 </div>
                 <div class="form-group"><label>อีเมล</label>
                     <div class="input-group-custom"><i class="bi bi-envelope"></i><input type="email"
@@ -358,7 +359,8 @@
                 </div>
                 <div class="form-group"><label>เบอร์โทรศัพท์</label>
                     <div class="input-group-custom"><i class="bi bi-telephone"></i><input type="tel"
-                            class="form-control-custom" name="phone" placeholder="0xx-xxx-xxxx"></div>
+                            class="form-control-custom" id="phone" name="phone" placeholder="08xxxxxxxx" maxlength="10" required></div>
+                    <div id="phoneError" class="invalid-feedback-custom">กรุณากรอกเบอร์โทรให้ถูกต้อง (ตัวเลข 10 หลัก)</div>
                 </div>
                 <div class="form-row">
                     <div class="form-group"><label>รหัสผ่าน</label>
@@ -414,6 +416,23 @@
             if (!nameRegex.test(lastName)) {
                 document.getElementById('lastName').classList.add('is-invalid');
                 document.getElementById('lastNameError').style.display = 'block';
+                hasError = true;
+            }
+
+            // ตรวจสอบรหัสนักศึกษา/อาจารย์ (10 ตัว)
+            const idVal = formData.get('identificationNumber') || '';
+            if (idVal.trim().length !== 10) {
+                document.getElementById('identificationNumber').classList.add('is-invalid');
+                document.getElementById('idError').style.display = 'block';
+                hasError = true;
+            }
+
+            // ตรวจสอบเบอร์โทร (10 หลัก เริ่มด้วย 0, อนุญาตให้มีขีด -)
+            const rawPhone = formData.get('phone') || '';
+            const phoneClean = rawPhone.replace(/[\-\s]/g, '');
+            if (!/^0\d{9}$/.test(phoneClean)) {
+                document.getElementById('phone').classList.add('is-invalid');
+                document.getElementById('phoneError').style.display = 'block';
                 hasError = true;
             }
 

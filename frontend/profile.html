@@ -911,7 +911,7 @@
                     const stats = data.stats;
 
                     document.getElementById('displayName').textContent = user.full_name;
-                    document.getElementById('displayRole').textContent = user.user_type === 'student' ? 'นักศึกษา' : user.user_type === 'staff' ? 'บุคลากร' : 'บุคคลภายนอก';
+                    document.getElementById('displayRole').textContent = user.user_type === 'student' ? 'นักศึกษา' : user.user_type === 'staff' ? 'อาจารย์' : 'บุคคลภายนอก';
                     
                     if (user.role === 'admin') {
                         document.getElementById('adminBtnContainer').style.display = 'block';

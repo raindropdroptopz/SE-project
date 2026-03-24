@@ -652,7 +652,7 @@
         <div class="content-card">
             <div class="card-header-custom">
                 <h5><i class="bi bi-clock-history me-2"></i>การจองล่าสุด</h5>
-                <button class="btn-custom btn-primary-custom">ดูทั้งหมด</button>
+                <button class="btn-custom btn-primary-custom" onclick="window.location.href='/admin/bookings.html'">ดูทั้งหมด</button>
             </div>
             <table class="table-custom">
                 <thead>
@@ -1021,17 +1021,31 @@
                     if (data.recentBookings && data.recentBookings.length > 0) {
                         tbody.innerHTML = data.recentBookings.map(b => {
                             const date = new Date(b.booking_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
-                            const statusClass = b.status === 'confirmed' ? 'confirmed' : (b.status === 'pending' ? 'pending' : 'cancelled');
-                            const statusText = b.status === 'confirmed' ? 'ยืนยันแล้ว' : (b.status === 'pending' ? 'รออนุมัติ' : 'ยกเลิก');
+                            const statusMap = {
+                                'confirmed': { class: 'confirmed', text: 'ยืนยันแล้ว' },
+                                'borrowed': { class: 'confirmed', text: 'กำลังยืม' },
+                                'returned': { class: 'confirmed', text: 'คืนแล้ว' },
+                                'purchased': { class: 'confirmed', text: 'ซื้อแล้ว' },
+                                'pending': { class: 'pending', text: 'รออนุมัติ' },
+                                'cancelled': { class: 'cancelled', text: 'ยกเลิก' },
+                                'overdue': { class: 'cancelled', text: 'เลยเวลา' }
+                            };
+                            
+                            let statusClass = 'pending';
+                            let statusText = 'รออนุมัติ';
+                            if (statusMap[b.status]) {
+                                statusClass = statusMap[b.status].class;
+                                statusText = statusMap[b.status].text;
+                            }
                             
                             // Store bookings globally
                             currentRecentBookings = data.recentBookings;
 
-                            let actionBtns = `<button class="action-btn view" onclick="showBookingDetails(${b.id})"><i class="bi bi-eye"></i></button>`;
+                            let actionBtns = `<button class="action-btn view" onclick="showBookingDetails(${b.id}, '${b.type}')"><i class="bi bi-eye"></i></button>`;
                             if (b.status === 'pending') {
                                 actionBtns += `
-                                    <button class="action-btn" style="background:rgba(56,239,125,0.15);color:#11998e;" onclick="approveBooking(${b.id})"><i class="bi bi-check-lg"></i></button>
-                                    <button class="action-btn delete" onclick="rejectBooking(${b.id})"><i class="bi bi-x-lg"></i></button>
+                                    <button class="action-btn" style="background:rgba(56,239,125,0.15);color:#11998e;" onclick="approveBooking(${b.id}, '${b.type}', 'inline')"><i class="bi bi-check-lg"></i></button>
+                                    <button class="action-btn delete" onclick="rejectBooking(${b.id}, '${b.type}', 'inline')"><i class="bi bi-x-lg"></i></button>
                                 `;
                             }
 
@@ -1061,8 +1075,8 @@
             }
         }
 
-        function showBookingDetails(bookingId) {
-            const b = currentRecentBookings.find(item => item.id === bookingId);
+        function showBookingDetails(bookingId, type) {
+            const b = currentRecentBookings.find(item => item.id === bookingId && item.type === type);
             if (!b) return;
 
             // Simple fields
@@ -1074,8 +1088,22 @@
 
             // Status Badge
             const badge = document.getElementById('viewStatusBadge');
-            const statusClass = b.status === 'confirmed' ? 'confirmed' : (b.status === 'pending' ? 'pending' : 'cancelled');
-            const statusText = b.status === 'confirmed' ? 'ยืนยันแล้ว' : (b.status === 'pending' ? 'รออนุมัติ' : 'ยกเลิก');
+            const statusMap = {
+                'confirmed': { class: 'confirmed', text: 'ยืนยันแล้ว' },
+                'borrowed': { class: 'confirmed', text: 'กำลังยืม' },
+                'returned': { class: 'confirmed', text: 'คืนแล้ว' },
+                'purchased': { class: 'confirmed', text: 'ซื้อแล้ว' },
+                'pending': { class: 'pending', text: 'รออนุมัติ' },
+                'cancelled': { class: 'cancelled', text: 'ยกเลิก' },
+                'overdue': { class: 'cancelled', text: 'เลยเวลา' }
+            };
+            
+            let statusClass = 'pending';
+            let statusText = 'รออนุมัติ';
+            if (statusMap[b.status]) {
+                statusClass = statusMap[b.status].class;
+                statusText = statusMap[b.status].text;
+            }
             badge.className = `status-badge ${statusClass}`;
             badge.textContent = statusText;
 
@@ -1106,8 +1134,8 @@
             actionContainer.innerHTML = '';
             if (b.status === 'pending') {
                 actionContainer.innerHTML = `
-                    <button class="btn btn-success rounded-pill px-4 ms-2" onclick="approveBooking(${b.id}, 'modal')"><i class="bi bi-check-lg me-1"></i>อนุมัติ</button>
-                    <button class="btn btn-danger rounded-pill px-4 ms-2" onclick="rejectBooking(${b.id}, 'modal')"><i class="bi bi-x-lg me-1"></i>ปฏิเสธ</button>
+                    <button class="btn btn-success rounded-pill px-4 ms-2" onclick="approveBooking(${b.id}, '${b.type}', 'modal')"><i class="bi bi-check-lg me-1"></i>อนุมัติ</button>
+                    <button class="btn btn-danger rounded-pill px-4 ms-2" onclick="rejectBooking(${b.id}, '${b.type}', 'modal')"><i class="bi bi-x-lg me-1"></i>ปฏิเสธ</button>
                 `;
             }
 
@@ -1115,14 +1143,14 @@
             modal.show();
         }
 
-        async function approveBooking(id, from) {
+        async function approveBooking(id, type, from) {
             if (!confirm('ต้องการอนุมัติการจองนี้?')) return;
             const token = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
             try {
                 const res = await fetch(`/api/admin/bookings/${id}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ status: 'confirmed' })
+                    body: JSON.stringify({ status: 'confirmed', type })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -1138,14 +1166,14 @@
             }
         }
 
-        async function rejectBooking(id, from) {
+        async function rejectBooking(id, type, from) {
             if (!confirm('ต้องการปฏิเสธการจองนี้?')) return;
             const token = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
             try {
                 const res = await fetch(`/api/admin/bookings/${id}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ status: 'cancelled' })
+                    body: JSON.stringify({ status: 'cancelled', type })
                 });
                 const data = await res.json();
                 if (data.success) {
