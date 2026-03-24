@@ -1002,8 +1002,8 @@
                 const res = await fetch('/api/stats');
                 const data = await res.json();
                 if (data.success) {
-                    document.getElementById('stat-courts').textContent = data.courts + '+';
-                    document.getElementById('stat-equipment').textContent = data.equipment + '+';
+                    document.getElementById('stat-courts').textContent = data.courts;
+                    document.getElementById('stat-equipment').textContent = data.equipment;
                     document.getElementById('stat-users').textContent = data.users.toLocaleString() + '+';
                 }
             } catch (err) {
